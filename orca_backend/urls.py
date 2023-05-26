@@ -1,5 +1,5 @@
 """
-URL configuration for orca_ui project.
+URL configuration for orca_backend project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/4.2/topics/http/urls/
@@ -17,11 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path, re_path
 
-from device import views
+from network import views
 
 urlpatterns = [
-    path("device/", include("device.urls")),
+    path("device/", include("network.urls")),
     path("admin/", admin.site.urls),
-    re_path(r'^api/device/$', views.device_list),
-    re_path(r'^api/device/([0-9])$', views.device_detail),
+    re_path(r'^api/network/$', views.device_list),
+    re_path(r'^api/network/([0-9])$', views.device_detail),
 ]

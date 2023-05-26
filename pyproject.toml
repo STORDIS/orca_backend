@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "orca_ui"
+name = "orca_backend"
 version = "0.1.0"
-description = "Orca Frontend"
+description = "Orca Backend "
 authors = ["kamal bhatt <kamal.bhatt@stordis.com>"]
 
 [tool.poetry.dependencies]
