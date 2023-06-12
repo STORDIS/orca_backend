@@ -20,8 +20,7 @@ from django.urls import include, path, re_path
 from network import views
 
 urlpatterns = [
-    path("device/", include("network.urls")),
+    path("", include("network.urls")),
     path("admin/", admin.site.urls),
-    re_path(r'^api/network/$', views.device_list),
-    re_path(r'^api/network/([0-9])$', views.device_detail),
+    
 ]
