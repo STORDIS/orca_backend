@@ -1,3 +1,4 @@
+import os
 from django.shortcuts import render
 
 from django.http import HttpResponse, JsonResponse
@@ -8,10 +9,16 @@ from orca_nw_lib.device import getDeviceDetailsFromGraph
 from orca_nw_lib.interfaces import getInterfacesDetailsFromGraph
 from orca_nw_lib.port_chnl import getPortChnlDetailsFromGraph
 from orca_nw_lib.mclag import getMCLAGsFromGraph
+from orca_nw_lib.discovery import discover_all
 
-
-def index(request):
-    return HttpResponse("Hello, world. You're at the polls index.")
+@api_view(['GET',])
+def discover(request):
+    if request.method == 'GET':
+        data=discover_all()
+        if data:
+            return JsonResponse({"result":"Success"}, safe=False)
+        else:
+            return JsonResponse({"result":"Fail"}, safe=False)
 
 @api_view(['GET',])
 def device_list(request):
