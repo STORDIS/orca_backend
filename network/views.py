@@ -5,11 +5,12 @@ from django.http import HttpResponse, JsonResponse
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
-from orca_nw_lib.device import getDeviceDetailsFromGraph
-from orca_nw_lib.interfaces import getInterfacesDetailsFromGraph, config_interface
-from orca_nw_lib.port_chnl import getPortChnlDetailsFromGraph,add_port_chnl
-from orca_nw_lib.mclag import getMCLAGsFromGraph
+from orca_nw_lib.device import getDeviceDetailsFromDB
+from orca_nw_lib.interfaces import getInterfacesDetailsFromDB, set_interface_config_on_device
+from orca_nw_lib.port_chnl import getPortChnlDetailsFromDB,add_port_chnl_on_device
+from orca_nw_lib.mclag import getMCLAGsFromDB
 from orca_nw_lib.discovery import discover_all
+from orca_nw_lib.bgp import getBGPGlobalJsonFromDB
 
 @api_view(['GET',])
 def discover(request):
@@ -23,7 +24,7 @@ def discover(request):
 @api_view(['GET',])
 def device_list(request):
     if request.method == 'GET':
-        data=getDeviceDetailsFromGraph(request.GET.get('mgt_ip',''))
+        data=getDeviceDetailsFromDB(request.GET.get('mgt_ip',''))
         return JsonResponse(data, safe=False)
     
 @api_view(['GET','PUT'])
@@ -35,7 +36,7 @@ def device_interfaces_list(request):
             return Response({"status": "Required field device mgt_ip not found."},
                                         status=status.HTTP_400_BAD_REQUEST)
         intfc_name=request.GET.get('intfc_name','')
-        data=getInterfacesDetailsFromGraph(device_ip,intfc_name)
+        data=getInterfacesDetailsFromDB(device_ip,intfc_name)
         return JsonResponse(data, safe=False)
     elif request.method == 'PUT':
         device_ip=request.POST.get('mgt_ip','')
@@ -46,7 +47,7 @@ def device_interfaces_list(request):
         if not req_data.get('name'):
             return Response({"status": "Required field device mgt_ip not found."},
                                     status=status.HTTP_400_BAD_REQUEST)
-        data = config_interface(device_ip=device_ip,intfc_name=req_data.get('name'),enable=req_data.get('enabled'),
+        data = set_interface_config_on_device(device_ip=device_ip,intfc_name=req_data.get('name'),enable=req_data.get('enabled'),
                          mtu=req_data.get('mtu'),loopback=req_data.get('loopback-mode'),description=req_data.get('description'),
                          speed=req_data.get('port-speed'))
         return Response({"status": "Error occurred while applying config."},
@@ -65,7 +66,7 @@ def device_port_chnl_list(request):
             return Response({"status": "Required field device mgt_ip not found."},
                                         status=status.HTTP_400_BAD_REQUEST)
         port_chnl_name=request.GET.get('chnl_name','')
-        data=getPortChnlDetailsFromGraph(device_ip,port_chnl_name)
+        data=getPortChnlDetailsFromDB(device_ip,port_chnl_name)
         return JsonResponse(data, safe=False)
     elif request.method == 'PUT':
         device_ip=request.POST.get('mgt_ip','')
@@ -76,7 +77,7 @@ def device_port_chnl_list(request):
         if not req_data.get('chnl_name'):
             return Response({"status": "Required field device chnl_name not found."},
                                     status=status.HTTP_400_BAD_REQUEST)
-        data=add_port_chnl(device_ip,req_data.get('chnl_name'),
+        data=add_port_chnl_on_device(device_ip,req_data.get('chnl_name'),
                            admin_status=req_data.get('admin_status'),
                            mtu=int(req_data.get('mtu')))
         return Response({"status": "Error occurred while applying config."},
@@ -95,5 +96,15 @@ def device_mclag_list(request):
             return Response({"status": "Required field device mgt_ip not found."},
                                         status=status.HTTP_400_BAD_REQUEST)
         domain_id=request.GET.get('domain_id','')
-        data=getMCLAGsFromGraph(device_ip,domain_id)
+        data=getMCLAGsFromDB(device_ip,domain_id)
+        return JsonResponse(data, safe=False)
+    
+@api_view(['GET',])
+def device_bgp_global(request):
+    if request.method == 'GET':
+        device_ip=request.GET.get('mgt_ip','')
+        if not device_ip :
+            return Response({"status": "Required field device mgt_ip not found."},
+                                        status=status.HTTP_400_BAD_REQUEST)
+        data=getBGPGlobalJsonFromDB(device_ip)
         return JsonResponse(data, safe=False)
