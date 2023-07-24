@@ -1,3 +1,4 @@
+import logging
 import os
 from django.shortcuts import render
 
@@ -18,6 +19,7 @@ from orca_nw_lib.portgroup import (
     getJsonOfAllPortGroupsOfDeviceFromDB,
     getJsonOfPortGroupMemIfFromDB,
 )
+from orca_nw_lib.vlan import getJsonOfVLANDetailsFromDB
 
 
 @api_view(
@@ -211,5 +213,23 @@ def port_group_members(request):
                 {"status": "Required field device port_group_id not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        data = getJsonOfPortGroupMemIfFromDB(device_ip,port_group_id)
+        data = getJsonOfPortGroupMemIfFromDB(device_ip, port_group_id)
+        return JsonResponse(data, safe=False)
+
+
+@api_view(
+    [
+        "GET",
+    ]
+)
+def vlans(request):    
+    if request.method == "GET":
+        device_ip = request.GET.get("mgt_ip", "")
+        if not device_ip:
+            return Response(
+                {"status": "Required field device mgt_ip not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        vlan_name = request.GET.get("vlan_name", "")
+        data = getJsonOfVLANDetailsFromDB(device_ip, vlan_name)
         return JsonResponse(data, safe=False)
