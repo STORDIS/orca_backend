@@ -1,25 +1,21 @@
-import logging
-import os
-from django.shortcuts import render
-
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
-from orca_nw_lib.device import getDeviceDetailsFromDB
-from orca_nw_lib.interfaces import (
-    getInterfacesDetailsFromDB,
-    set_interface_config_on_device,
+from orca_nw_lib.device import get_device_details
+from orca_nw_lib.interface import (
+    get_interface,
+    config_interface,
 )
-from orca_nw_lib.port_chnl import getPortChnlDetailsFromDB, add_port_chnl_on_device
-from orca_nw_lib.mclag import getMCLAGsFromDB
+from orca_nw_lib.port_chnl import get_port_chnl, add_port_chnl
+from orca_nw_lib.mclag import get_mclags
 from orca_nw_lib.discovery import discover_all
-from orca_nw_lib.bgp import getBGPGlobalJsonFromDB
+from orca_nw_lib.bgp import get_bgp_global
 from orca_nw_lib.portgroup import (
-    getJsonOfAllPortGroupsOfDeviceFromDB,
-    getJsonOfPortGroupMemIfFromDB,
+    get_port_groups,
+    get_port_group_members,
 )
-from orca_nw_lib.vlan import getJsonOfVLANDetailsFromDB
+from orca_nw_lib.vlan import get_vlan
 
 
 @api_view(
@@ -43,7 +39,7 @@ def discover(request):
 )
 def device_list(request):
     if request.method == "GET":
-        data = getDeviceDetailsFromDB(request.GET.get("mgt_ip", ""))
+        data = get_device_details(request.GET.get("mgt_ip", ""))
         return JsonResponse(data, safe=False)
 
 
@@ -57,7 +53,7 @@ def device_interfaces_list(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         intfc_name = request.GET.get("intfc_name", "")
-        data = getInterfacesDetailsFromDB(device_ip, intfc_name)
+        data = get_interface(device_ip, intfc_name)
         return JsonResponse(data, safe=False)
     elif request.method == "PUT":
         device_ip = request.POST.get("mgt_ip", "")
@@ -72,10 +68,12 @@ def device_interfaces_list(request):
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        data = set_interface_config_on_device(
+        # print(req_data)
+        # print( True if req_data.get("enabled") == 'True' else False)
+        data = config_interface(
             device_ip=device_ip,
             intfc_name=req_data.get("name"),
-            enable=req_data.get("enabled"),
+            enable=True if req_data.get("enabled") == "True" else False,
             mtu=req_data.get("mtu"),
             loopback=req_data.get("loopback-mode"),
             description=req_data.get("description"),
@@ -106,7 +104,7 @@ def device_port_chnl_list(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         port_chnl_name = request.GET.get("chnl_name", "")
-        data = getPortChnlDetailsFromDB(device_ip, port_chnl_name)
+        data = get_port_chnl(device_ip, port_chnl_name)
         return JsonResponse(data, safe=False)
     elif request.method == "PUT":
         device_ip = request.POST.get("mgt_ip", "")
@@ -121,19 +119,15 @@ def device_port_chnl_list(request):
                 {"status": "Required field device chnl_name not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        data = add_port_chnl_on_device(
+        add_port_chnl(
             device_ip,
             req_data.get("chnl_name"),
             admin_status=req_data.get("admin_status"),
             mtu=int(req_data.get("mtu")),
         )
         return (
-            Response(
-                {"status": "Error occurred while applying config."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-            if not data
-            else Response({"status": "Config Successful"}, status=status.HTTP_200_OK)
+            # TODO: Add Response when config is failed.
+            Response({"status": "Config Successful"}, status=status.HTTP_200_OK)
         )
     else:
         return Response(
@@ -156,7 +150,7 @@ def device_mclag_list(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         domain_id = request.GET.get("domain_id", "")
-        data = getMCLAGsFromDB(device_ip, domain_id)
+        data = get_mclags(device_ip, domain_id)
         return JsonResponse(data, safe=False)
 
 
@@ -173,7 +167,7 @@ def device_bgp_global(request):
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        data = getBGPGlobalJsonFromDB(device_ip)
+        data = get_bgp_global(device_ip)
         return JsonResponse(data, safe=False)
 
 
@@ -190,7 +184,7 @@ def port_groups(request):
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        data = getJsonOfAllPortGroupsOfDeviceFromDB(device_ip)
+        data = get_port_groups(device_ip)
         return JsonResponse(data, safe=False)
 
 
@@ -213,7 +207,7 @@ def port_group_members(request):
                 {"status": "Required field device port_group_id not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        data = getJsonOfPortGroupMemIfFromDB(device_ip, port_group_id)
+        data = get_port_group_members(device_ip, port_group_id)
         return JsonResponse(data, safe=False)
 
 
@@ -222,7 +216,7 @@ def port_group_members(request):
         "GET",
     ]
 )
-def vlans(request):    
+def vlans(request):
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", "")
         if not device_ip:
@@ -231,5 +225,5 @@ def vlans(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         vlan_name = request.GET.get("vlan_name", "")
-        data = getJsonOfVLANDetailsFromDB(device_ip, vlan_name)
+        data = get_vlan(device_ip, vlan_name)
         return JsonResponse(data, safe=False)
