@@ -12,19 +12,17 @@ class TaskAPITestCase(APITestCase):
             reverse("device_interface_list"), {"mgt_ip": device_ip}
         )
         ether_name = response.json()[0]["name"]
+        
         request_body = {"mgt_ip": device_ip, "name": ether_name, "enabled": False}
         response = self.client.put(reverse("device_interface_list"), request_body)
-        sleep(5)
         response = self.client.get(
             reverse("device_interface_list"),
             {"mgt_ip": device_ip, "intfc_name": ether_name},
         )
-        print(response.json()[0]["enabled"])
         self.assertEqual(response.json()[0]["enabled"], request_body["enabled"])
 
-        request_body = {"mgt_ip": device_ip, "name": ether_name, "enabled": False}
+        request_body = {"mgt_ip": device_ip, "name": ether_name, "enabled": True}
         response = self.client.put(reverse("device_interface_list"), request_body)
-        sleep(5)
         response = self.client.get(
             reverse("device_interface_list"),
             {"mgt_ip": device_ip, "intfc_name": ether_name},
