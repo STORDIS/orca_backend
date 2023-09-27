@@ -121,10 +121,11 @@ def device_list(request):
 #         )
 #  )
 
-@api_view(["GET","PUT"])
+@api_view(["GET", "PUT"])
 def device_interfaces_list(request):
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", "")
+        print(device_ip)
         if not device_ip:
             return Response(
                 {"status": "Required field device mgt_ip not found."},
@@ -133,79 +134,56 @@ def device_interfaces_list(request):
         intfc_name = request.GET.get("intfc_name", "")
         data = get_interface(device_ip, intfc_name)
         return JsonResponse(data, safe=False)
+		
     elif request.method == "PUT":
-
-        #  Multiple data handling
-        req_data = request.data
-        if not isinstance(req_data, list):
-            return Response(
-                {"status": "Request data should be a list of dictionaries."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        response_data = []
-        
-        for item in req_data:
-            device_ip = item.get("mgt_ip", "")
-            print(device_ip)
-            if not device_ip:
-                 return Response(
-                 {"status": "Required field device mgt_ip not found."},
-                status=status.HTTP_400_BAD_REQUEST,
-                     )
-            continue
-          
-        if not item.get("name"):
-                 return Response(
-                {"status": "Required field device mgt_ip not found."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        
-        #########################################################################
-        # print(req_data)
-        # print( True if req_data.get("enabled") == 'True' else False)
-        
         try:
-            speed = None
-            if(req_data.get("speed") == "SPEED_1GB"):
-                speed = Speed.SPEED_1GB
-            elif(req_data.get("speed") == "SPEED_5GB"):
-                speed = Speed.SPEED_5GB
-            elif(req_data.get("speed") == "SPEED_10GB"):
-                speed = Speed.SPEED_10GB
-            elif(req_data.get("speed") == "SPEED_25GB"):
-                speed = Speed.SPEED_25GB
-            elif(req_data.get("speed") == "SPEED_40GB"):
-                speed = Speed.SPEED_40GB
-            elif(req_data.get("speed") == "SPEED_50GB"):
-                speed = Speed.SPEED_50GB
-            elif(req_data.get("speed") == "SPEED_100GB"):
-                speed = Speed.SPEED_100GB
-            # else:
-            #     raise Exception ("Please enter valid speed in request body")
+            req_data_list = request.data  
+            for req_data in req_data_list:
+                device_ip = req_data.get("mgt_ip", "")
+                if not device_ip:
+                    return Response(
+                        {"status": "Required field device mgt_ip not found."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
 
-            config_interface(
-                device_ip=device_ip,
-                intfc_name=req_data.get("name"),
-                enable=True if req_data.get("enabled") == "True" else False,
-                mtu=int(mtu) if (mtu:=req_data.get("mtu")) else None,
-               # fec=req_data.get("fec"),
-                description=req_data.get("description"),
-                #speed=req_data.get("port-speed"),   
-                speed = speed
-            )
-           
-            return ( Response({"status": "Config Successful"}, status=status.HTTP_200_OK))
-        
-        except Exception as err:
+                if not req_data.get("name"):
+                    return Response(
+                        {"status": "Required field name not found."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                speed = None
+                if(req_data.get("speed") == "SPEED_1GB"):
+                    speed = Speed.SPEED_1GB
+                elif(req_data.get("speed") == "SPEED_5GB"):
+                    speed = Speed.SPEED_5GB
+                elif(req_data.get("speed") == "SPEED_10GB"):
+                    speed = Speed.SPEED_10GB
+                elif(req_data.get("speed") == "SPEED_25GB"):
+                    speed = Speed.SPEED_25GB
+                elif(req_data.get("speed") == "SPEED_40GB"):
+                    speed = Speed.SPEED_40GB
+                elif(req_data.get("speed") == "SPEED_50GB"):
+                    speed = Speed.SPEED_50GB
+                elif(req_data.get("speed") == "SPEED_100GB"):
+                    speed = Speed.SPEED_100GB
+                config_interface(
+                    device_ip=device_ip,
+                    intfc_name=req_data.get("name"),
+                    enable=True if req_data.get("enabled") else False,
+                    mtu=int(req_data.get("mtu")) if "mtu" in req_data else None,
+                    description=req_data.get("description"),
+                    speed=speed
+                )
+
+            return Response({"status": "Config Successful"}, status=status.HTTP_200_OK)
+        except Exception as err:    
             print(err)
-            return (
+        return (
             Response(
                 {"status": "Error occurred while applying config on device."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
          )
             )
-
-
 @api_view(["GET", "PUT"])
 def device_port_chnl_list(request):
     if request.method == "GET":
@@ -246,6 +224,7 @@ def device_port_chnl_list(request):
             {"status": f"Unknown request method {request.method}"},
             status=status.HTTP_400_BAD_REQUEST,
         )
+    
 
 
 @api_view(
