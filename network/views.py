@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
 from orca_nw_lib.device import get_device_details
+from orca_nw_lib.common import Speed
 from orca_nw_lib.interface import (
     get_interface,
     config_interface,
@@ -42,7 +43,6 @@ def device_list(request):
         data = get_device_details(request.GET.get("mgt_ip", ""))
         return JsonResponse(data, safe=False)
 
-
 @api_view(["GET", "PUT"])
 def device_interfaces_list(request):
     if request.method == "GET":
@@ -55,44 +55,56 @@ def device_interfaces_list(request):
         intfc_name = request.GET.get("intfc_name", "")
         data = get_interface(device_ip, intfc_name)
         return JsonResponse(data, safe=False)
+		
     elif request.method == "PUT":
-        device_ip = request.POST.get("mgt_ip", "")
-        if not device_ip:
-            return Response(
-                {"status": "Required field device mgt_ip not found."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        req_data = request.data
-        if not req_data.get("name"):
-            return Response(
-                {"status": "Required field device mgt_ip not found."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        # print(req_data)
-        # print( True if req_data.get("enabled") == 'True' else False)
-        data = config_interface(
-            device_ip=device_ip,
-            intfc_name=req_data.get("name"),
-            enable=True if req_data.get("enabled") == "True" else False,
-            mtu=req_data.get("mtu"),
-            loopback=req_data.get("loopback-mode"),
-            description=req_data.get("description"),
-            speed=req_data.get("port-speed"),
-        )
+        try:
+            req_data_list = request.data if isinstance(request.data, list) else [request.data] 
+            for req_data in req_data_list:
+                device_ip = req_data.get("mgt_ip", "")
+                if not device_ip:
+                    return Response(
+                        {"status": "Required field device mgt_ip not found."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                if not req_data.get("name"):
+                    return Response(
+                        {"status": "Required field name not found."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                speed = None
+                if(req_data.get("speed") == "SPEED_1GB"):
+                    speed = Speed.SPEED_1GB
+                elif(req_data.get("speed") == "SPEED_5GB"):
+                    speed = Speed.SPEED_5GB
+                elif(req_data.get("speed") == "SPEED_10GB"):
+                    speed = Speed.SPEED_10GB
+                elif(req_data.get("speed") == "SPEED_25GB"):
+                    speed = Speed.SPEED_25GB
+                elif(req_data.get("speed") == "SPEED_40GB"):
+                    speed = Speed.SPEED_40GB
+                elif(req_data.get("speed") == "SPEED_50GB"):
+                    speed = Speed.SPEED_50GB
+                elif(req_data.get("speed") == "SPEED_100GB"):
+                    speed = Speed.SPEED_100GB
+                config_interface(
+                    device_ip=device_ip,
+                    intfc_name=req_data.get("name"),
+                    enable = True if str(req_data.get("enabled")).lower() == "true" else False if str(req_data.get("enabled")).lower() == "false" else None,
+                    mtu=int(req_data.get("mtu")) if "mtu" in req_data else None,
+                    description=req_data.get("description"),
+                    speed=speed
+                )
+
+            return Response({"status": "Config Successful"}, status=status.HTTP_200_OK)
+        except Exception as err:    
+            print(err)
         return (
             Response(
-                {"status": "Error occurred while applying config."},
+                {"status": "Error occurred while applying config on device."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+         )
             )
-            if not data
-            else Response({"status": "Config Successful"}, status=status.HTTP_200_OK)
-        )
-    else:
-        return Response(
-            {"status": f"Unknown request method {request.method}"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
 
 @api_view(["GET", "PUT"])
 def device_port_chnl_list(request):
@@ -106,34 +118,37 @@ def device_port_chnl_list(request):
         port_chnl_name = request.GET.get("chnl_name", "")
         data = get_port_chnl(device_ip, port_chnl_name)
         return JsonResponse(data, safe=False)
+    
     elif request.method == "PUT":
-        device_ip = request.POST.get("mgt_ip", "")
-        if not device_ip:
-            return Response(
-                {"status": "Required field device mgt_ip not found."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        req_data = request.data
-        if not req_data.get("chnl_name"):
-            return Response(
-                {"status": "Required field device chnl_name not found."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        add_port_chnl(
-            device_ip,
-            req_data.get("chnl_name"),
-            admin_status=req_data.get("admin_status"),
-            mtu=int(req_data.get("mtu")),
-        )
+        try:
+            req_data_list = request.data if isinstance(request.data, list) else [request.data] 
+            for req_data in req_data_list:
+                device_ip = req_data.get("mgt_ip", "")
+                if not device_ip:
+                    return Response(
+                        {"status": "Required field device mgt_ip not found."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                if not req_data.get("chnl_name"):
+                     return Response(
+                        {"status": "Required field device chnl_name not found."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                )
+                add_port_chnl(
+                    device_ip,
+                    req_data.get("chnl_name"),
+                    admin_status=req_data.get("admin_status"),
+                    mtu=int(req_data.get("mtu")) if "mtu" in req_data else None,
+                )
+            return Response({"status": "Config Successful"}, status=status.HTTP_200_OK)
+        except Exception as err:    
+            print(err)
         return (
-            # TODO: Add Response when config is failed.
-            Response({"status": "Config Successful"}, status=status.HTTP_200_OK)
-        )
-    else:
-        return Response(
-            {"status": f"Unknown request method {request.method}"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+            Response(
+                {"status": "Error occurred while applying config on device."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+         )
+            )
 
 
 @api_view(
