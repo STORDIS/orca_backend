@@ -14,44 +14,45 @@ class InterfaceAPITestCase(APITestCase):
 
 
     #  Enabled
-        request_body = [{"mgt_ip": device_ip, "name": ether_name, "enabled": True}]
+        request_body = [{"mgt_ip": device_ip, "name": ether_name, "enabled": False}]
         for data in request_body:
             response = self.client.put(reverse("device_interface_list"), data)
             response = self.client.get(
             reverse("device_interface_list"),
             {"mgt_ip": device_ip, "intfc_name": ether_name},
         )
-        self.assertEqual(response.json()[0]["enabled"], data["enabled"])
+            print(response.json())
+        self.assertEqual(response.json()["enabled"], data["enabled"])
 
     #    mtu
-        request_body = [{"mgt_ip": device_ip, "name": ether_name, "mtu": 9100}]
+        request_body = [{"mgt_ip": device_ip, "name": ether_name, "mtu": 9200}]
         for data in request_body:
             response = self.client.put(reverse("device_interface_list"), data)
             response = self.client.get(
             reverse("device_interface_list"),
             {"mgt_ip": device_ip, "intfc_name": ether_name},
         )
-        self.assertEqual(response.json()[0]["mtu"], data["mtu"])
+        self.assertEqual(response.json()["mtu"], data["mtu"])
 
     #     #description
-        request_body = [{"mgt_ip": device_ip, "name": ether_name, "description": "SamplePort"}]
+        request_body = [{"mgt_ip": device_ip, "name": ether_name, "description": "Sample_Description"}]
         for data in request_body:
             response = self.client.put(reverse("device_interface_list"), data)
             response = self.client.get(
             reverse("device_interface_list"),
             {"mgt_ip": device_ip, "intfc_name": ether_name},
         )
-        self.assertEqual(response.json()[0]["description"], data["description"])
+        self.assertEqual(response.json()["description"], data["description"])
         
     #     #port-speed
-        request_body = [{"mgt_ip": device_ip, "name": ether_name, "speed": "SPEED_40GB"}]
+        request_body = [{"mgt_ip": device_ip, "name": ether_name, "speed": "SPEED_100GB"}]
         for data in request_body:
             response = self.client.put(reverse("device_interface_list"), data)
             response = self.client.get(
             reverse("device_interface_list"),
             {"mgt_ip": device_ip, "intfc_name": ether_name},
         )
-        self.assertEqual(response.json()[0]["speed"], data["speed"])
+        self.assertEqual(response.json()["speed"], data["speed"])
 
     #   Multiple Interfaces for update
 
@@ -96,7 +97,7 @@ class PortchannelsAPITestcase(APITestCase):
             response = self.client.get(
                 reverse("device_port_chnl"),
                 {"mgt_ip": device_ip, "chnl_name": name},)
-        self.assertEqual(response.json()[0]["mtu"], data["mtu"])
+        self.assertEqual(response.json()["mtu"], data["mtu"])
 
         # Admin status
         request_body = [{"mgt_ip": device_ip, "chnl_name": name, "admin_status": "up"}]
@@ -105,8 +106,8 @@ class PortchannelsAPITestcase(APITestCase):
             response = self.client.get(
                 reverse("device_port_chnl"),
                 {"mgt_ip": device_ip, "chnl_name": name},)
-        self.assertEqual(response.json()[0]["admin_sts"], data["admin_status"])
-        
+        self.assertEqual(response.json()["admin_sts"], data["admin_status"])
+
     #    Multiple Portchannels update request
 
     def test_multiple_portchanls_list(self):
