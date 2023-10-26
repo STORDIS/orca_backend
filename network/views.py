@@ -47,7 +47,6 @@ def device_list(request):
 def device_interfaces_list(request):
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", "")
-        print(device_ip)
         if not device_ip:
             return Response(
                 {"status": "Required field device mgt_ip not found."},
@@ -59,7 +58,7 @@ def device_interfaces_list(request):
 		
     elif request.method == "PUT":
         try:
-            req_data_list = request.data  
+            req_data_list = request.data if isinstance(request.data, list) else [request.data] 
             for req_data in req_data_list:
                 device_ip = req_data.get("mgt_ip", "")
                 if not device_ip:
@@ -91,7 +90,7 @@ def device_interfaces_list(request):
                 config_interface(
                     device_ip=device_ip,
                     intfc_name=req_data.get("name"),
-                    enable=True if req_data.get("enabled") else False,
+                    enable = True if str(req_data.get("enabled")).lower() == "true" else False if str(req_data.get("enabled")).lower() == "false" else None,
                     mtu=int(req_data.get("mtu")) if "mtu" in req_data else None,
                     description=req_data.get("description"),
                     speed=speed
@@ -106,6 +105,7 @@ def device_interfaces_list(request):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
          )
             )
+
 @api_view(["GET", "PUT"])
 def device_port_chnl_list(request):
     if request.method == "GET":
@@ -118,35 +118,37 @@ def device_port_chnl_list(request):
         port_chnl_name = request.GET.get("chnl_name", "")
         data = get_port_chnl(device_ip, port_chnl_name)
         return JsonResponse(data, safe=False)
-    elif request.method == "PUT":
-        device_ip = request.POST.get("mgt_ip", "")
-        if not device_ip:
-            return Response(
-                {"status": "Required field device mgt_ip not found."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        req_data = request.data
-        if not req_data.get("chnl_name"):
-            return Response(
-                {"status": "Required field device chnl_name not found."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        add_port_chnl(
-            device_ip,
-            req_data.get("chnl_name"),
-            admin_status=req_data.get("admin_status"),
-            mtu=int(req_data.get("mtu")),
-        )
-        return (
-            # TODO: Add Response when config is failed.
-            Response({"status": "Config Successful"}, status=status.HTTP_200_OK)
-        )
-    else:
-        return Response(
-            {"status": f"Unknown request method {request.method}"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
     
+    elif request.method == "PUT":
+        try:
+            req_data_list = request.data if isinstance(request.data, list) else [request.data] 
+            for req_data in req_data_list:
+                device_ip = req_data.get("mgt_ip", "")
+                if not device_ip:
+                    return Response(
+                        {"status": "Required field device mgt_ip not found."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                if not req_data.get("chnl_name"):
+                     return Response(
+                        {"status": "Required field device chnl_name not found."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                )
+                add_port_chnl(
+                    device_ip,
+                    req_data.get("chnl_name"),
+                    admin_status=req_data.get("admin_status"),
+                    mtu=int(req_data.get("mtu")) if "mtu" in req_data else None,
+                )
+            return Response({"status": "Config Successful"}, status=status.HTTP_200_OK)
+        except Exception as err:    
+            print(err)
+        return (
+            Response(
+                {"status": "Error occurred while applying config on device."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+         )
+            )
 
 
 @api_view(
