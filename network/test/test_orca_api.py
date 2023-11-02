@@ -221,7 +221,38 @@ class InterfaceAPITestCase(APITestCase):
             )
             self.assertEqual(response.json()["speed"], data["speed"])
 
-    #   Multiple Interfaces for update
+    def test_interface_fec_config(self):
+        """
+        Test the FEC configuration of the interface.
+        """
+        device_ip = self.retrieve_device()[0]
+        ether_name = self.retrieve_device()[1]
+        response = self.client.get(
+            reverse("device_interface_list"),
+            {"mgt_ip": device_ip, "intfc_name": ether_name},
+        )
+        fec = response.json()["fec"]
+
+        if fec == "FEC_DISABLED":
+            fec_to_set = "FEC_AUTO"
+        elif fec == "FEC_AUTO":
+            fec_to_set = "FEC_RS"
+        elif fec == "FEC_RS":
+            fec_to_set = "FEC_DISABLED"
+        else:
+            fec_to_set = "FEC_AUTO"
+
+        request_body = [
+            {"mgt_ip": device_ip, "name": ether_name, "fec": fec_to_set},
+            {"mgt_ip": device_ip, "name": ether_name, "fec": fec},
+        ]
+        for data in request_body:
+            response = self.client.put(reverse("device_interface_list"), data)
+            response = self.client.get(
+                reverse("device_interface_list"),
+                {"mgt_ip": device_ip, "intfc_name": ether_name},
+            )
+            self.assertEqual(response.json()["fec"], data["fec"])
 
     def test_multiple_interfaces_config(self):
         """
