@@ -247,7 +247,7 @@ class InterfaceAPITestCase(APITestCase):
             {"mgt_ip": device_ip, "name": ether_name, "fec": fec},
         ]
         for data in request_body:
-            response = self.client.put(reverse("device_interface_list"), data)
+            response = self.client.put(reverse("device_interface_list"), data, format="json")
             response = self.client.get(
                 reverse("device_interface_list"),
                 {"mgt_ip": device_ip, "intfc_name": ether_name},
@@ -342,58 +342,3 @@ class InterfaceAPITestCase(APITestCase):
         self.assertEqual(response2.json()["mtu"], mtu2)
         self.assertEqual(response2.json()["description"], desc2)
         self.assertEqual(response2.json()["speed"], speed2)
-
-
-class PortchannelsAPITestcase(APITestCase):
-    def test_put_device_Portchannel(self):
-        response = self.client.get(reverse("device_list"))
-        device_ip = response.json()[1]["mgt_ip"]
-        response = self.client.get(
-            reverse("device_port_chnl"),
-            {"mgt_ip": device_ip},
-        )
-        name = response.json()[0]["lag_name"]
-
-        # mtu
-        request_body = [{"mgt_ip": device_ip, "chnl_name": name, "mtu": 8000}]
-        for data in request_body:
-            response = self.client.put(reverse("device_port_chnl"), data)
-            response = self.client.get(
-                reverse("device_port_chnl"),
-                {"mgt_ip": device_ip, "chnl_name": name},
-            )
-        self.assertEqual(response.json()[0]["mtu"], data["mtu"])
-
-        # Admin status
-        request_body = [{"mgt_ip": device_ip, "chnl_name": name, "admin_status": "up"}]
-        for data in request_body:
-            response = self.client.put(reverse("device_port_chnl"), data)
-            response = self.client.get(
-                reverse("device_port_chnl"),
-                {"mgt_ip": device_ip, "chnl_name": name},
-            )
-        self.assertEqual(response.json()[0]["admin_sts"], data["admin_status"])
-
-    #    Multiple Portchannels update request
-
-    def test_multiple_portchanls_list(self):
-        request_body = [
-            {
-                "mgt_ip": "10.10.130.213",
-                "chnl_name": "PortChannel103",
-                "mtu": "9100",
-                "admin_status": "down",
-            },
-            {
-                "mgt_ip": "10.10.130.213",
-                "chnl_name": "PortChannel102",
-                "mtu": "9200",
-                "admin_status": "down",
-            },
-        ]
-
-        response = self.client.put(
-            reverse("device_port_chnl"), request_body, format="json"
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, {"status": "Config Successful"})

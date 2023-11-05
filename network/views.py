@@ -8,7 +8,7 @@ from orca_nw_lib.interface import (
     get_interface,
     config_interface,
 )
-from orca_nw_lib.port_chnl import get_port_chnl, add_port_chnl
+from orca_nw_lib.port_chnl import get_port_chnl, add_port_chnl, del_port_chnl
 from orca_nw_lib.mclag import get_mclags
 from orca_nw_lib.discovery import discover_all
 from orca_nw_lib.bgp import get_bgp_global
@@ -98,7 +98,7 @@ def device_interfaces_list(request):
             )
 
 
-@api_view(["GET", "PUT"])
+@api_view(["GET", "PUT", "DELETE"])
 def device_port_chnl_list(request):
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", "")
@@ -136,11 +136,35 @@ def device_port_chnl_list(request):
                 )
             return Response({"status": "Config Successful"}, status=status.HTTP_200_OK)
         except Exception as err:
-            print(err)
-        return Response(
-            {"status": "Error occurred while applying config on device."},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
+            return Response(
+                {"status": err},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    elif request.method == "DELETE":
+        try:
+            req_data_list = (
+                request.data if isinstance(request.data, list) else [request.data]
+            )
+            for req_data in req_data_list:
+                device_ip = req_data.get("mgt_ip", "")
+                if not device_ip:
+                    return Response(
+                        {"status": "Required field device mgt_ip not found."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                if not req_data.get("chnl_name"):
+                    return Response(
+                        {"status": "Required field device chnl_name not found."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                del_port_chnl(device_ip, req_data.get("chnl_name"))
+            return Response({"status": "Config Successful"}, status=status.HTTP_200_OK)
+        except Exception as err:
+            return Response(
+                {"status": err},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 @api_view(
