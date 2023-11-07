@@ -5,8 +5,6 @@ class ORCATest(APITestCase):
     
     device_ips=[]
     ether_names=[]
-    
-    
     def setUp(self):
         response = self.client.get(reverse("device_list"))
         if not response.json():
@@ -21,6 +19,6 @@ class ORCATest(APITestCase):
             response = self.client.get(
                 reverse("device_interface_list"), {"mgt_ip": self.device_ips[0]}
             )
-            for i in range(0,5):
-                if (intfs:=response.json()) and intfs[i]["name"].startswith("Ethernet"):
-                    self.ether_names.append(intfs[i]["name"])
+            while len(self.ether_names) < 5:
+                if (intfs:=response.json()) and (ifc:=intfs.pop()) and ifc["name"].startswith("Ethernet"):
+                    self.ether_names.append(ifc["name"])
