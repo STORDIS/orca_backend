@@ -1,33 +1,26 @@
 from rest_framework.test import APITestCase
 from django.urls import reverse
 
-class ORCATests(APITestCase):
-    def retrieve_device(self):
-        """
-        Retrieves a device and ethernet from DB.
-
-        :return: A tuple containing the device IP, the first Ethernet interface name,
-                 and the second Ethernet interface name.
-        """
+class ORCATest(APITestCase):
+    
+    device_ips=[]
+    ether_names=[]
+    
+    
+    def setUp(self):
         response = self.client.get(reverse("device_list"))
         if not response.json():
             response = self.client.get(reverse("discover"))
             if not response or response.get("result") == "Fail":
                 self.fail("Failed to discover devices")
 
-        device_ip = response.json()[0]["mgt_ip"]
-        response = self.client.get(
-            reverse("device_interface_list"), {"mgt_ip": device_ip}
-        )
-        ether_name = None
-        ether_name_2 = None
-
-        for intf in response.json():
-            if intf["name"].startswith("Ethernet"):
-                if not ether_name:
-                    ether_name = intf["name"]
-                    continue
-                ether_name_2 = intf["name"]
-                break
-
-        return (device_ip, ether_name, ether_name_2)
+        for device in response.json():
+            self.device_ips.append(device["mgt_ip"])
+        
+        if self.device_ips:
+            response = self.client.get(
+                reverse("device_interface_list"), {"mgt_ip": self.device_ips[0]}
+            )
+            for i in range(0,5):
+                if (intfs:=response.json()) and intfs[i]["name"].startswith("Ethernet"):
+                    self.ether_names.append(intfs[i]["name"])

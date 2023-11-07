@@ -3,45 +3,15 @@ This module contains tests for the Interface API.
 """
 
 from rest_framework import status
-from rest_framework.test import APITestCase
 from django.urls import reverse
 
+from network.test.test_common import ORCATest
 
-class InterfaceAPITestCase(APITestCase):
+
+class InterfaceTest(ORCATest):
     """
     This class contains tests for the Interface API.
     """
-
-    def retrieve_device(self):
-        """
-        Retrieves a device and ethernet from DB.
-
-        :return: A tuple containing the device IP, the first Ethernet interface name,
-                 and the second Ethernet interface name.
-        """
-        response = self.client.get(reverse("device_list"))
-        if not response.json():
-            response = self.client.get(reverse("discover"))
-            if not response or response.get("result") == "Fail":
-                self.fail("Failed to discover devices")
-
-        device_ip = response.json()[0]["mgt_ip"]
-        response = self.client.get(
-            reverse("device_interface_list"), {"mgt_ip": device_ip}
-        )
-        ether_name = None
-        ether_name_2 = None
-
-        for intf in response.json():
-            if intf["name"].startswith("Ethernet"):
-                if not ether_name:
-                    ether_name = intf["name"]
-                    continue
-                else:
-                    ether_name_2 = intf["name"]
-                    break
-
-        return (device_ip, ether_name, ether_name_2)
 
     def test_interface_enable_config(self):
         """
@@ -63,8 +33,8 @@ class InterfaceAPITestCase(APITestCase):
 
         This function does not return any values.
         """
-        device_ip = self.retrieve_device()[0]
-        ether_name = self.retrieve_device()[1]
+        device_ip = self.device_ips[0]
+        ether_name = self.ether_names[1]
         response = self.client.get(
             reverse("device_interface_list"),
             {"mgt_ip": device_ip, "intfc_name": ether_name},
@@ -100,8 +70,8 @@ class InterfaceAPITestCase(APITestCase):
 
         This function does not have any parameters and does not return any value.
         """
-        device_ip = self.retrieve_device()[0]
-        ether_name = self.retrieve_device()[1]
+        device_ip = self.device_ips[0]
+        ether_name = self.ether_names[1]
         response = self.client.get(
             reverse("device_interface_list"),
             {"mgt_ip": device_ip, "intfc_name": ether_name},
@@ -138,8 +108,8 @@ class InterfaceAPITestCase(APITestCase):
         Returns:
         - None
         """
-        device_ip = self.retrieve_device()[0]
-        ether_name = self.retrieve_device()[1]
+        device_ip = self.device_ips[0]
+        ether_name = self.ether_names[1]
         response = self.client.get(
             reverse("device_interface_list"),
             {"mgt_ip": device_ip, "intfc_name": ether_name},
@@ -201,8 +171,8 @@ class InterfaceAPITestCase(APITestCase):
 
         This function does not return any values.
         """
-        device_ip = self.retrieve_device()[0]
-        ether_name = self.retrieve_device()[1]
+        device_ip = self.device_ips[0]
+        ether_name = self.ether_names[1]
         response = self.client.get(
             reverse("device_interface_list"),
             {"mgt_ip": device_ip, "intfc_name": ether_name},
@@ -225,8 +195,8 @@ class InterfaceAPITestCase(APITestCase):
         """
         Test the FEC configuration of the interface.
         """
-        device_ip = self.retrieve_device()[0]
-        ether_name = self.retrieve_device()[1]
+        device_ip = self.device_ips[0]
+        ether_name = self.ether_names[1]
         response = self.client.get(
             reverse("device_interface_list"),
             {"mgt_ip": device_ip, "intfc_name": ether_name},
@@ -247,7 +217,9 @@ class InterfaceAPITestCase(APITestCase):
             {"mgt_ip": device_ip, "name": ether_name, "fec": fec},
         ]
         for data in request_body:
-            response = self.client.put(reverse("device_interface_list"), data, format="json")
+            response = self.client.put(
+                reverse("device_interface_list"), data, format="json"
+            )
             response = self.client.get(
                 reverse("device_interface_list"),
                 {"mgt_ip": device_ip, "intfc_name": ether_name},
@@ -265,7 +237,9 @@ class InterfaceAPITestCase(APITestCase):
         Returns:
             None
         """
-        device_ip, ether_name_1, ether_name_2 = self.retrieve_device()
+        device_ip = self.device_ips[0]
+        ether_name_1 = self.ether_names[1]
+        ether_name_2 = self.ether_names[2]
 
         response1 = self.client.get(
             reverse("device_interface_list"),
@@ -319,7 +293,6 @@ class InterfaceAPITestCase(APITestCase):
                 "description": desc2,
             },
         ]
-
         response = self.client.put(
             reverse("device_interface_list"), request_body, format="json"
         )
