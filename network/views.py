@@ -106,7 +106,7 @@ def device_interfaces_list(request):
                     f"{request.method} request failed :\n {req_data} \n {str(err)}"
                 )
                 http_status = http_status and False
-    
+
     return Response(
         {"result": result},
         status=status.HTTP_200_OK
@@ -128,10 +128,11 @@ def device_port_chnl_list(request):
             )
         port_chnl_name = request.GET.get("chnl_name", "")
         data = get_port_chnl(device_ip, port_chnl_name)
-        if data:
-            data["members"] = [
+
+        for chnl in data if isinstance(data, list) else [data]:
+            chnl["members"] = [
                 intf["name"]
-                for intf in get_port_chnl_members(device_ip, port_chnl_name)
+                for intf in get_port_chnl_members(device_ip, chnl["lag_name"])
             ]
         return JsonResponse(data, safe=False)
 
@@ -218,11 +219,7 @@ def device_port_chnl_list(request):
     )
 
 
-@api_view(
-    [
-        "GET","PUT","DELETE"
-    ]
-)
+@api_view(["GET", "PUT", "DELETE"])
 def device_mclag_list(request):
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", "")
@@ -249,9 +246,12 @@ def device_mclag_list(request):
             )
         except Exception as err:
             return Response(
-                {"result": f"{request.method} request failed: {request.data} {str(err)}"},
+                {
+                    "result": f"{request.method} request failed: {request.data} {str(err)}"
+                },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
 
 @api_view(
     [
