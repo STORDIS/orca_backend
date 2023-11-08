@@ -16,7 +16,7 @@ from orca_nw_lib.port_chnl import (
     add_port_chnl_mem,
     del_port_chnl_mem,
 )
-from orca_nw_lib.mclag import get_mclags
+from orca_nw_lib.mclag import get_mclags, del_mclag
 from orca_nw_lib.discovery import discover_all
 from orca_nw_lib.bgp import get_bgp_global
 from orca_nw_lib.portgroup import (
@@ -220,7 +220,7 @@ def device_port_chnl_list(request):
 
 @api_view(
     [
-        "GET",
+        "GET","PUT","DELETE"
     ]
 )
 def device_mclag_list(request):
@@ -234,7 +234,24 @@ def device_mclag_list(request):
         domain_id = request.GET.get("domain_id", "")
         data = get_mclags(device_ip, domain_id)
         return JsonResponse(data, safe=False)
-
+    if request.method == "DELETE":
+        device_ip = request.data.get("mgt_ip", "")
+        if not device_ip:
+            return Response(
+                {"status": "Required field device mgt_ip not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            del_mclag(device_ip)
+            return Response(
+                {"result": f"{request.method} request successful: {request.data}"},
+                status=status.HTTP_200_OK,
+            )
+        except Exception as err:
+            return Response(
+                {"result": f"{request.method} request failed: {request.data} {str(err)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 @api_view(
     [
