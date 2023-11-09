@@ -9,10 +9,11 @@ from network.test.test_common import ORCATest
 
 
 class PortChnlTest(ORCATest):
-    """
-    This class contains tests for the Interface API.
-    """
 
+    """
+    This class contains tests for the Port Channel API.
+    """
+    
     def test_port_channel_config(self):
         """
         Test the port channel configuration.
@@ -69,51 +70,7 @@ class PortChnlTest(ORCATest):
         )
 
         # Now delete port channels
-
-        response = self.client.delete(
-            reverse("device_port_chnl"),
-            request_body,
-            format="json",
-        )
-        self.assertTrue(
-            response.status_code == status.HTTP_200_OK
-            or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
-            )
-        )
-
-        for data in request_body:
-            response = self.client.get(
-                reverse("device_port_chnl"),
-                {"mgt_ip": device_ip, "chnl_name": data["chnl_name"]},
-            )
-
-            self.assertIsNone(response.json())
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-            response = self.client.put(reverse("device_port_chnl"), data)
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            response = self.client.get(
-                reverse("device_port_chnl"),
-                {"mgt_ip": device_ip, "chnl_name": data["chnl_name"]},
-            )
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            self.assertEqual(response.json()["mtu"], data["mtu"])
-            self.assertEqual(response.json()["admin_sts"], data["admin_status"])
-
-            if response.json() and response.json()["lag_name"]:
-                response = self.client.delete(
-                    reverse("device_port_chnl"),
-                    {"mgt_ip": device_ip, "chnl_name": data["chnl_name"]},
-                )
-                self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-            response = self.client.get(
-                reverse("device_port_chnl"),
-                {"mgt_ip": device_ip, "chnl_name": data["chnl_name"]},
-            )
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            self.assertIsNone(response.json())
+        self.perform_del_add_del_port_chnl(request_body)
 
     def test_port_chnl_mem_config(self):
         """

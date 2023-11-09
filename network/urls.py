@@ -12,5 +12,7 @@ urlpatterns = [
     re_path("bgp", views.device_bgp_global, name="bgp_global"),
     re_path("port_groups", views.port_groups, name="port_groups"),
     re_path("vlans", views.vlans, name="vlans"),
+    re_path("gateway_mac", views.mclag_gateway_mac, name="mclag_gateway_mac"),
+    re_path("mclag_member", views.mclag_member, name="mclag_member")
     
 ]

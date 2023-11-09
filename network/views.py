@@ -16,7 +16,17 @@ from orca_nw_lib.port_chnl import (
     add_port_chnl_mem,
     del_port_chnl_mem,
 )
-from orca_nw_lib.mclag import get_mclags, del_mclag
+from orca_nw_lib.mclag import (
+    get_mclags,
+    del_mclag,
+    config_mclag,
+    get_mclag_gw_mac,
+    del_mclag_gw_mac,
+    config_mclag_gw_mac,
+    get_mclag_mem_portchnls,
+    config_mclag_mem_portchnl,
+    del_mclag_member,
+)
 from orca_nw_lib.discovery import discover_all
 from orca_nw_lib.bgp import get_bgp_global
 from orca_nw_lib.portgroup import (
@@ -129,7 +139,7 @@ def device_port_chnl_list(request):
         port_chnl_name = request.GET.get("chnl_name", "")
         data = get_port_chnl(device_ip, port_chnl_name)
 
-        for chnl in data if isinstance(data, list) else [data]:
+        for chnl in data if isinstance(data, list) else [data] if data else []:
             chnl["members"] = [
                 intf["name"]
                 for intf in get_port_chnl_members(device_ip, chnl["lag_name"])
@@ -251,6 +261,171 @@ def device_mclag_list(request):
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+    elif request.method == "PUT":
+        device_ip = request.data.get("mgt_ip", "")
+        domain_id = request.data.get("domain_id", "")
+        src_addr = request.data.get("source_address", "")
+        peer_addr = request.data.get("peer_addr", "")
+        peer_link = request.data.get("peer_link", "")
+        mclag_sys_mac = request.data.get("mclag_sys_mac", "")
+
+        if (
+            not device_ip
+            or not domain_id
+            or not src_addr
+            or not peer_addr
+            or not peer_link
+            or not mclag_sys_mac
+        ):
+            return Response(
+                {
+                    "result": "All of the required fields mgt_ip, domain_id, src_addr, peer_addr, peer_link, mclag_sys_mac not found."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            config_mclag(
+                device_ip, domain_id, src_addr, peer_addr, peer_link, mclag_sys_mac
+            )
+            return Response(
+                {"result": f"{request.method} request successful: {request.data}"},
+                status=status.HTTP_200_OK,
+            )
+        except Exception as err:
+            return Response(
+                {
+                    "result": f"{request.method} request failed: {request.data} {str(err)}"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+@api_view(["GET", "PUT", "DELETE"])
+def mclag_gateway_mac(request):
+    if request.method == "GET":
+        device_ip = request.GET.get("mgt_ip", "")
+        if not device_ip:
+            return Response(
+                {"status": "Required field device mgt_ip not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        gateway_mac = request.GET.get("gateway_mac", "")
+        data = get_mclag_gw_mac(device_ip, gateway_mac)
+        return JsonResponse(data, safe=False)
+    if request.method == "DELETE":
+        device_ip = request.data.get("mgt_ip", "")
+        if not device_ip:
+            return Response(
+                {"status": "Required field device mgt_ip not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            del_mclag_gw_mac(device_ip)
+            return Response(
+                {"result": f"{request.method} request successful: {request.data}"},
+                status=status.HTTP_200_OK,
+            )
+        except Exception as err:
+            return Response(
+                {
+                    "result": f"{request.method} request failed: {request.data} {str(err)}"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+    elif request.method == "PUT":
+        device_ip = request.data.get("mgt_ip", "")
+        if not device_ip:
+            return Response(
+                {"status": "Required field device mgt_ip not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        mclag_gateway_mac = request.data.get("gateway_mac", "")
+        if not mclag_gateway_mac:
+            return Response(
+                {"status": "Required field device mclag_gateway_mac not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            config_mclag_gw_mac(device_ip, mclag_gateway_mac)
+            return Response(
+                {"result": f"{request.method} request successful: {request.data}"},
+                status=status.HTTP_200_OK,
+            )
+        except Exception as err:
+            return Response(
+                {
+                    "result": f"{request.method} request failed: {request.data} {str(err)}"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+@api_view(["GET", "PUT", "DELETE"])
+def mclag_member(request):
+    if request.method == "GET":
+        device_ip = request.GET.get("mgt_ip", "")
+        if not device_ip:
+            return Response(
+                {"status": "Required field device mgt_ip not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        domain_id = request.GET.get("domain_id", "")
+        if not domain_id:
+            return Response(
+                {"status": "Required field device domain_id not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        data = get_mclag_mem_portchnls(device_ip, domain_id)
+        return JsonResponse(data, safe=False)
+    if request.method == "DELETE":
+        device_ip = request.data.get("mgt_ip", "")
+        if not device_ip:
+            return Response(
+                {"status": "Required field device mgt_ip not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            del_mclag_member(device_ip)
+            return Response(
+                {"result": f"{request.method} request successful: {request.data}"},
+                status=status.HTTP_200_OK,
+            )
+        except Exception as err:
+            return Response(
+                {
+                    "result": f"{request.method} request failed: {request.data} {str(err)}"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+    elif request.method == "PUT":
+        result = []
+        http_status = True
+        device_ip = request.data.get("mgt_ip", "")
+        domain_id = request.data.get("domain_id", "")
+        mclag_members = request.data.get("mclag_members", "")
+        if not device_ip or not domain_id or not mclag_members:
+            return Response(
+                {
+                    "result": "All of the required fields mgt_ip, domain_id, mclag_members not found."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        for mem in mclag_members:
+            try:
+                config_mclag_mem_portchnl(device_ip, domain_id, mem)
+                result.append(f"{request.method} request successful :\n {mem}")
+                http_status = http_status and True
+
+            except Exception as err:
+                result.append(f"{request.method} request failed :\n {mem} {str(err)}")
+                http_status = http_status and True
+
+        return Response(
+            {"result": result},
+            status=status.HTTP_200_OK
+            if http_status
+            else status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 
 @api_view(
