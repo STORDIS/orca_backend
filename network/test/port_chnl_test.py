@@ -3,7 +3,6 @@ This module contains tests for the Interface API.
 """
 
 from rest_framework import status
-from django.urls import reverse
 
 from network.test.test_common import ORCATest
 
@@ -13,7 +12,7 @@ class PortChnlTest(ORCATest):
     """
     This class contains tests for the Port Channel API.
     """
-    
+
     def test_port_channel_config(self):
         """
         Test the port channel configuration.
@@ -51,16 +50,9 @@ class PortChnlTest(ORCATest):
         # First delete mclag, if it exists.
         # port channel deletion will fail if port channel is found to be a member of mclag.
 
-        self.client.delete(
-            reverse("device_mclag_list"),
-            {"mgt_ip": device_ip},
-            format="json",
-        )
+        self.del_req("device_mclag_list", {"mgt_ip": device_ip})
 
-        response = self.client.get(
-            reverse("device_mclag_list"),
-            {"mgt_ip": device_ip},
-        )
+        response = self.get_req("device_mclag_list", {"mgt_ip": device_ip})
 
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
@@ -106,9 +98,7 @@ class PortChnlTest(ORCATest):
             },
         ]
 
-        response = self.client.put(
-            reverse("device_interface_list"), itf_request_body, format="json"
-        )
+        response = self.put_req("device_interface_list", itf_request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         request_body = [
@@ -127,20 +117,11 @@ class PortChnlTest(ORCATest):
                 "members": [ether_3, ether_4],
             },
         ]
-        
+
         # delete mclag, if it exists.
         # port channel deletion will fail if port channel is found to be a member of mclag.
 
-        self.client.delete(
-            reverse("device_mclag_list"),
-            {"mgt_ip": device_ip},
-            format="json",
-        )
-
-        response = self.client.get(
-            reverse("device_mclag_list"),
-            {"mgt_ip": device_ip},
-        )
+        response = self.del_req("device_mclag_list", {"mgt_ip": device_ip})
 
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
@@ -148,6 +129,11 @@ class PortChnlTest(ORCATest):
                 "resource not found" in res.lower() for res in response.json()["result"]
             )
         )
+
+        response = self.get_req("device_mclag_list", {"mgt_ip": device_ip})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.json())
 
         # Now delete port channels
 
@@ -155,66 +141,8 @@ class PortChnlTest(ORCATest):
             {"mgt_ip": device_ip, "chnl_name": "PortChannel101"},
             {"mgt_ip": device_ip, "chnl_name": "PortChannel102"},
         ]
-
-        response = self.client.delete(
-            reverse("device_port_chnl"),
-            request_body_2,
-            format="json",
-        )
-        self.assertTrue(
-            response.status_code == status.HTTP_200_OK
-            or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
-            )
-        )
-
-        for data in request_body:
-            response = self.client.get(
-                reverse("device_port_chnl"),
-                data,
-            )
-
-            self.assertIsNone(response.json())
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-            response = self.client.put(reverse("device_port_chnl"), data, format="json")
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            response = self.client.get(
-                reverse("device_port_chnl"),
-                data,
-            )
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            self.assertEqual(response.json()["mtu"], data["mtu"])
-            self.assertEqual(response.json()["admin_sts"], data["admin_status"])
-            self.assertTrue(
-                True
-                if m in response.json()["members"]
-                else False and len(response.json()["members"]) == len(data["members"])
-                for m in data["members"]
-            )
-            # Remove port channel members
-            response = self.client.delete(
-                reverse("device_port_chnl"),
-                data,
-                format="json",
-            )
-
-            response = self.client.get(
-                reverse("device_port_chnl"),
-                data,
-            )
-
-            self.assertFalse(response.json()["members"])
-
-            response = self.client.delete(
-                reverse("device_port_chnl"),
-                {"mgt_ip": device_ip, "chnl_name": data["chnl_name"]},
-                format="json",
-            )
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            response = self.client.get(
-                reverse("device_port_chnl"),
-                {"mgt_ip": device_ip, "chnl_name": data["chnl_name"]},
-            )
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            self.assertIsNone(response.json())
+        self.perform_del_port_chnl(request_body_2)
+        self.perform_add_port_chnl(request_body)
+        self.perform_del_port_chnl(request_body)
+        self.perform_del_port_chnl(request_body_2)
+        

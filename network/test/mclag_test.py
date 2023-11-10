@@ -3,8 +3,6 @@ This module contains tests for the Interface API.
 """
 
 from rest_framework import status
-from django.urls import reverse
-
 from network.test.test_common import ORCATest
 
 
@@ -22,17 +20,8 @@ class MclagTest(ORCATest):
     def test_mclag_config(self):
         device_ip_1 = self.device_ips[0]
         device_ip_2 = self.device_ips[1]
-
-        self.client.delete(
-            reverse("device_mclag_list"),
-            {"mgt_ip": device_ip_1},
-            format="json",
-        )
-
-        response = self.client.get(
-            reverse("device_mclag_list"),
-            {"mgt_ip": device_ip_1},
-        )
+        self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
+        response = self.get_req("device_mclag_list", {"mgt_ip": device_ip_1})
 
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
@@ -40,6 +29,14 @@ class MclagTest(ORCATest):
                 "resource not found" in res.lower() for res in response.json()["result"]
             )
         )
+
+        # Create peerlink port channel first
+        req = {
+            "mgt_ip": device_ip_1,
+            "chnl_name": self.peer_link,
+        }
+        self.perform_del_port_chnl(req)
+        self.perform_add_port_chnl(req)
 
         request_body = {
             "mgt_ip": device_ip_1,
@@ -50,14 +47,11 @@ class MclagTest(ORCATest):
             "mclag_sys_mac": self.mclag_sys_mac,
         }
 
-        response = self.client.put(
-            reverse("device_mclag_list"), request_body, format="json"
-        )
+        response = self.put_req("device_mclag_list", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        response = self.client.get(
-            reverse("device_mclag_list"),
-            {"mgt_ip": device_ip_1, "domain_id": self.domain_id},
+        response = self.get_req(
+            "device_mclag_list", {"mgt_ip": device_ip_1, "domain_id": self.domain_id}
         )
 
         self.assertEqual(response.json().get("domain_id"), self.domain_id)
@@ -68,16 +62,9 @@ class MclagTest(ORCATest):
 
         # Finally remove mclag
 
-        self.client.delete(
-            reverse("device_mclag_list"),
-            {"mgt_ip": device_ip_1},
-            format="json",
-        )
+        self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
 
-        response = self.client.get(
-            reverse("device_mclag_list"),
-            {"mgt_ip": device_ip_1},
-        )
+        response = self.get_req("device_mclag_list", {"mgt_ip": device_ip_1})
 
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
@@ -90,11 +77,7 @@ class MclagTest(ORCATest):
         device_ip_1 = self.device_ips[0]
         device_ip_2 = self.device_ips[1]
 
-        response = self.client.delete(
-            reverse("device_mclag_list"),
-            {"mgt_ip": device_ip_1},
-            format="json",
-        )
+        response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
@@ -102,10 +85,7 @@ class MclagTest(ORCATest):
             )
         )
 
-        response = self.client.get(
-            reverse("device_mclag_list"),
-            {"mgt_ip": device_ip_1},
-        )
+        response = self.get_req("device_mclag_list", {"mgt_ip": device_ip_1})
 
         self.assertTrue(
             response.status_code == status.HTTP_200_OK and not response.json()
@@ -120,14 +100,11 @@ class MclagTest(ORCATest):
             "mclag_sys_mac": self.mclag_sys_mac,
         }
 
-        response = self.client.put(
-            reverse("device_mclag_list"), request_body, format="json"
-        )
+        response = self.put_req("device_mclag_list", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        response = self.client.get(
-            reverse("device_mclag_list"),
-            {"mgt_ip": device_ip_1, "domain_id": self.domain_id},
+        response = self.get_req(
+            "device_mclag_list", {"mgt_ip": device_ip_1, "domain_id": self.domain_id}
         )
 
         self.assertEqual(response.json().get("domain_id"), self.domain_id)
@@ -159,87 +136,70 @@ class MclagTest(ORCATest):
             "mclag_members": [self.mem_port_chnl, self.mem_port_chnl_2],
         }
 
-        response = self.client.delete(
-            reverse("mclag_member"),
-            request_body_members,
-            format="json",
-        )
+        response = self.del_req("device_mclag_list", request_body_members)
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
                 "resource not found" in res.lower() for res in response.json()["result"]
             )
         )
-        response = self.client.put(
-            reverse("mclag_member"),
-            request_body_members,
-            format="json",
-        )
+        response = self.put_req("device_mclag_list", request_body_members)
         self.assertTrue(response.status_code == status.HTTP_200_OK)
-        response = self.client.get(
-            reverse("mclag_member"),
-            request_body_members,
-            format="json",
-        )
+        response = self.get_req("device_mclag_list", request_body_members)
         self.assertTrue(response.status_code == status.HTTP_200_OK)
-        self.assertEqual(len(response.json()), 2)
-        for mem in response.json():
+        self.assertEqual(len(response.json().get("mclag_members")), 2)
+        for mem in response.json().get("mclag_members"):
             self.assertTrue(
                 mem.get("lag_name") in [self.mem_port_chnl, self.mem_port_chnl_2]
             )
+        
+        # cleanup members
+        response = self.del_req("device_mclag_list", request_body_members)
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "resource not found" in res.lower() for res in response.json()["result"]
+            )
+        )
+        # cleanup mclag
+        response = self.del_req("device_mclag_list", request_body)
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "resource not found" in res.lower() for res in response.json()["result"]
+            )
+        )
 
     def test_mclag_gateway_mac(self):
         device_ip_1 = self.device_ips[0]
         gw_mac = "aa:bb:aa:bb:aa:bb"
-
-        self.client.delete(
-            reverse("mclag_gateway_mac"),
-            {"mgt_ip": device_ip_1},
-            format="json",
+        self.del_req("mclag_gateway_mac", {"mgt_ip": device_ip_1})
+        response = self.get_req(
+            "mclag_gateway_mac", {"mgt_ip": device_ip_1, "gateway_mac": gw_mac}
         )
-
-        response = self.client.get(
-            reverse("mclag_gateway_mac"),
-            {"mgt_ip": device_ip_1, "gateway_mac": gw_mac},
-        )
-
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
                 "resource not found" in res.lower() for res in response.json()["result"]
             )
         )
-
         request_body = {
             "mgt_ip": device_ip_1,
             "gateway_mac": gw_mac,
         }
-
-        response = self.client.put(
-            reverse("mclag_gateway_mac"), request_body, format="json"
-        )
+        response = self.put_req("mclag_gateway_mac", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        response = self.client.get(
-            reverse("mclag_gateway_mac"),
-            {"mgt_ip": device_ip_1, "gateway_mac": gw_mac},
+        response = self.get_req(
+            "mclag_gateway_mac", {"mgt_ip": device_ip_1, "gateway_mac": gw_mac}
         )
-
         self.assertEqual(response.json().get("gateway_mac"), gw_mac)
 
         # Finally remove mclag gateway mac
 
-        self.client.delete(
-            reverse("mclag_gateway_mac"),
-            {"mgt_ip": device_ip_1},
-            format="json",
+        self.del_req("mclag_gateway_mac", {"mgt_ip": device_ip_1})
+        response = self.get_req(
+            "mclag_gateway_mac", {"mgt_ip": device_ip_1, "gateway_mac": gw_mac}
         )
-
-        response = self.client.get(
-            reverse("mclag_gateway_mac"),
-            {"mgt_ip": device_ip_1, "gateway_mac": gw_mac},
-        )
-
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(

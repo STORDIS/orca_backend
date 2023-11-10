@@ -3,7 +3,6 @@ This module contains tests for the Interface API.
 """
 
 from rest_framework import status
-from django.urls import reverse
 
 from network.test.test_common import ORCATest
 
@@ -35,9 +34,8 @@ class InterfaceTest(ORCATest):
         """
         device_ip = self.device_ips[0]
         ether_name = self.ether_names[1]
-        response = self.client.get(
-            reverse("device_interface_list"),
-            {"mgt_ip": device_ip, "intfc_name": ether_name},
+        response = self.get_req(
+            "device_interface_list", {"mgt_ip": device_ip, "intfc_name": ether_name}
         )
         enb = response.json()["enabled"]
 
@@ -46,9 +44,9 @@ class InterfaceTest(ORCATest):
             {"mgt_ip": device_ip, "name": ether_name, "enabled": enb},
         ]
         for data in request_body:
-            response = self.client.put(reverse("device_interface_list"), data)
-            response = self.client.get(
-                reverse("device_interface_list"),
+            response = self.put_req("device_interface_list", data)
+            response = self.get_req(
+                "device_interface_list",
                 {"mgt_ip": device_ip, "intfc_name": ether_name},
             )
             self.assertEqual(response.json()["enabled"], data["enabled"])
@@ -72,9 +70,8 @@ class InterfaceTest(ORCATest):
         """
         device_ip = self.device_ips[0]
         ether_name = self.ether_names[1]
-        response = self.client.get(
-            reverse("device_interface_list"),
-            {"mgt_ip": device_ip, "intfc_name": ether_name},
+        response = self.get_req(
+            "device_interface_list", {"mgt_ip": device_ip, "intfc_name": ether_name}
         )
         mtu = response.json()["mtu"]
         request_body = [
@@ -82,10 +79,9 @@ class InterfaceTest(ORCATest):
             {"mgt_ip": device_ip, "name": ether_name, "mtu": mtu},
         ]
         for data in request_body:
-            response = self.client.put(reverse("device_interface_list"), data)
-            response = self.client.get(
-                reverse("device_interface_list"),
-                {"mgt_ip": device_ip, "intfc_name": ether_name},
+            response = self.put_req("device_interface_list", data)
+            response = self.get_req(
+                "device_interface_list", {"mgt_ip": device_ip, "intfc_name": ether_name}
             )
             self.assertEqual(response.json()["mtu"], data["mtu"])
 
@@ -110,9 +106,8 @@ class InterfaceTest(ORCATest):
         """
         device_ip = self.device_ips[0]
         ether_name = self.ether_names[1]
-        response = self.client.get(
-            reverse("device_interface_list"),
-            {"mgt_ip": device_ip, "intfc_name": ether_name},
+        response = self.get_req(
+            "device_interface_list", {"mgt_ip": device_ip, "intfc_name": ether_name}
         )
         desc = response.json()["description"]
         request_body = [
@@ -120,10 +115,9 @@ class InterfaceTest(ORCATest):
             {"mgt_ip": device_ip, "name": ether_name, "description": desc},
         ]
         for data in request_body:
-            response = self.client.put(reverse("device_interface_list"), data)
-            response = self.client.get(
-                reverse("device_interface_list"),
-                {"mgt_ip": device_ip, "intfc_name": ether_name},
+            response = self.put_req("device_interface_list", data)
+            response = self.get_req(
+                "device_interface_list", {"mgt_ip": device_ip, "intfc_name": ether_name}
             )
             self.assertEqual(response.json()["description"], data["description"])
 
@@ -173,9 +167,8 @@ class InterfaceTest(ORCATest):
         """
         device_ip = self.device_ips[0]
         ether_name = self.ether_names[1]
-        response = self.client.get(
-            reverse("device_interface_list"),
-            {"mgt_ip": device_ip, "intfc_name": ether_name},
+        response = self.get_req(
+            "device_interface_list", {"mgt_ip": device_ip, "intfc_name": ether_name}
         )
         speed = response.json()["speed"]
         speed_to_set = self.get_speed_to_set(speed)
@@ -184,10 +177,9 @@ class InterfaceTest(ORCATest):
             {"mgt_ip": device_ip, "name": ether_name, "speed": speed},
         ]
         for data in request_body:
-            response = self.client.put(reverse("device_interface_list"), data)
-            response = self.client.get(
-                reverse("device_interface_list"),
-                {"mgt_ip": device_ip, "intfc_name": ether_name},
+            response = self.put_req("device_interface_list", data)
+            response = self.get_req(
+                "device_interface_list", {"mgt_ip": device_ip, "intfc_name": ether_name}
             )
             self.assertEqual(response.json()["speed"], data["speed"])
 
@@ -197,8 +189,8 @@ class InterfaceTest(ORCATest):
         """
         device_ip = self.device_ips[0]
         ether_name = self.ether_names[1]
-        response = self.client.get(
-            reverse("device_interface_list"),
+        response = self.get_req(
+            "device_interface_list",
             {"mgt_ip": device_ip, "intfc_name": ether_name},
         )
         fec = response.json()["fec"]
@@ -217,12 +209,9 @@ class InterfaceTest(ORCATest):
             {"mgt_ip": device_ip, "name": ether_name, "fec": fec},
         ]
         for data in request_body:
-            response = self.client.put(
-                reverse("device_interface_list"), data, format="json"
-            )
-            response = self.client.get(
-                reverse("device_interface_list"),
-                {"mgt_ip": device_ip, "intfc_name": ether_name},
+            response = self.put_req("device_interface_list", data)
+            response = self.get_req(
+                "device_interface_list", {"mgt_ip": device_ip, "intfc_name": ether_name}
             )
             self.assertEqual(response.json()["fec"], data["fec"])
 
@@ -241,18 +230,16 @@ class InterfaceTest(ORCATest):
         ether_name_1 = self.ether_names[1]
         ether_name_2 = self.ether_names[2]
 
-        response1 = self.client.get(
-            reverse("device_interface_list"),
-            {"mgt_ip": device_ip, "intfc_name": ether_name_1},
+        response1 = self.get_req(
+            "device_interface_list", {"mgt_ip": device_ip, "intfc_name": ether_name_1}
         )
         enb1 = response1.json()["enabled"]
         mtu1 = response1.json()["mtu"]
         desc1 = response1.json()["description"]
         speed1 = response1.json()["speed"]
 
-        response2 = self.client.get(
-            reverse("device_interface_list"),
-            {"mgt_ip": device_ip, "intfc_name": ether_name_2},
+        response2 = self.get_req(
+            "device_interface_list", {"mgt_ip": device_ip, "intfc_name": ether_name_2}
         )
         enb2 = response2.json()["enabled"]
         mtu2 = response2.json()["mtu"]
@@ -293,23 +280,19 @@ class InterfaceTest(ORCATest):
                 "description": desc2,
             },
         ]
-        response = self.client.put(
-            reverse("device_interface_list"), request_body, format="json"
-        )
+        response = self.put_req("device_interface_list", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        response1 = self.client.get(
-            reverse("device_interface_list"),
-            {"mgt_ip": device_ip, "intfc_name": ether_name_1},
+        response1 = self.get_req(
+            "device_interface_list", {"mgt_ip": device_ip, "intfc_name": ether_name_1}
         )
         self.assertEqual(response1.json()["enabled"], enb1)
         self.assertEqual(response1.json()["mtu"], mtu1)
         self.assertEqual(response1.json()["description"], desc1)
         self.assertEqual(response1.json()["speed"], speed1)
 
-        response2 = self.client.get(
-            reverse("device_interface_list"),
-            {"mgt_ip": device_ip, "intfc_name": ether_name_2},
+        response2 = self.get_req(
+            "device_interface_list", {"mgt_ip": device_ip, "intfc_name": ether_name_2}
         )
         self.assertEqual(response2.json()["enabled"], enb2)
         self.assertEqual(response2.json()["mtu"], mtu2)

@@ -8,9 +8,9 @@ class ORCATest(APITestCase):
     ether_names = []
 
     def setUp(self):
-        response = self.client.get(reverse("device_list"))
+        response = self.get_req("device_list")
         if not response.json():
-            response = self.client.get(reverse("discover"))
+            response = self.get_req("discover")
             if not response or response.get("result") == "Fail":
                 self.fail("Failed to discover devices")
 
@@ -18,8 +18,8 @@ class ORCATest(APITestCase):
             self.device_ips.append(device["mgt_ip"])
 
         if self.device_ips:
-            response = self.client.get(
-                reverse("device_interface_list"), {"mgt_ip": self.device_ips[0]}
+            response = self.get_req(
+                "device_interface_list", {"mgt_ip": self.device_ips[0]}
             )
             while len(self.ether_names) < 5:
                 if (
@@ -30,48 +30,93 @@ class ORCATest(APITestCase):
                     self.ether_names.append(ifc["name"])
 
     def perform_del_port_chnl(self, request_body):
-        response = self.client.delete(
-            reverse("device_port_chnl"),
-            request_body,
-            format="json",
-        )
+        response = self.del_req("device_port_chnl", request_body)
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
                 "resource not found" in res.lower() for res in response.json()["result"]
             )
         )
-        for data in request_body if isinstance(request_body, list) else [request_body] if request_body else []:
-            response = self.client.get(
-                reverse("device_port_chnl"),
-                data,
-            )
-            self.assertIsNone(response.json())
+        for data in (
+            request_body
+            if isinstance(request_body, list)
+            else [request_body]
+            if request_body
+            else []
+        ):
+            response = self.get_req("device_port_chnl", data)
+            if data.get("members"):
+                self.assertFalse(response.json()["members"])
+            else:
+                self.assertIsNone(response.json())
+
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def perform_add_port_chnl(self, request_body):
-        for data in request_body if isinstance(request_body, list) else [request_body] if request_body else []:
-            device_ip = data["mgt_ip"]
+        for data in (
+            request_body
+            if isinstance(request_body, list)
+            else [request_body]
+            if request_body
+            else []
+        ):
+            device_ip = data.get("mgt_ip")
 
-            response = self.client.get(
-                reverse("device_port_chnl"),
-                {"mgt_ip": device_ip, "chnl_name": data["chnl_name"]},
+            response = self.get_req(
+                "device_port_chnl",
+                {"mgt_ip": device_ip, "chnl_name": data.get("chnl_name")},
             )
 
             self.assertIsNone(response.json())
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-            response = self.client.put(reverse("device_port_chnl"), data)
+            response = self.put_req("device_port_chnl", data)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
-            response = self.client.get(
-                reverse("device_port_chnl"),
-                {"mgt_ip": device_ip, "chnl_name": data["chnl_name"]},
+            response = self.get_req(
+                "device_port_chnl",
+                {"mgt_ip": device_ip, "chnl_name": data.get("chnl_name")},
             )
             self.assertEqual(response.status_code, status.HTTP_200_OK)
-            self.assertEqual(response.json()["mtu"], data["mtu"])
-            self.assertEqual(response.json()["admin_sts"], data["admin_status"])
+            self.assertTrue(
+                response.json()["mtu"] == data["mtu"] if data.get("mtu") else True
+            )
+            self.assertTrue(
+                response.json()["admin_sts"] == data.get("admin_status")
+                if data.get("admin_status")
+                else True
+            )
+
+            if data.get("members"):
+                self.assertTrue(
+                    all(
+                        True if m in response.json()["members"] else False
+                        for m in data.get("members")
+                    )
+                    and len(response.json()["members"]) == len(data.get("members"))
+                )
 
     def perform_del_add_del_port_chnl(self, request_body):
         self.perform_del_port_chnl(request_body)
         self.perform_add_port_chnl(request_body)
         self.perform_del_port_chnl(request_body)
+
+    def get_req(self, url_name: str, req_json=None):
+        return self.client.get(
+            reverse(url_name),
+            req_json,
+            format="json",
+        )
+
+    def del_req(self, url_name: str, req_json):
+        return self.client.delete(
+            reverse(url_name),
+            req_json,
+            format="json",
+        )
+
+    def put_req(self, url_name: str, req_json):
+        return self.client.put(
+            reverse(url_name),
+            req_json,
+            format="json",
+        )
