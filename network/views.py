@@ -6,7 +6,6 @@ from orca_nw_lib.device import get_device_details
 
 
 from orca_nw_lib.discovery import discover_all
-from orca_nw_lib.bgp import get_bgp_global
 from orca_nw_lib.portgroup import (
     get_port_groups,
     get_port_group_members,
@@ -35,24 +34,6 @@ def discover(request):
 def device_list(request):
     if request.method == "GET":
         data = get_device_details(request.GET.get("mgt_ip", ""))
-        return JsonResponse(data, safe=False)
-
-
-
-@api_view(
-    [
-        "GET",
-    ]
-)
-def device_bgp_global(request):
-    if request.method == "GET":
-        device_ip = request.GET.get("mgt_ip", "")
-        if not device_ip:
-            return Response(
-                {"status": "Required field device mgt_ip not found."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        data = get_bgp_global(device_ip)
         return JsonResponse(data, safe=False)
 
 
