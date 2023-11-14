@@ -1,0 +1,88 @@
+from django.http import JsonResponse
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from rest_framework import status
+from orca_nw_lib.common import Speed
+from orca_nw_lib.portgroup import (
+    get_port_groups,
+    get_port_group_members,
+    set_port_group_speed,
+)
+
+
+@api_view(["GET", "PUT"])
+def port_groups(request):
+    if request.method == "GET":
+        device_ip = request.GET.get("mgt_ip", "")
+        if not device_ip:
+            return Response(
+                {"status": "Required field device mgt_ip not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        port_group_id = request.GET.get("port_group_id", None)
+        data = get_port_groups(device_ip, port_group_id)
+        return JsonResponse(data, safe=False)
+    elif request.method == "PUT":
+        result = []
+        http_status = True
+        req_data_list = (
+            request.data if isinstance(request.data, list) else [request.data]
+        )
+        for req_data in req_data_list:
+            device_ip = req_data.get("mgt_ip", "")
+            if not device_ip:
+                return Response(
+                    {"status": "Required field device mgt_ip not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            port_group_id = req_data.get("port_group_id", "")
+            if not port_group_id:
+                return Response(
+                    {"status": "Required field device port_group_id not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            speed = req_data.get("speed", "")
+            if not speed:
+                return Response(
+                    {"status": "Required field device speed not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                set_port_group_speed(
+                    device_ip, port_group_id, Speed.get_enum_from_str(speed)
+                )
+                result.append(f"{request.method} request successful :\n {req_data}")
+            except Exception as err:
+                result.append(
+                    f"{request.method} request failed :\n {req_data} \n {str(err)}"
+                )
+                http_status = http_status and False
+        return Response(
+            {"result": result},
+            status=status.HTTP_200_OK
+            if http_status
+            else status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(
+    [
+        "GET",
+    ]
+)
+def port_group_members(request):
+    if request.method == "GET":
+        device_ip = request.GET.get("mgt_ip", "")
+        if not device_ip:
+            return Response(
+                {"status": "Required field device mgt_ip not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        port_group_id = request.GET.get("port_group_id", "")
+        if not port_group_id:
+            return Response(
+                {"status": "Required field device port_group_id not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        data = get_port_group_members(device_ip, port_group_id)
+        return JsonResponse(data, safe=False)

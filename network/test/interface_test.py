@@ -121,31 +121,6 @@ class InterfaceTest(ORCATest):
             )
             self.assertEqual(response.json()["description"], data["description"])
 
-    def get_speed_to_set(self, speed):
-        """
-        Get the speed to set based on the given speed.
-
-        Args:
-            speed (str): The current speed.
-
-        Returns:
-            str: The speed to set.
-
-        Raises:
-            None
-        """
-        if speed == "SPEED_40GB":
-            speed_to_set = "SPEED_100GB"
-        elif speed == "SPEED_100GB":
-            speed_to_set = "SPEED_40GB"
-        elif speed == "SPEED_10GB":
-            speed_to_set = "SPEED_25GB"
-        elif speed == "SPEED_25GB":
-            speed_to_set = "SPEED_10GB"
-        else:
-            speed_to_set = "SPEED_25GB"
-        return speed_to_set
-
     def test_interface_speed_config(self):
         """
         Test the speed configuration of the interface.
