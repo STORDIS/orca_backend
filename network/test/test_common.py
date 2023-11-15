@@ -8,7 +8,7 @@ class ORCATest(APITestCase):
     ether_names = []
 
     def setUp(self):
-        response = self.get_req("device_list")
+        response = self.get_req("device")
         if not response.json():
             response = self.get_req("discover")
             if not response or response.get("result") == "Fail":
