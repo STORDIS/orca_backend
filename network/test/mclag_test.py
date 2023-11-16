@@ -33,7 +33,7 @@ class MclagTest(ORCATest):
         # Create peerlink port channel first
         req = {
             "mgt_ip": device_ip_1,
-            "chnl_name": self.peer_link,
+            "lag_name": self.peer_link,
         }
         self.perform_del_port_chnl(req)
         self.perform_add_port_chnl(req)
@@ -116,13 +116,13 @@ class MclagTest(ORCATest):
         request_body = [
             {
                 "mgt_ip": device_ip_1,
-                "chnl_name": self.mem_port_chnl,
+                "lag_name": self.mem_port_chnl,
                 "mtu": 8000,
                 "admin_status": "up",
             },
             {
                 "mgt_ip": device_ip_1,
-                "chnl_name": self.mem_port_chnl_2,
+                "lag_name": self.mem_port_chnl_2,
                 "mtu": 9100,
                 "admin_status": "up",
             },

@@ -64,7 +64,7 @@ class ORCATest(APITestCase):
 
             response = self.get_req(
                 "device_port_chnl",
-                {"mgt_ip": device_ip, "chnl_name": data.get("chnl_name")},
+                {"mgt_ip": device_ip, "lag_name": data.get("lag_name")},
             )
 
             self.assertIsNone(response.json())
@@ -74,7 +74,7 @@ class ORCATest(APITestCase):
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             response = self.get_req(
                 "device_port_chnl",
-                {"mgt_ip": device_ip, "chnl_name": data.get("chnl_name")},
+                {"mgt_ip": device_ip, "lag_name": data.get("lag_name")},
             )
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertTrue(

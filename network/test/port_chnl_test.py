@@ -35,13 +35,13 @@ class PortChnlTest(ORCATest):
         request_body = [
             {
                 "mgt_ip": device_ip,
-                "chnl_name": "PortChannel101",
+                "lag_name": "PortChannel101",
                 "mtu": 8000,
                 "admin_status": "up",
             },
             {
                 "mgt_ip": device_ip,
-                "chnl_name": "PortChannel102",
+                "lag_name": "PortChannel102",
                 "mtu": 9100,
                 "admin_status": "up",
             },
@@ -104,14 +104,14 @@ class PortChnlTest(ORCATest):
         request_body = [
             {
                 "mgt_ip": device_ip,
-                "chnl_name": "PortChannel101",
+                "lag_name": "PortChannel101",
                 "mtu": mtu,
                 "admin_status": "up",
                 "members": [ether_1, ether_2],
             },
             {
                 "mgt_ip": device_ip,
-                "chnl_name": "PortChannel102",
+                "lag_name": "PortChannel102",
                 "mtu": mtu,
                 "admin_status": "up",
                 "members": [ether_3, ether_4],
@@ -138,8 +138,8 @@ class PortChnlTest(ORCATest):
         # Now delete port channels
 
         request_body_2 = [
-            {"mgt_ip": device_ip, "chnl_name": "PortChannel101"},
-            {"mgt_ip": device_ip, "chnl_name": "PortChannel102"},
+            {"mgt_ip": device_ip, "lag_name": "PortChannel101"},
+            {"mgt_ip": device_ip, "lag_name": "PortChannel102"},
         ]
         self.perform_del_port_chnl(request_body_2)
         self.perform_add_port_chnl(request_body)

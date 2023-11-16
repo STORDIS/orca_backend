@@ -23,7 +23,7 @@ def device_port_chnl_list(request):
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        port_chnl_name = request.GET.get("chnl_name", "")
+        port_chnl_name = request.GET.get("lag_name", "")
         data = get_port_chnl(device_ip, port_chnl_name)
 
         for chnl in data if isinstance(data, list) else [data] if data else []:
@@ -44,22 +44,22 @@ def device_port_chnl_list(request):
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            if not req_data.get("chnl_name"):
+            if not req_data.get("lag_name"):
                 return Response(
-                    {"status": "Required field device chnl_name not found."},
+                    {"status": "Required field device lag_name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             try:
                 add_port_chnl(
                     device_ip,
-                    req_data.get("chnl_name"),
+                    req_data.get("lag_name"),
                     admin_status=req_data.get("admin_status"),
                     mtu=int(req_data.get("mtu")) if "mtu" in req_data else None,
                 )
                 if members := req_data.get("members"):
                     add_port_chnl_mem(
                         device_ip,
-                        req_data.get("chnl_name"),
+                        req_data.get("lag_name"),
                         members,
                     )
                 result.append(f"{request.method} request successful :\n {req_data}")
@@ -81,9 +81,9 @@ def device_port_chnl_list(request):
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            if not req_data.get("chnl_name"):
+            if not req_data.get("lag_name"):
                 return Response(
-                    {"status": "Required field device chnl_name not found."},
+                    {"status": "Required field device lag_name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             try:
@@ -94,11 +94,11 @@ def device_port_chnl_list(request):
                     for mem in members:
                         del_port_chnl_mem(
                             device_ip,
-                            req_data.get("chnl_name"),
+                            req_data.get("lag_name"),
                             mem,
                         )
                 else:
-                    del_port_chnl(device_ip, req_data.get("chnl_name"))
+                    del_port_chnl(device_ip, req_data.get("lag_name"))
 
                 result.append(f"{request.method} request successful :\n {req_data}")
                 http_status = http_status and True
