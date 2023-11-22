@@ -26,8 +26,8 @@ def vlan_config(request):
             )
         vlan_name = request.GET.get("name", "")
         data = get_vlan(device_ip, vlan_name)
-        if data:
-            data["members"]=get_vlan_members(device_ip, vlan_name)
+        for vlan_data in data if isinstance(data, list) else [data] if data else []:
+            vlan_data["members"] = get_vlan_members(device_ip, vlan_data["name"])
         return JsonResponse(data, safe=False)
 
     for req_data in (
