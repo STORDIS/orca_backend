@@ -1,4 +1,6 @@
-from django.http import JsonResponse
+""" Interface view. """
+
+from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -8,8 +10,18 @@ from orca_nw_lib.interface import (
 )
 from orca_nw_lib.common import Speed, PortFec
 
+
 @api_view(["GET", "PUT"])
 def device_interfaces_list(request):
+    """
+    This function handles the API view for listing and updating device interfaces.
+
+    Parameters:
+    - request: The HTTP request object.
+
+    Returns:
+    - The HTTP response object containing the result of the operation.
+    """
     result = []
     http_status = True
     if request.method == "GET":
@@ -21,7 +33,11 @@ def device_interfaces_list(request):
             )
         intfc_name = request.GET.get("intfc_name", "")
         data = get_interface(device_ip, intfc_name)
-        return JsonResponse(data, safe=False)
+        return (
+            Response(data, status.HTTP_200_OK)
+            if data
+            else Response({}, status.HTTP_204_NO_CONTENT)
+        )
 
     elif request.method == "PUT":
         req_data_list = (

@@ -50,9 +50,7 @@ class PortChnlTest(ORCATest):
         # First delete mclag, if it exists.
         # port channel deletion will fail if port channel is found to be a member of mclag.
 
-        self.del_req("device_mclag_list", {"mgt_ip": device_ip})
-
-        response = self.get_req("device_mclag_list", {"mgt_ip": device_ip})
+        response = self.del_req("device_mclag_list", {"mgt_ip": device_ip})
 
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
@@ -60,6 +58,9 @@ class PortChnlTest(ORCATest):
                 "resource not found" in res.lower() for res in response.json()["result"]
             )
         )
+        response = self.get_req("device_mclag_list", {"mgt_ip": device_ip})
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
 
         # Now delete port channels
         self.perform_del_add_del_port_chnl(request_body)
@@ -132,8 +133,8 @@ class PortChnlTest(ORCATest):
 
         response = self.get_req("device_mclag_list", {"mgt_ip": device_ip})
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(response.json())
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
 
         # Now delete port channels
 
@@ -145,4 +146,3 @@ class PortChnlTest(ORCATest):
         self.perform_add_port_chnl(request_body)
         self.perform_del_port_chnl(request_body)
         self.perform_del_port_chnl(request_body_2)
-        

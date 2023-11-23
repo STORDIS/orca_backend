@@ -8,7 +8,24 @@ from network.test.test_common import ORCATest
 
 
 class BGPTest(ORCATest):
+    """
+    This class contains tests for the BGP API.
+    """
+
     def test_bgp_global_config(self):
+        """
+        Test the BGP global configuration.
+
+        This function tests the BGP global configuration by performing a series of
+        API requests. It verifies that the configuration can be deleted, retrieved,
+        modified, and deleted again, and that the expected values are returned.
+
+        Args:
+            self (TestCase): The test case object.
+
+        Returns:
+            None
+        """
         device_ip = self.device_ips[0]
         request_body = {
             "mgt_ip": device_ip,
@@ -25,7 +42,8 @@ class BGPTest(ORCATest):
             )
         )
         response = self.get_req("bgp_global", request_body)
-        self.assertFalse(response.json())
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
 
         response = self.put_req("bgp_global", request_body)
         response = self.get_req("bgp_global", request_body)
@@ -41,9 +59,23 @@ class BGPTest(ORCATest):
             )
         )
         response = self.get_req("bgp_global", request_body)
-        self.assertFalse(response.json())
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
 
     def test_bgp_nbr_config(self):
+        """
+        Test the BGP neighbor configuration.
+
+        This function tests the BGP neighbor configuration by performing a series of
+        API requests. It verifies that the neighbor is correctly added and that the
+        expected response is received.
+
+        Parameters:
+        - self: The instance of the test class.
+
+        Returns:
+        None
+        """
         device_ip = self.device_ips[0]
         request_body = {
             "mgt_ip": device_ip,
@@ -60,7 +92,8 @@ class BGPTest(ORCATest):
             )
         )
         response = self.get_req("bgp_global", request_body)
-        self.assertFalse(response.json())
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
 
         response = self.put_req("bgp_global", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -122,4 +155,5 @@ class BGPTest(ORCATest):
             )
         )
         response = self.get_req("bgp_global", request_body)
-        self.assertFalse(response.json())
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)

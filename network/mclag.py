@@ -1,4 +1,4 @@
-from django.http import JsonResponse
+""" MCLAG API """
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
@@ -13,8 +13,22 @@ from orca_nw_lib.mclag import (
     config_mclag_mem_portchnl,
     del_mclag_member,
 )
+
+
 @api_view(["GET", "PUT", "DELETE"])
 def device_mclag_list(request):
+    """
+    Retrieves a list of device MCLAGs.
+
+    Args:
+        request: The HTTP request object.
+
+    Returns:
+        A Response object containing the list of device MCLAGs.
+        If successful, the response will have a status code of 200 (OK).
+        If no MCLAGs are found, the response will have a status code of 204 (No Content).
+        If there is a bad request, the response will have a status code of 400 (Bad Request).
+    """
     result = []
     http_status = True
     if request.method == "GET":
@@ -28,7 +42,11 @@ def device_mclag_list(request):
         data = get_mclags(device_ip, domain_id)
         if data and domain_id:
             data["mclag_members"] = get_mclag_mem_portchnls(device_ip, domain_id)
-        return JsonResponse(data, safe=False)
+        return (
+            Response(data, status=status.HTTP_200_OK)
+            if data
+            else Response({}, status=status.HTTP_204_NO_CONTENT)
+        )
     if request.method == "DELETE":
         for req_data in (
             request.data
@@ -131,6 +149,18 @@ def device_mclag_list(request):
 
 @api_view(["GET", "PUT", "DELETE"])
 def mclag_gateway_mac(request):
+    """
+    Retrieves or configures the MCLAG gateway MAC address.
+
+    Args:
+        request: The HTTP request object.
+
+    Returns:
+        A Response object containing the MCLAG gateway MAC address.
+        If successful, the response will have a status code of 200 (OK).
+        If no MCLAG gateway MAC address is found, the response will have a status code of 204 (No Content).
+        If there is a bad request, the response will have a status code of 400 (Bad Request).
+    """
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", "")
         if not device_ip:
@@ -140,7 +170,11 @@ def mclag_gateway_mac(request):
             )
         gateway_mac = request.GET.get("gateway_mac", "")
         data = get_mclag_gw_mac(device_ip, gateway_mac)
-        return JsonResponse(data, safe=False)
+        return (
+            Response(data, status=status.HTTP_200_OK)
+            if data
+            else Response({}, status=status.HTTP_204_NO_CONTENT)
+        )
     if request.method == "DELETE":
         device_ip = request.data.get("mgt_ip", "")
         if not device_ip:

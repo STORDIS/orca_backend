@@ -8,7 +8,14 @@ from network.test.test_common import ORCATest
 
 
 class PortGroupTest(ORCATest):
+    """
+    Test class for the BGP API.
+    """
+
     def test_port_group_speed_config(self):
+        """
+        Test port group speed configuration.
+        """
         device_ip = self.device_ips[0]
         request_body = {"mgt_ip": device_ip, "port_group_id": "1", "speed": "SPEED_10G"}
 
@@ -34,6 +41,9 @@ class PortGroupTest(ORCATest):
         self.assertEqual(request_body["speed"], response.json().get("speed"))
 
     def test_multiple_port_group_speed_config(self):
+        """
+        Test multiple port group speed configuration.
+        """
         device_ip = self.device_ips[0]
         request_body = {"mgt_ip": device_ip}
 

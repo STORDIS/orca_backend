@@ -1,4 +1,4 @@
-from django.http import JsonResponse
+""" Network Port Channel API. """
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
@@ -14,6 +14,25 @@ from orca_nw_lib.port_chnl import (
 
 @api_view(["GET", "PUT", "DELETE"])
 def device_port_chnl_list(request):
+    """
+    Handles the device port channel list API.
+
+    This function is responsible for handling the GET, PUT, and DELETE requests for the device port channel list API. It takes in a `request` object and returns a `Response` object.
+
+    Parameters:
+    - `request` (Request): The request object containing the HTTP method and parameters.
+
+    Returns:
+    - `Response`: The response object containing the result of the API call.
+
+    Raises:
+    - `Exception`: If there is an error during the API call.
+
+    Example Usage:
+    ```
+    response = device_port_chnl_list(request)
+    ```
+    """
     result = []
     http_status = True
     if request.method == "GET":
@@ -31,7 +50,11 @@ def device_port_chnl_list(request):
                 intf["name"]
                 for intf in get_port_chnl_members(device_ip, chnl["lag_name"])
             ]
-        return JsonResponse(data, safe=False)
+        return (
+            Response(data, status=status.HTTP_200_OK)
+            if data
+            else Response({}, status=status.HTTP_204_NO_CONTENT)
+        )
 
     if request.method == "PUT":
         req_data_list = (

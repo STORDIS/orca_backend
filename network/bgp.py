@@ -1,4 +1,4 @@
-from django.http import JsonResponse
+""" BGP API views. """
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
@@ -15,6 +15,33 @@ from orca_nw_lib.bgp import (
 
 @api_view(["GET", "PUT", "DELETE"])
 def device_bgp_global(request):
+    """
+    A view function that handles GET, PUT, and DELETE requests for device BGP global settings.
+
+    Parameters:
+    - request: The request object containing the HTTP request details.
+
+    Returns:
+    - If the request method is GET:
+        - If the required field "mgt_ip" is not found in the GET parameters, returns a Response object with a "result" field indicating the error and a status code of 400 (Bad Request).
+        - Otherwise, returns a Response object with the BGP global settings data retrieved from the device. If no data is found, returns a Response object with an empty dictionary and a status code of 204 (No Content).
+
+    - If the request method is PUT:
+        - If the request data is not a list, wraps it in a list.
+        - For each request data in the list:
+            - If the required field "mgt_ip" is not found, returns a Response object with a "result" field indicating the error and a status code of 400 (Bad Request).
+            - If the required field "local_asn" is not found, returns a Response object with a "result" field indicating the error and a status code of 400 (Bad Request).
+            - Otherwise, calls the "config_bgp_global" function with the device IP, local ASN, device IP as the router ID, and optional VRF name. Appends the request data to the "result" list if successful, otherwise appends the request data and the error message. Sets the "http_status" flag to False if any request fails.
+
+    - If the request method is DELETE:
+        - If the request data is not a list, wraps it in a list.
+        - For each request data in the list:
+            - If the required field "mgt_ip" is not found, returns a Response object with a "result" field indicating the error and a status code of 400 (Bad Request).
+            - If the required field "vrf_name" is not found, returns a Response object with a "result" field indicating the error and a status code of 400 (Bad Request).
+            - Otherwise, calls the "del_bgp_global" function with the device IP and VRF name. Appends the request data to the "result" list if successful, otherwise appends the request data and the error message. Sets the "http_status" flag to False if any request fails.
+
+    - Returns a Response object with a "result" field containing the list of results and a status code of 200 (OK) if all requests were successful, otherwise returns a Response object with a status code of 500 (Internal Server Error).
+    """
     result = []
     http_status = True
     if request.method == "GET":
@@ -25,7 +52,11 @@ def device_bgp_global(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         data = get_bgp_global(device_ip, request.GET.get("vrf_name", None))
-        return JsonResponse(data, safe=False)
+        return (
+            Response(data, status.HTTP_200_OK)
+            if data
+            else Response({}, status.HTTP_204_NO_CONTENT)
+        )
     if request.method == "PUT":
         req_data_list = (
             request.data if isinstance(request.data, list) else [request.data]
@@ -87,6 +118,22 @@ def device_bgp_global(request):
 
 @api_view(["GET", "PUT", "DELETE"])
 def bgp_nbr_config(request):
+    """
+    A view function that handles GET, PUT, and DELETE requests for BGP neighbor configuration.
+
+    Parameters:
+    - request: The request object containing the HTTP request details.
+
+    Returns:
+    - If the request method is GET:
+        - If the required field "mgt_ip" is not found in the GET parameters, returns a Response object with a "result" field indicating the error and a status code of 400 (Bad Request).
+        - If the required field "local_asn" is not found in the GET parameters, returns a Response object with a "result" field indicating the error and a status code of 400 (Bad Request).
+        - Otherwise, returns a Response object with the BGP neighbor configuration data retrieved from the device. If no data is found, returns a Response object with an empty dictionary and a status code of 204 (No Content).
+
+    - If the request method is PUT:
+        - If the request data is not a list, wraps it in a list.
+        - For each request data in the list:
+    """
     result = []
     http_status = True
     if request.method == "GET":
@@ -106,7 +153,11 @@ def bgp_nbr_config(request):
             "nbr_sub_if": get_bgp_neighbors_subinterfaces(device_ip, local_asn),
             "nbr_bgp": get_neighbour_bgp(device_ip, local_asn),
         }
-        return JsonResponse(data, safe=False)
+        return (
+            Response(data, status.HTTP_200_OK)
+            if data
+            else Response({}, status.HTTP_204_NO_CONTENT)
+        )
     if request.method == "PUT":
         req_data_list = (
             request.data if isinstance(request.data, list) else [request.data]

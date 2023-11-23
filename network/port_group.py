@@ -1,4 +1,4 @@
-from django.http import JsonResponse
+""" Port Group API. """
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
@@ -12,6 +12,15 @@ from orca_nw_lib.portgroup import (
 
 @api_view(["GET", "PUT"])
 def port_groups(request):
+    """
+    This function handles the API view for listing and updating port groups.
+
+    Parameters:
+    - request: The HTTP request object.
+
+    Returns:
+    - The HTTP response object containing the result of the operation.
+    """
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", "")
         if not device_ip:
@@ -21,7 +30,11 @@ def port_groups(request):
             )
         port_group_id = request.GET.get("port_group_id", None)
         data = get_port_groups(device_ip, port_group_id)
-        return JsonResponse(data, safe=False)
+        return (
+            Response(data, status.HTTP_200_OK)
+            if data
+            else Response({}, status.HTTP_204_NO_CONTENT)
+        )
     elif request.method == "PUT":
         result = []
         http_status = True
@@ -71,6 +84,10 @@ def port_groups(request):
     ]
 )
 def port_group_members(request):
+    """
+    This function handles the API view for listing port group members.
+    """
+
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", "")
         if not device_ip:
@@ -85,4 +102,10 @@ def port_group_members(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         data = get_port_group_members(device_ip, port_group_id)
-        return JsonResponse(data, safe=False)
+        return (
+            Response(data, status.HTTP_200_OK)
+            if data
+            else Response(
+                {"status": "No port group members found."}, status.HTTP_404_NOT_FOUND
+            )
+        )

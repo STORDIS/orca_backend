@@ -1,3 +1,4 @@
+""" Network URL Configuration """
 from django.urls import re_path
 
 from . import views

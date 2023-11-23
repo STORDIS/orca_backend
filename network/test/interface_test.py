@@ -37,6 +37,7 @@ class InterfaceTest(ORCATest):
         response = self.get_req(
             "device_interface_list", {"mgt_ip": device_ip, "intfc_name": ether_name}
         )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         enb = response.json()["enabled"]
 
         request_body = [

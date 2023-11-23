@@ -1,7 +1,7 @@
+""" VLAN API. """
 from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework.response import Response
-from django.http import JsonResponse
 from orca_nw_lib.vlan import (
     get_vlan,
     del_vlan,
@@ -15,6 +15,15 @@ from orca_nw_lib.common import VlanTagMode
 
 @api_view(["GET", "PUT", "DELETE"])
 def vlan_config(request):
+    """
+    Generates the function comment for the given function body.
+
+    Args:
+        request (Request): The request object.
+
+    Returns:
+        Response: The response object containing the result of the function.
+    """
     result = []
     http_status = True
     if request.method == "GET":
@@ -28,7 +37,11 @@ def vlan_config(request):
         data = get_vlan(device_ip, vlan_name)
         for vlan_data in data if isinstance(data, list) else [data] if data else []:
             vlan_data["members"] = get_vlan_members(device_ip, vlan_data["name"])
-        return JsonResponse(data, safe=False)
+        return (
+            Response(data, status=status.HTTP_200_OK)
+            if data
+            else Response({}, status=status.HTTP_204_NO_CONTENT)
+        )
 
     for req_data in (
         request.data
@@ -125,6 +138,15 @@ def vlan_config(request):
 
 @api_view(["DELETE"])
 def vlan_mem_config(request):
+    """
+    Deletes VLAN membership configuration.
+
+    Parameters:
+    - `request`: The HTTP request object.
+
+    Returns:
+    - `Response`: The HTTP response object with the result of the delete operation.
+    """
     result = []
     http_status = True
     if request.method == "DELETE":

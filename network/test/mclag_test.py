@@ -18,10 +18,19 @@ class MclagTest(ORCATest):
     mem_port_chnl_2 = "PortChannel102"
 
     def test_mclag_config(self):
+        """
+        Test the MCLAG configuration.
+
+        This function tests the MCLAG configuration by performing a series of operations
+        including creating a peerlink port channel, configuring MCLAG settings on a device,
+        and checking the response of each operation. The function takes no parameters and
+        does not return anything.
+
+        :return: None
+        """
         device_ip_1 = self.device_ips[0]
         device_ip_2 = self.device_ips[1]
-        self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
-        response = self.get_req("device_mclag_list", {"mgt_ip": device_ip_1})
+        response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
 
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
@@ -29,6 +38,9 @@ class MclagTest(ORCATest):
                 "resource not found" in res.lower() for res in response.json()["result"]
             )
         )
+        response = self.get_req("device_mclag_list", {"mgt_ip": device_ip_1})
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
 
         # Create peerlink port channel first
         req = {
@@ -62,9 +74,7 @@ class MclagTest(ORCATest):
 
         # Finally remove mclag
 
-        self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
-
-        response = self.get_req("device_mclag_list", {"mgt_ip": device_ip_1})
+        response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
 
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
@@ -72,12 +82,26 @@ class MclagTest(ORCATest):
                 "resource not found" in res.lower() for res in response.json()["result"]
             )
         )
+        response = self.get_req("device_mclag_list", {"mgt_ip": device_ip_1})
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
 
     def test_mclag_member_config(self):
+        """
+        Test the MCLAG member configuration.
+
+        This function tests the MCLAG member configuration by performing a series of operations
+        including creating a peerlink port channel, configuring MCLAG settings on a device,
+        and checking the response of each operation. The function takes no parameters and
+        does not return anything.
+
+        :return: None
+        """
         device_ip_1 = self.device_ips[0]
         device_ip_2 = self.device_ips[1]
 
         response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
+
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
@@ -86,10 +110,8 @@ class MclagTest(ORCATest):
         )
 
         response = self.get_req("device_mclag_list", {"mgt_ip": device_ip_1})
-
-        self.assertTrue(
-            response.status_code == status.HTTP_200_OK and not response.json()
-        )
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
 
         request_body = {
             "mgt_ip": device_ip_1,
@@ -152,7 +174,7 @@ class MclagTest(ORCATest):
             self.assertTrue(
                 mem.get("lag_name") in [self.mem_port_chnl, self.mem_port_chnl_2]
             )
-        
+
         # cleanup members
         response = self.del_req("device_mclag_list", request_body_members)
         self.assertTrue(
@@ -171,18 +193,32 @@ class MclagTest(ORCATest):
         )
 
     def test_mclag_gateway_mac(self):
+        """
+        Test the MCLAG gateway MAC configuration.
+
+        This function tests the MCLAG gateway MAC configuration by performing a series of operations
+        including creating a peerlink port channel, configuring MCLAG settings on a device,
+        and checking the response of each operation. The function takes no parameters and
+        does not return anything.
+
+        :return: None
+        """
+
         device_ip_1 = self.device_ips[0]
         gw_mac = "aa:bb:aa:bb:aa:bb"
-        self.del_req("mclag_gateway_mac", {"mgt_ip": device_ip_1})
-        response = self.get_req(
-            "mclag_gateway_mac", {"mgt_ip": device_ip_1, "gateway_mac": gw_mac}
-        )
+        response = self.del_req("mclag_gateway_mac", {"mgt_ip": device_ip_1})
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
                 "resource not found" in res.lower() for res in response.json()["result"]
             )
         )
+        response = self.get_req(
+            "mclag_gateway_mac", {"mgt_ip": device_ip_1, "gateway_mac": gw_mac}
+        )
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
+
         request_body = {
             "mgt_ip": device_ip_1,
             "gateway_mac": gw_mac,
@@ -196,13 +232,16 @@ class MclagTest(ORCATest):
 
         # Finally remove mclag gateway mac
 
-        self.del_req("mclag_gateway_mac", {"mgt_ip": device_ip_1})
-        response = self.get_req(
-            "mclag_gateway_mac", {"mgt_ip": device_ip_1, "gateway_mac": gw_mac}
-        )
+        response = self.del_req("mclag_gateway_mac", {"mgt_ip": device_ip_1})
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
                 "resource not found" in res.lower() for res in response.json()["result"]
             )
         )
+
+        response = self.get_req(
+            "mclag_gateway_mac", {"mgt_ip": device_ip_1, "gateway_mac": gw_mac}
+        )
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)

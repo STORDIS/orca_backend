@@ -7,14 +7,19 @@ from network.test.test_common import ORCATest
 
 
 class VlanTestCase(ORCATest):
-    vlan_id = 1
-    vlan_name = "Vlan1"
-
     """
     Test the VLAN API.
     """
 
+    vlan_id = 1
+    vlan_name = "Vlan1"
+
     def test_vlan_config(self):
+        """
+        Test the VLAN configuration.
+
+        This function tests the VLAN configuration by performing a series of HTTP requests.
+        """
         device_ip = self.device_ips[0]
         response = self.del_req(
             "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
@@ -30,8 +35,8 @@ class VlanTestCase(ORCATest):
         response = self.get_req(
             "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIsNone(response.json())
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
 
         response = self.put_req(
             "vlan_config",
@@ -59,10 +64,23 @@ class VlanTestCase(ORCATest):
         response = self.get_req(
             "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIsNone(response.json())
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
 
     def test_vlan_mem_config(self):
+        """
+        Test the VLAN memory configuration.
+
+        This function performs a series of tests on the VLAN memory configuration. It verifies
+        that the configuration can be deleted, retrieved, modified, and deleted again without
+        any errors or inconsistencies.
+
+        Parameters:
+            self (object): The instance of the test class.
+
+        Returns:
+            None
+        """
         device_ip = self.device_ips[0]
         ether_1 = self.ether_names[0]
         ether_2 = self.ether_names[1]
@@ -81,8 +99,8 @@ class VlanTestCase(ORCATest):
         response = self.get_req(
             "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIsNone(response.json())
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
 
         request_body = {
             "mgt_ip": device_ip,
@@ -113,7 +131,7 @@ class VlanTestCase(ORCATest):
         )
         self.assertEqual(response.json()["members"][ether_1], "tagged")
         self.assertEqual(response.json()["members"][ether_2], "untagged")
-        
+
         response = self.del_req(
             "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
         )
@@ -128,5 +146,5 @@ class VlanTestCase(ORCATest):
         response = self.get_req(
             "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIsNone(response.json())
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
