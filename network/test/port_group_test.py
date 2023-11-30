@@ -31,6 +31,13 @@ class PortGroupTest(ORCATest):
         response = self.get_req("port_groups", request_body)
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         self.assertEqual(request_body["speed"], response.json().get("speed"))
+        # Confirm speed changes on all member interfaces
+        for mem_if in response.json().get("mem_intfs"):
+            response = self.get_req(
+            "device_interface_list", {"mgt_ip": device_ip, "intfc_name": mem_if}
+            )
+            self.assertEqual(request_body["speed"], response.json().get("speed"))
+        
         # Restore speed
         request_body["speed"] = orig_speed
         response = self.put_req("port_groups", request_body)
@@ -39,6 +46,12 @@ class PortGroupTest(ORCATest):
         response = self.get_req("port_groups", request_body)
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         self.assertEqual(request_body["speed"], response.json().get("speed"))
+        # Confirm speed changes on all member interfaces
+        for mem_if in response.json().get("mem_intfs"):
+            response = self.get_req(
+            "device_interface_list", {"mgt_ip": device_ip, "intfc_name": mem_if}
+            )
+            self.assertEqual(request_body["speed"], response.json().get("speed"))
 
     def test_multiple_port_group_speed_config(self):
         """

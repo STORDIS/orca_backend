@@ -142,22 +142,56 @@ class InterfaceTest(ORCATest):
         This function does not return any values.
         """
         device_ip = self.device_ips[0]
-        ether_name = self.ether_names[1]
-        response = self.get_req(
-            "device_interface_list", {"mgt_ip": device_ip, "intfc_name": ether_name}
+        response_1 = self.get_req(
+            "device_interface_list",
+            {"mgt_ip": device_ip, "intfc_name": self.ether_names[0]},
         )
-        speed = response.json()["speed"]
-        speed_to_set = self.get_speed_to_set(speed)
+        speed_1 = response_1.json()["speed"]
+        speed_to_set_1 = self.get_speed_to_set(speed_1)
+
+        response_2 = self.get_req(
+            "device_interface_list",
+            {"mgt_ip": device_ip, "intfc_name": self.ether_names[1]},
+        )
+        speed_2 = response_2.json()["speed"]
+        speed_to_set_2 = self.get_speed_to_set(speed_2)
+
+        response_3 = self.get_req(
+            "device_interface_list",
+            {"mgt_ip": device_ip, "intfc_name": self.ether_names[2]},
+        )
+        speed_3 = response_3.json()["speed"]
+        speed_to_set_3 = self.get_speed_to_set(speed_3)
+
         request_body = [
-            {"mgt_ip": device_ip, "name": ether_name, "speed": speed_to_set},
-            {"mgt_ip": device_ip, "name": ether_name, "speed": speed},
+            {"mgt_ip": device_ip, "name": self.ether_names[0], "speed": speed_to_set_1},
+            {"mgt_ip": device_ip, "name": self.ether_names[0], "speed": speed_1},
+            {"mgt_ip": device_ip, "name": self.ether_names[1], "speed": speed_to_set_2},
+            {"mgt_ip": device_ip, "name": self.ether_names[1], "speed": speed_2},
+            {"mgt_ip": device_ip, "name": self.ether_names[2], "speed": speed_to_set_3},
+            {"mgt_ip": device_ip, "name": self.ether_names[2], "speed": speed_3},
         ]
         for data in request_body:
             response = self.put_req("device_interface_list", data)
             response = self.get_req(
-                "device_interface_list", {"mgt_ip": device_ip, "intfc_name": ether_name}
+                "device_interface_list", {"mgt_ip": data.get("mgt_ip"), "intfc_name": data.get("name")}
             )
             self.assertEqual(response.json()["speed"], data["speed"])
+            ## Also confirm the speed of respective port-group (if supported) has been updates as well.
+            ## Also the speed of other member interfaces of the port-groupshould be updated.
+            response = self.get_req("port_groups", {"mgt_ip": device_ip})
+            for pg in response.json():
+                if (if_name:=data.get("name")) in pg.get("mem_intfs"):
+                    ## This is the port group of the interface being tested.
+
+                    ## Check that all interfaces have the same speed.
+                    print(f"PG number of {if_name} is {pg.get('port_group_id')}")
+                    for mem in pg.get("mem_intfs"):
+                        mem_resp = self.get_req(
+                            "device_interface_list",
+                            {"mgt_ip": device_ip, "intfc_name": mem},
+                        )
+                        self.assertEqual(mem_resp.json()["speed"], data["speed"])
 
     def test_interface_fec_config(self):
         """
