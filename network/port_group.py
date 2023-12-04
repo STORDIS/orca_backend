@@ -64,18 +64,18 @@ def port_groups(request):
                 set_port_group_speed(
                     device_ip, port_group_id, Speed.get_enum_from_str(speed)
                 )
-                result.append(f"{request.method} request successful :\n {req_data}")
+                result.append(f"{request.method} request successful : {req_data}")
             except Exception as err:
                 result.append(
-                    f"{request.method} request failed :\n {req_data} \n {str(err)}"
+                    f"{request.method} request failed : {req_data} {str(err)}"
                 )
                 http_status = http_status and False
-        return Response(
-            {"result": result},
-            status=status.HTTP_200_OK
-            if http_status
-            else status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
+    return Response(
+        {"result": result},
+        status=status.HTTP_200_OK
+        if http_status
+        else status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
 
 
 @api_view(

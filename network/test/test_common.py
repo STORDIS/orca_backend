@@ -115,8 +115,8 @@ class ORCATest(APITestCase):
                 response.json()["mtu"] == data["mtu"] if data.get("mtu") else True
             )
             self.assertTrue(
-                response.json()["admin_sts"] == data.get("admin_status")
-                if data.get("admin_status")
+                response.json()["admin_sts"] == data.get("admin_sts")
+                if data.get("admin_sts")
                 else True
             )
 

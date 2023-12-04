@@ -76,7 +76,7 @@ def device_port_chnl_list(request):
                 add_port_chnl(
                     device_ip,
                     req_data.get("lag_name"),
-                    admin_status=req_data.get("admin_status"),
+                    admin_status=req_data.get("admin_sts"),
                     mtu=int(req_data.get("mtu")) if "mtu" in req_data else None,
                 )
                 if members := req_data.get("members"):
@@ -104,16 +104,12 @@ def device_port_chnl_list(request):
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            if not req_data.get("lag_name"):
-                return Response(
-                    {"status": "Required field device lag_name not found."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+           
             try:
                 # If member are given in the request body
                 # Delete the members only, otherwise request is considered
                 # to be for deleting the whole port channel
-                if members := req_data.get("members"):
+                if (members := req_data.get("members")) and req_data.get("lag_name"):
                     for mem in members:
                         del_port_chnl_mem(
                             device_ip,

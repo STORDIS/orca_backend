@@ -19,6 +19,11 @@ class PortGroupTest(ORCATest):
         device_ip = self.device_ips[0]
         request_body = {"mgt_ip": device_ip, "port_group_id": "1", "speed": "SPEED_10G"}
 
+        ## Simply delete all port channels as if an interfacce which is member of a port channel as well, 
+        # speed config will fail.
+        
+        self.perform_del_port_chnl( {"mgt_ip": device_ip})
+
         # Get current speed
         response = self.get_req("port_groups", request_body)
         self.assertTrue(response.status_code == status.HTTP_200_OK)
@@ -34,10 +39,10 @@ class PortGroupTest(ORCATest):
         # Confirm speed changes on all member interfaces
         for mem_if in response.json().get("mem_intfs"):
             response = self.get_req(
-            "device_interface_list", {"mgt_ip": device_ip, "intfc_name": mem_if}
+                "device_interface_list", {"mgt_ip": device_ip, "intfc_name": mem_if}
             )
             self.assertEqual(request_body["speed"], response.json().get("speed"))
-        
+
         # Restore speed
         request_body["speed"] = orig_speed
         response = self.put_req("port_groups", request_body)
@@ -49,7 +54,7 @@ class PortGroupTest(ORCATest):
         # Confirm speed changes on all member interfaces
         for mem_if in response.json().get("mem_intfs"):
             response = self.get_req(
-            "device_interface_list", {"mgt_ip": device_ip, "intfc_name": mem_if}
+                "device_interface_list", {"mgt_ip": device_ip, "intfc_name": mem_if}
             )
             self.assertEqual(request_body["speed"], response.json().get("speed"))
 
@@ -59,6 +64,11 @@ class PortGroupTest(ORCATest):
         """
         device_ip = self.device_ips[0]
         request_body = {"mgt_ip": device_ip}
+        
+        ## Simply delete all port channels as if an interfacce which is member of a port channel as well, 
+        # speed config will fail.
+        
+        self.perform_del_port_chnl({"mgt_ip": device_ip})
 
         # Get current speed
         response = self.get_req("port_groups", request_body)

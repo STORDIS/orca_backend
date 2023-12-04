@@ -47,6 +47,11 @@ class PortChnlTest(ORCATest):
             },
         ]
 
+        ## Better cleanup all port channels first may be there are existing
+        # port channels withe member interfaces which are of interest of this
+        # test case.
+        self.perform_del_port_chnl({"mgt_ip": device_ip})
+
         # First delete mclag, if it exists.
         # port channel deletion will fail if port channel is found to be a member of mclag.
 
@@ -70,6 +75,12 @@ class PortChnlTest(ORCATest):
         Test the configuration of port channel members.
         """
         device_ip = self.device_ips[0]
+
+        ## Better cleanup all port channels first may be there are existing
+        # port channels withe member interfaces which are of interest of this
+        # test case.
+        self.perform_del_port_chnl({"mgt_ip": device_ip})
+
         ether_1 = self.ether_names[0]
         ether_2 = self.ether_names[1]
         ether_3 = self.ether_names[2]
