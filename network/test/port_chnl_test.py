@@ -76,8 +76,8 @@ class PortChnlTest(ORCATest):
         """
         device_ip = self.device_ips[0]
 
-        ## Better cleanup all port channels first may be there are existing
-        # port channels withe member interfaces which are of interest of this
+        ## Better cleanup all port channels first, may be there are existing
+        # port channels with the member interfaces which are of interest of this
         # test case.
         self.perform_del_port_chnl({"mgt_ip": device_ip})
 
