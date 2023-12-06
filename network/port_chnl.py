@@ -11,6 +11,8 @@ from orca_nw_lib.port_chnl import (
     del_port_chnl_mem,
 )
 
+from network.util import add_msg_to_list, get_failure_msg, get_success_msg
+
 
 @api_view(["GET", "PUT", "DELETE"])
 def device_port_chnl_list(request):
@@ -85,12 +87,9 @@ def device_port_chnl_list(request):
                         req_data.get("lag_name"),
                         members,
                     )
-                result.append(f"{request.method} request successful :\n {req_data}")
-                http_status = http_status and True
+                add_msg_to_list(result, get_success_msg(request, req_data))
             except Exception as err:
-                result.append(
-                    f"{request.method} request failed :\n {req_data} \n {str(err)}"
-                )
+                add_msg_to_list(result, get_failure_msg(err, request, req_data))
                 http_status = http_status and False
 
     elif request.method == "DELETE":
@@ -104,7 +103,7 @@ def device_port_chnl_list(request):
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-           
+
             try:
                 # If member are given in the request body
                 # Delete the members only, otherwise request is considered
@@ -118,13 +117,9 @@ def device_port_chnl_list(request):
                         )
                 else:
                     del_port_chnl(device_ip, req_data.get("lag_name"))
-
-                result.append(f"{request.method} request successful :\n {req_data}")
-                http_status = http_status and True
+                add_msg_to_list(result, get_success_msg(request, req_data))
             except Exception as err:
-                result.append(
-                    f"{request.method} request failed :\n {req_data} \n {str(err)}"
-                )
+                add_msg_to_list(result, get_failure_msg(err, request, req_data))
                 http_status = http_status and False
 
     return Response(

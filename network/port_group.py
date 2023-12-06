@@ -9,6 +9,12 @@ from orca_nw_lib.portgroup import (
     set_port_group_speed,
 )
 
+from network.util import (
+    add_msg_to_list,
+    get_failure_msg,
+    get_success_msg,
+)
+
 
 @api_view(["GET", "PUT"])
 def port_groups(request):
@@ -64,11 +70,9 @@ def port_groups(request):
                 set_port_group_speed(
                     device_ip, port_group_id, Speed.get_enum_from_str(speed)
                 )
-                result.append(f"{request.method} request successful : {req_data}")
+                add_msg_to_list(result, get_success_msg(request, req_data))
             except Exception as err:
-                result.append(
-                    f"{request.method} request failed : {req_data} {str(err)}"
-                )
+                add_msg_to_list(result, get_failure_msg(err, request, req_data))
                 http_status = http_status and False
     return Response(
         {"result": result},

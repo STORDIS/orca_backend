@@ -1,6 +1,5 @@
 """ Interface view. """
 
-from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -9,6 +8,7 @@ from orca_nw_lib.interface import (
     config_interface,
 )
 from orca_nw_lib.common import Speed, PortFec
+from network.util import add_msg_to_list, get_failure_msg, get_success_msg
 
 
 @api_view(["GET", "PUT"])
@@ -71,13 +71,10 @@ def device_interfaces_list(request):
                     fec=PortFec.get_enum_from_str(req_data.get("fec")),
                     speed=Speed.get_enum_from_str(req_data.get("speed")),
                 )
-
-                result.append(f"{request.method} request successful :\n {req_data}")
+                add_msg_to_list(result, get_success_msg(request, req_data))
                 http_status = http_status and True
             except Exception as err:
-                result.append(
-                    f"{request.method} request failed :\n {req_data} \n {str(err)}"
-                )
+                add_msg_to_list(result, get_failure_msg(err, request, req_data))
                 http_status = http_status and False
 
     return Response(

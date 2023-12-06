@@ -12,6 +12,12 @@ from orca_nw_lib.vlan import (
 )
 from orca_nw_lib.common import VlanTagMode
 
+from network.util import (
+    add_msg_to_list,
+    get_failure_msg,
+    get_success_msg,
+)
+
 
 @api_view(["GET", "PUT", "DELETE"])
 def vlan_config(request):
@@ -71,11 +77,9 @@ def vlan_config(request):
                 )
             try:
                 config_vlan(device_ip, vlan_name, vlanid)
-                result.append(f"{request.method} request successful :\n {req_data}")
+                add_msg_to_list(result, get_success_msg(request, req_data))
             except Exception as err:
-                result.append(
-                    f"{request.method} request failed :\n {req_data} \n {str(err)}"
-                )
+                add_msg_to_list(result, get_failure_msg(err, request, req_data))
                 http_status = http_status and False
 
             try:
@@ -84,11 +88,9 @@ def vlan_config(request):
                     for mem_if, tagging_mode in members.items():
                         members[mem_if] = VlanTagMode.get_enum_from_str(tagging_mode)
                     add_vlan_mem(device_ip, vlan_name, members)
-                    result.append(f"{request.method} request successful :\n {members}")
+                    add_msg_to_list(result, get_success_msg(request, req_data))
             except Exception as err:
-                result.append(
-                    f"{request.method} request failed :\n {members} \n {str(err)}"
-                )
+                add_msg_to_list(result, get_failure_msg(err, request, req_data))
                 http_status = http_status and False
 
         elif request.method == "DELETE":
@@ -110,22 +112,15 @@ def vlan_config(request):
                 for mem_if, tagging_mode in members.items():
                     try:
                         del_vlan_mem(device_ip, vlan_name, mem_if)
-                        result.append(
-                            f"{request.method} request successful :\n {members}"
-                        )
+                        add_msg_to_list(result, get_success_msg(request, req_data))
                     except Exception as err:
-                        result.append(
-                            f"{request.method} request failed :\n {members} \n {str(err)}"
-                        )
+                        add_msg_to_list(result, get_failure_msg(err, request, req_data))
                         http_status = http_status and False
-
             try:
                 del_vlan(device_ip, vlan_name)
-                result.append(f"{request.method} request successful :\n {req_data}")
+                add_msg_to_list(result, get_success_msg(request, req_data))
             except Exception as err:
-                result.append(
-                    f"{request.method} request failed :\n {req_data} \n {str(err)}"
-                )
+                add_msg_to_list(result, get_failure_msg(err, request, req_data))
                 http_status = http_status and False
 
     return Response(
@@ -175,13 +170,9 @@ def vlan_mem_config(request):
                 for mem_if in members:
                     try:
                         del_vlan_mem(device_ip, vlan_name, mem_if)
-                        result.append(
-                            f"{request.method} request successful :\n {members}"
-                        )
+                        add_msg_to_list(result, get_success_msg(request, req_data))
                     except Exception as err:
-                        result.append(
-                            f"{request.method} request failed :\n {members} \n {str(err)}"
-                        )
+                        add_msg_to_list(result, get_failure_msg(err, request, req_data))
                         http_status = http_status and False
 
     return Response(

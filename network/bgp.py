@@ -12,6 +12,12 @@ from orca_nw_lib.bgp import (
     del_all_bgp_neighbors,
 )
 
+from network.util import (
+    add_msg_to_list,
+    get_failure_msg,
+    get_success_msg,
+)
+
 
 @api_view(["GET", "PUT", "DELETE"])
 def device_bgp_global(request):
@@ -78,9 +84,9 @@ def device_bgp_global(request):
                 config_bgp_global(
                     device_ip, local_asn, device_ip, vrf_name=req_data.get("vrf_name")
                 )
-                result.append(f"{req_data} request successful :\n {req_data}")
+                add_msg_to_list(result, get_success_msg(request, req_data))
             except Exception as err:
-                result.append(f"{req_data} request failed :\n {req_data} \n {str(err)}")
+                add_msg_to_list(result, get_failure_msg(err, request, req_data))
                 http_status = http_status and False
 
     elif request.method == "DELETE":
@@ -103,9 +109,9 @@ def device_bgp_global(request):
                 )
             try:
                 del_bgp_global(device_ip, vrf_name)
-                result.append(f"{req_data} request successful :\n {req_data}")
+                add_msg_to_list(result, get_success_msg(request, req_data))
             except Exception as err:
-                result.append(f"{req_data} request failed :\n {req_data} \n {str(err)}")
+                add_msg_to_list(result, get_failure_msg(err, request, req_data))
                 http_status = http_status and False
 
     return Response(
@@ -192,9 +198,9 @@ def bgp_nbr_config(request):
 
             try:
                 config_bgp_neighbors(device_ip, remote_asn, neighbor_ip, remote_vrf)
-                result.append(f"{req_data} request successful :\n {req_data}")
+                add_msg_to_list(result, get_success_msg(request, req_data))
             except Exception as err:
-                result.append(f"{req_data} request failed :\n {req_data} \n {str(err)}")
+                add_msg_to_list(result, get_failure_msg(err, request, req_data))
                 http_status = http_status and False
     elif request.method == "DELETE":
         req_data_list = (
@@ -209,9 +215,9 @@ def bgp_nbr_config(request):
                 )
             try:
                 del_all_bgp_neighbors(device_ip)
-                result.append(f"{req_data} request successful :\n {req_data}")
+                add_msg_to_list(result, get_success_msg(request, req_data))
             except Exception as err:
-                result.append(f"{req_data} request failed :\n {req_data} \n {str(err)}")
+                add_msg_to_list(result, get_failure_msg(err, request, req_data))
                 http_status = http_status and False
 
     return Response(
