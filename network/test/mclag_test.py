@@ -113,6 +113,14 @@ class MclagTest(ORCATest):
         self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
         self.assertFalse(response.data)
 
+        # Create peerlink port channel first
+        req = {
+            "mgt_ip": device_ip_1,
+            "lag_name": self.peer_link,
+        }
+        self.perform_del_port_chnl(req)
+        self.perform_add_port_chnl(req)
+
         request_body = {
             "mgt_ip": device_ip_1,
             "domain_id": self.domain_id,

@@ -1,7 +1,8 @@
 [tool.poetry]
 name = "orca_backend"
 version = "0.1.0"
-description = "Orca Backend "
+description = "Orca backend web server implemets orca_nw_lib"
+readme = "readme.md"
 authors = ["kamal bhatt <kamal.bhatt@stordis.com>"]
 
 [tool.poetry.dependencies]
