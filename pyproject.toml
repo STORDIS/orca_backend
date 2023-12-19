@@ -7,12 +7,12 @@ authors = ["kamal bhatt <kamal.bhatt@stordis.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-Django = "^4.2.1"
+Django = "^4.2.8"
 djangorestframework = "^3.14.0"
 django-cors-headers = "^3.14.0"
 pytest = "^7.3.2"
-pytest-django = "^4.6.0"
-orca-nw-lib = "^1.3.0"
+pytest-django = "^4.7.0"
+orca-nw-lib = "^1.3.1"
 
 [tool.poetry.dev-dependencies]
 
