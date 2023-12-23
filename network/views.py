@@ -3,31 +3,71 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
 from orca_nw_lib.device import get_device_details
-from orca_nw_lib.discovery import discover_all
+from orca_nw_lib.discovery import discover_device
 
 
 @api_view(
     [
-        "GET",
+        "DELETE",
+    ]
+)
+def delete_db(request):
+    """
+    A function that deletes the database.
+
+    Parameters:
+        request (HttpRequest): The HTTP request object.
+
+    Returns:
+        Response: The HTTP response object with the result of the deletion operation.
+    """
+    if request.method == "DELETE":
+        from orca_nw_lib.utils import clean_db
+        try:
+            clean_db()
+        except Exception as e:
+            return Response({"result": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({"result": "Success"}, status=status.HTTP_200_OK)
+
+
+@api_view(
+    [
+        "PUT",
     ]
 )
 def discover(request):
     """
-    This function is the API view for the 'discover' endpoint.
-
+    This function is an API view that handles the HTTP PUT request for the 'discover' endpoint.
+    
     Parameters:
-        request (HttpRequest): The request object sent by the client.
-
+        - request: The HTTP request object.
+        
     Returns:
-        Response: The HTTP response containing the result of the API call.
+        - Response: The HTTP response object containing the result of the discovery process.
     """
-    if request.method == "GET":
-        data = discover_all()
-        if data:
-            return Response({"result": "Success"}, status=status.HTTP_200_OK)
-        else:
-            return Response(
-                {"result": "Fail"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+    result = []
+    http_status = True
+    if request.method == "PUT":
+        req_data_list = (
+            request.data if isinstance(request.data, list) else [request.data]
+        )
+        for req_data in req_data_list:
+            if req_data.get("discover_from_config", False):
+                from orca_nw_lib.discovery import discover_device_from_config
+                if not discover_device_from_config():
+                    result.append("Discovery from configuration failed")
+                    http_status &= False
+            
+            
+            if addr:=req_data.get("address", ""):
+                if not discover_device(ip_or_nw=addr):
+                    result.append("Discovery failed for {}".format(addr))
+                
+        return Response(
+            {"result": result},
+            status=status.HTTP_200_OK
+            if http_status
+            else status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 

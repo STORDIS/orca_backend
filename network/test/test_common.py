@@ -16,11 +16,12 @@ class ORCATest(APITestCase):
 
     def setUp(self):
         response = self.get_req("device")
-        if not response.json():
-            response = self.get_req("discover")
+        if not response.data:
+            response = self.put_req("discover", {"address": "10.10.130.210", "user_name": "admin", "password": "YourPaSsWoRd", "grpc_port": 8080})
             if not response or response.get("result") == "Fail":
                 self.fail("Failed to discover devices")
-
+        
+        response = self.get_req("device")
         for device in response.json():
             self.device_ips.append(device["mgt_ip"])
 
@@ -160,7 +161,7 @@ class ORCATest(APITestCase):
             format="json",
         )
 
-    def del_req(self, url_name: str, req_json):
+    def del_req(self, url_name: str, req_json=None):
         """
         Delete a resource using a DELETE request to the specified URL.
 

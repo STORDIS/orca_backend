@@ -5,6 +5,7 @@ from . import views
 from . import vlan, interface, port_chnl, mclag, bgp, port_group
 
 urlpatterns = [
+    re_path("del_db", views.delete_db, name="del_db"),
     re_path("discover", views.discover, name="discover"),
     re_path("devices", views.device_list, name="device"),
     re_path("interfaces", interface.device_interfaces_list, name="device_interface_list"),

@@ -76,24 +76,28 @@ class BGPTest(ORCATest):
         Returns:
         None
         """
-        device_ip = self.device_ips[0]
+        for device_ip in self.device_ips:
+            response = self.del_req(
+                "bgp_global", {"mgt_ip": device_ip, "vrf_name": "default"}
+            )
+            self.assertTrue(
+                response.status_code == status.HTTP_200_OK
+                or any(
+                    "resource not found" in res.lower()
+                    for res in response.json()["result"]
+                )
+            )
+            response = self.get_req("bgp_global", {"mgt_ip": device_ip})
+            self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+            self.assertFalse(response.data)
+
+        device_ip_1 = self.device_ips[0]
         request_body = {
-            "mgt_ip": device_ip,
+            "mgt_ip": device_ip_1,
             "vrf_name": "default",
             "local_asn": 65000,
-            "router_id": device_ip,
+            "router_id": device_ip_1,
         }
-
-        response = self.del_req("bgp_global", request_body)
-        self.assertTrue(
-            response.status_code == status.HTTP_200_OK
-            or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
-            )
-        )
-        response = self.get_req("bgp_global", request_body)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(response.data)
 
         response = self.put_req("bgp_global", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -102,10 +106,26 @@ class BGPTest(ORCATest):
         self.assertEqual(request_body.get("vrf_name"), response.json()["vrf_name"])
         self.assertEqual(request_body.get("router_id"), response.json()["router_id"])
 
-        # Add a neighbor
+        # Create neighbor BGP
+        
+        device_ip_2 = self.device_ips[1]
+        request_body = {
+            "mgt_ip": device_ip_2,
+            "vrf_name": "default",
+            "local_asn": 65001,
+            "router_id": device_ip_2,
+        }
 
+        response = self.put_req("bgp_global", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.get_req("bgp_global", request_body)
+        self.assertEqual(request_body.get("local_asn"), response.json()["local_asn"])
+        self.assertEqual(request_body.get("vrf_name"), response.json()["vrf_name"])
+        self.assertEqual(request_body.get("router_id"), response.json()["router_id"])
+
+        # Add neighbor BGP
         nbr_req = {
-            "mgt_ip": device_ip,
+            "mgt_ip": device_ip_1,
             "remote_vrf": "default",
             "local_asn": 65000,
             "remote_asn": 65001,
