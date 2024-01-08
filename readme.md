@@ -1,11 +1,26 @@
 # ORCA Backend
 ORCA Backend is a REST API server written using Django framework to access orca_nw_lib functionalities. It is a backend service that can be used by applications to interact with SONiC Netowrk and devices.
 ## Installing Dependencies
+### Install Neo4j
+One of the dependencies for ORCA backend orca_nw_lib uses neo4j to store the network topology. To install neo4j easiest is to run Neo4j Docker image in container with the following command :
+        
+    docker run \
+        --name testneo4j \
+        -p7474:7474 -p7687:7687 \
+        -d \
+        -v $HOME/neo4j/data:/data \
+        -v $HOME/neo4j/logs:/logs \
+        -v $HOME/neo4j/import:/var/lib/neo4j/import \
+        -v $HOME/neo4j/plugins:/plugins \
+        --env NEO4J_AUTH=neo4j/password \
+        neo4j:latest
+Then open https://localhost:7474 with credentials neo4j/password to browse the database.\
+### Install ORCA Backend dependencies
 ORCA backend uses poetry for installing all required dependencies. Poetry can be installed using the following command :
         
         pip install poetry
 
-To install dependencies use the following command :
+To install all dependencies of ORCA backend use the following command :
 
         cd orca_backend
         poetry install
