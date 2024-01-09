@@ -17,11 +17,13 @@ class ORCATest(APITestCase):
     def setUp(self):
         response = self.get_req("device")
         if not response.data:
-            response = self.put_req("discover", {"address": "10.10.130.210", "user_name": "admin", "password": "YourPaSsWoRd", "grpc_port": 8080})
+            response = self.put_req("discover", {"discover_from_config":True})
             if not response or response.get("result") == "Fail":
                 self.fail("Failed to discover devices")
         
         response = self.get_req("device")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
         for device in response.json():
             self.device_ips.append(device["mgt_ip"])
 
@@ -29,12 +31,12 @@ class ORCATest(APITestCase):
             response = self.get_req(
                 "device_interface_list", {"mgt_ip": self.device_ips[0]}
             )
+            intfs = response.data
+            if not intfs or not isinstance(intfs, list):
+                return
             while len(self.ether_names) < 5:
-                if not response.json():
-                    break
                 if (
-                    (intfs := response.json())
-                    and (ifc := intfs.pop())
+                    (ifc := intfs.pop())
                     and ifc["name"].startswith("Ethernet")
                 ):
                     self.ether_names.append(ifc["name"])

@@ -23,10 +23,13 @@ def delete_db(request):
     """
     if request.method == "DELETE":
         from orca_nw_lib.utils import clean_db
+
         try:
             clean_db()
         except Exception as e:
-            return Response({"result": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"result": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
         return Response({"result": "Success"}, status=status.HTTP_200_OK)
 
 
@@ -38,15 +41,14 @@ def delete_db(request):
 def discover(request):
     """
     This function is an API view that handles the HTTP PUT request for the 'discover' endpoint.
-    
+
     Parameters:
         - request: The HTTP request object.
-        
+
     Returns:
         - Response: The HTTP response object containing the result of the discovery process.
     """
     result = []
-    http_status = True
     if request.method == "PUT":
         req_data_list = (
             request.data if isinstance(request.data, list) else [request.data]
@@ -54,21 +56,17 @@ def discover(request):
         for req_data in req_data_list:
             if req_data.get("discover_from_config", False):
                 from orca_nw_lib.discovery import discover_device_from_config
-                if not discover_device_from_config():
-                    result.append("Discovery from configuration failed")
-                    http_status &= False
-            
-            
-            if addr:=req_data.get("address", ""):
-                if not discover_device(ip_or_nw=addr):
-                    result.append("Discovery failed for {}".format(addr))
-                
-        return Response(
-            {"result": result},
-            status=status.HTTP_200_OK
-            if http_status
-            else status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+                if temp_res:=discover_device_from_config():
+                    result += temp_res
+            if addr := req_data.get("address", ""):
+                if temp_res:=discover_device(ip_or_nw=addr):
+                    result += temp_res
+        if not result:
+            # Because orca_nw_lib returns report for errors in discovery.
+            result.append("Discovery Successful.")
+        else:
+            result.append("Discovery is partially successful or failed.")
+        return Response({"result": result}, status=status.HTTP_200_OK)
 
 
 @api_view(
@@ -88,7 +86,7 @@ def device_list(request):
     - If no data is found, returns a JSON response with an empty object and HTTP status code 204.
     """
     if request.method == "GET":
-        data = get_device_details(request.GET.get("mgt_ip", ""))
+        data = get_device_details(request.GET.get("mgt_ip", None))
         return (
             Response(data, status=status.HTTP_200_OK)
             if data
