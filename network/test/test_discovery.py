@@ -25,10 +25,10 @@ class DiscoverTest(ORCATest):
         self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
         
         ## Discover only one device
-        device_ip = "10.10.229.58"
+        device_ip = "10.10.130.227"
         request_body = {
             "address": device_ip,
-            "discover_from_config": True
+            "discover_from_config": False
         }
         response=self.put_req("discover",request_body)
         self.assertTrue(response.status_code == status.HTTP_200_OK)
@@ -44,7 +44,7 @@ class DiscoverTest(ORCATest):
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         response=self.get_req("device")
         self.assertTrue(response.status_code == status.HTTP_200_OK)
-        self.assertTrue(device_ip and '10.10.229.50' in [device['mgt_ip'] for device in response.json()])
+        self.assertTrue(device_ip and '10.10.130.210' in [device['mgt_ip'] for device in response.json()])
         
         ## Clean DB
         response=self.del_req("del_db")

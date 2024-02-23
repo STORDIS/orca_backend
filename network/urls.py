@@ -16,5 +16,4 @@ urlpatterns = [
     re_path("groups", port_group.port_groups, name="port_groups"),
     re_path("gateway_mac", mclag.mclag_gateway_mac, name="mclag_gateway_mac"),
     re_path("vlan", vlan.vlan_config, name="vlan_config"),
-    re_path("vlan_mem_delete", vlan.vlan_mem_config, name="vlan_mem_delete"),
 ]
