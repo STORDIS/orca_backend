@@ -4,7 +4,7 @@ import traceback
 import requests
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpRequest
 from oauth2_provider.contrib.rest_framework import TokenHasReadWriteScope
 from oauth2_provider.decorators import protected_resource
 from oauth2_provider.views import TokenView
@@ -28,7 +28,7 @@ class UserList(generics.ListCreateAPIView):
 
 
 @api_view(['get'])
-def callback(request: Request):
+def callback(request: HttpRequest | Request):
     # resp = requests.get("auth/o/token", )
     try:
         query_params = request.query_params
@@ -74,11 +74,11 @@ def login(request: Request):
     - If fails returns a JSON response with 500 status.
     """
     try:
-        request_body = json.loads(request.body)
+        data = request.data
         url = 'http://localhost:8000/auth/o/token/'
         body = {
             "grant_type": "password",
-            **request_body
+            **data
         }
         resp = requests.post(
             url=url, data=json.dumps(body), headers={
@@ -167,7 +167,7 @@ class GetUserView(generics.RetrieveAPIView):
             }
             return Response(
                 data=data,
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_200_OK
             )
         except Exception as e:
             print(e)
@@ -215,14 +215,13 @@ class DeleteUserView(generics.DestroyAPIView):
 
 
 class ChangePasswordView(generics.UpdateAPIView):
-
     """
     A Class update password.
 
     Checks user authenticated based on token.
     """
 
-    permission_classes = [permissions.IsAuthenticated, TokenHasReadWriteScope]
+    permission_classes = [permissions.IsAuthenticated]
 
     def put(self, request, **kwargs):
         """
@@ -257,7 +256,6 @@ class ChangePasswordView(generics.UpdateAPIView):
 
 
 class UpdateUserView(generics.UpdateAPIView):
-
     """
     A Class update user data.
 
@@ -286,6 +284,46 @@ class UpdateUserView(generics.UpdateAPIView):
             email = data.pop("email", "")
             # user = get_object_or_404(User.objects.filter(email=email))
             update_data = {k: v for k, v in data.items() if k not in ["is_staff", "is_superuser", "password"]}
+            User.objects.filter(email=email).update(**update_data)
+            return Response(data={"message": "Update successful."}, status=status.HTTP_200_OK)
+        except KeyError as e:
+            print(e)
+            return Response(data={"message": str(e)}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(e)
+            print(traceback.format_exc())
+            return Response(data={"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class UpdateIsStaffView(generics.UpdateAPIView):
+    """
+    A Class update user data.
+
+    Checks user authenticated based on token.
+    """
+
+    permission_classes = [IsAdmin]
+
+    def put(self, request, **kwargs):
+        """
+        A function to change is_staff.
+
+        Parameters:
+        - request: The Django request object.
+
+        Returns:
+        - If successful, returns a JSON response with token details and 200 ok status.
+        - If key error, returns a JSON response with token details and 404 status.
+        - If fails returns a JSON response with 500 status.
+
+        Required Keys:
+        - email.
+        """
+        try:
+            data = request.data
+            email = data.pop("email", "")
+            # user = get_object_or_404(User.objects.filter(email=email))
+            update_data = {"is_staff": True if kwargs.get("value") == "true" else False}
             User.objects.filter(email=email).update(**update_data)
             return Response(data={"message": "Update successful."}, status=status.HTTP_200_OK)
         except KeyError as e:
