@@ -17,4 +17,5 @@ urlpatterns = [
     path("user/delete", views.DeleteUserView.as_view()),
     path("user/<pk>", views.GetUserView.as_view()),
     path("users", views.UserList.as_view()),
+    path('refresh_token', views.generate_refresh_token, name="refresh_token"),
 ]

@@ -5,9 +5,9 @@ import requests
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
 from django.http import JsonResponse, HttpRequest
-from oauth2_provider.contrib.rest_framework import TokenHasReadWriteScope
-from oauth2_provider.decorators import protected_resource
+from oauth2_provider.oauth2_validators import RefreshToken, AccessToken
 from oauth2_provider.views import TokenView
+from oauthlib.common import generate_token
 from oauthlib.oauth2 import InvalidGrantError
 from requests.auth import HTTPBasicAuth
 from rest_framework import status, generics, permissions
@@ -78,15 +78,44 @@ def login(request: Request):
         url = 'http://localhost:8000/auth/o/token/'
         body = {
             "grant_type": "password",
+            "client_id": "orca_id",
             **data
         }
         resp = requests.post(
-            url=url, data=json.dumps(body), headers={
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
-            auth=HTTPBasicAuth(username="orca_id", password="orca_secret")
+            url=url, data=json.dumps(body)
         )
         return Response(resp.json(), status=status.HTTP_200_OK)
+    except Exception as e:
+        print(str(e))
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['post'])
+def generate_refresh_token(request: Request):
+    # resp = requests.get("auth/o/token", )
+    """
+    refreshes auth tokens.
+
+    Parameters:
+    - request: The Django request object.
+
+    Returns:
+    - If successful, returns a JSON response with token details and 200 ok status.
+    - If fails returns a JSON response with 500 status.
+    """
+    try:
+        data = request.data
+        refresh_token = RefreshToken.objects.get(token=data["refresh_token"])
+        url = 'http://localhost:8000/auth/o/token/'
+        response = requests.post(
+            url=url,
+            data=json.dumps({
+                "refresh_token": refresh_token.token,
+                "grant_type": "refresh_token",
+                "client_id": refresh_token.access_token.application.client_id
+            })
+        )
+        return Response(response.json(), status=status.HTTP_200_OK)
     except Exception as e:
         print(str(e))
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
