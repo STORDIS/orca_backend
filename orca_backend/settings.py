@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'network',
     'oauth2_provider',
     'authentication',
+    'log_manager',
 ]
 
 MIDDLEWARE = [

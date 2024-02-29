@@ -22,10 +22,26 @@ class TestAddAdminUser(TestAuthentication):
             "/auth/user/test_user"
         )
         assert get_resp_1.status_code == 200
-        update_resp = self.client.put(
+        update_resp_1 = self.client.put(
             path="/auth/user/is_admin/true", format="json", data={
                 "email": "test_user@gmail.com",
             },
         )
-        print(update_resp.json())
-        assert update_resp.status_code == 200
+        assert update_resp_1.status_code == 200
+        print(update_resp_1.json())
+        get_resp_2 = self.client.get(
+            "/auth/user/test_user"
+        )
+        assert get_resp_2.status_code == 200
+        assert get_resp_2.json()["is_staff"]
+        update_resp_2 = self.client.put(
+            path="/auth/user/is_admin/false", format="json", data={
+                "email": "test_user@gmail.com",
+            },
+        )
+        assert update_resp_2.status_code == 200
+        get_resp_3 = self.client.get(
+            "/auth/user/test_user"
+        )
+        assert get_resp_3.status_code == 200
+        assert not get_resp_3.json()["is_staff"]

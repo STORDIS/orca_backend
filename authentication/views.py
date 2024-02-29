@@ -7,9 +7,7 @@ from django.contrib.auth.models import User
 from django.http import JsonResponse, HttpRequest
 from oauth2_provider.oauth2_validators import RefreshToken, AccessToken
 from oauth2_provider.views import TokenView
-from oauthlib.common import generate_token
 from oauthlib.oauth2 import InvalidGrantError
-from requests.auth import HTTPBasicAuth
 from rest_framework import status, generics, permissions
 from rest_framework.decorators import api_view
 from rest_framework.generics import get_object_or_404
@@ -37,8 +35,7 @@ def callback(request: HttpRequest | Request):
             "code": query_params.get("code"),
             "grant_type": "authorization_code",
             "redirect_uri": "http://localhost:8000/auth/callback",
-            "client_id": "GtD7RImLyQG8Wx4A7c8bZUGGlwJx8cFazDwXhec9",
-            "client_secret": 'vLyECz7240Nw5AtAS7fzTPJ2eFsy4A1L7EemjE6L8oPVJ2rtusMmICYFDG4QLT2GhO1tvsk04jYfH7ZtsNG60ZQHBakg30NLJXeL1p4gPTEXlxjLOrEZfKqFU8rHdER0',
+            "client_id": "orca_id",
         }
         resp = requests.post(url=url, data=json.dumps(body), headers={
             "Content-Type": "application/x-www-form-urlencoded"
@@ -84,7 +81,10 @@ def login(request: Request):
         resp = requests.post(
             url=url, data=json.dumps(body)
         )
-        return Response(resp.json(), status=status.HTTP_200_OK)
+        if resp.status_code == 200:
+            return Response(resp.json(), status=status.HTTP_200_OK)
+        else:
+            return Response(resp.json(), status=status.HTTP_401_UNAUTHORIZED)
     except Exception as e:
         print(str(e))
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -192,7 +192,8 @@ class GetUserView(generics.RetrieveAPIView):
                 "username": user.username,
                 "email": user.email,
                 "first_name": user.first_name,
-                "last_name": user.last_name
+                "last_name": user.last_name,
+                "is_staff": user.is_staff
             }
             return Response(
                 data=data,

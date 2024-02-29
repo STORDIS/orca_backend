@@ -1,3 +1,5 @@
+from django.contrib.auth.models import User
+
 from authentication.test.test_authentication import TestAuthentication
 
 
@@ -22,6 +24,8 @@ class TestChangePasswordUser(TestAuthentication):
             "/auth/user/test_user"
         )
         assert get_resp_1.status_code == 200
+        user = User.objects.get(username='test_user')
+        assert user.check_password("test@123")
         update_resp = self.client.put(
             path="/auth/user/change_password", format="json", data={
                 "email": "test_user@gmail.com",
@@ -30,4 +34,7 @@ class TestChangePasswordUser(TestAuthentication):
             },
         )
         print(update_resp.json())
+        user = User.objects.get(username='test_user')
+        assert not user.check_password("test@123")
+        assert user.check_password("test@1234")
         assert update_resp.status_code == 200

@@ -1,5 +1,4 @@
 import datetime
-import json
 
 from django.contrib.auth.models import User
 from oauth2_provider.models import Application

@@ -22,5 +22,6 @@ from network import views
 urlpatterns = [
     path("", include("network.urls")),
     path("auth/", include("authentication.urls")),
+    path("logs/", include("log_manager.urls")),
     path("admin/", admin.site.urls),
 ]
