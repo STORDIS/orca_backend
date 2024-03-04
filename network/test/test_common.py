@@ -224,3 +224,25 @@ class ORCATest(APITestCase):
         else:
             speed_to_set = "SPEED_25GB"
         return speed_to_set
+
+
+    def get_common_speed_to_set(self, speed):
+            """
+            Get the speed to set based on the given speed.
+
+            Args:
+                speed (str): The current speed.
+
+            Returns:
+                str: The speed to set.
+
+            Raises:
+                None
+            """
+            if speed in ["SPEED_40GB", "SPEED_100GB"]:
+                speed_to_set = "SPEED_40GB"
+            elif speed in ["SPEED_10GB", "SPEED_25GB"]:
+                speed_to_set = "SPEED_10GB"
+            else:
+                speed_to_set = "SPEED_10GB"
+            return speed_to_set

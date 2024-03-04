@@ -113,6 +113,31 @@ class PortChnlTest(ORCATest):
         response = self.put_req("device_interface_list", itf_request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+
+        ## Members of a port channel members should have same speed.
+        request_body = [
+            {"mgt_ip": device_ip, "name": ether_1, "speed": ""},
+            {"mgt_ip": device_ip, "name": ether_2, "speed": ""},
+            {"mgt_ip": device_ip, "name": ether_3, "speed": ""},
+            {"mgt_ip": device_ip, "name": ether_4, "speed": ""},
+        ]
+        for req in request_body:
+            response_1 = self.get_req(
+                "device_interface_list",
+                {"mgt_ip": device_ip, "intfc_name": req["name"]},
+            )
+            speed_1 = response_1.json()["speed"]
+            req["speed"]=self.get_common_speed_to_set(speed_1)
+            
+            response = self.put_req("device_interface_list", req)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            response = self.get_req(
+                "device_interface_list", {"mgt_ip": req.get("mgt_ip"), "intfc_name": req.get("name")}
+            )
+            self.assertEqual(response.json()["speed"], req["speed"])
+        
+
+
         request_body = [
             {
                 "mgt_ip": device_ip,
@@ -153,6 +178,19 @@ class PortChnlTest(ORCATest):
             {"mgt_ip": device_ip, "lag_name": "PortChannel101"},
             {"mgt_ip": device_ip, "lag_name": "PortChannel102"},
         ]
+        
+        ## If any member portchannel is member of vlan it wont be added to portchannel 
+        ## So better delete All VLANs first.
+        response = self.del_req(
+            "vlan_config", {"mgt_ip": device_ip}
+        )
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "resource not found" in res.lower() for res in response.json()["result"]
+            )
+        )
+        
         self.perform_del_port_chnl(request_body_2)
         self.perform_add_port_chnl(request_body)
         self.perform_del_port_chnl(request_body)

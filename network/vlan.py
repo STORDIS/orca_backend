@@ -101,21 +101,16 @@ def vlan_config(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             vlan_name = req_data.get("name", "")
-            if not vlan_name:
-                return Response(
-                    {"status": "Required field device vlan_name not found."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            if members := req_data.get("members"):
-                ## Update members dictionary with tagging mode Enum
-                for mem_if, tagging_mode in members.items():
-                    try:
-                        del_vlan_mem(device_ip, vlan_name, mem_if)
-                        add_msg_to_list(result, get_success_msg(request, req_data))
-                    except Exception as err:
-                        add_msg_to_list(result, get_failure_msg(err, request, req_data))
-                        http_status = http_status and False
+            if vlan_name:
+                if members := req_data.get("members"):
+                    ## Update members dictionary with tagging mode Enum
+                    for mem_if, tagging_mode in members.items():
+                        try:
+                            del_vlan_mem(device_ip, vlan_name, mem_if)
+                            add_msg_to_list(result, get_success_msg(request, req_data))
+                        except Exception as err:
+                            add_msg_to_list(result, get_failure_msg(err, request, req_data))
+                            http_status = http_status and False
             try:
                 del_vlan(device_ip, vlan_name)
                 add_msg_to_list(result, get_success_msg(request, req_data))
