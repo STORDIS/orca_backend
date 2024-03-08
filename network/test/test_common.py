@@ -1,9 +1,11 @@
 """
 Test utility functions
 """
+
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
+from orca_nw_lib.gnmi_sub import gnmi_unsubscribe_for_all_devices_in_db
 
 
 class ORCATest(APITestCase):
@@ -17,13 +19,13 @@ class ORCATest(APITestCase):
     def setUp(self):
         response = self.get_req("device")
         if not response.data:
-            response = self.put_req("discover", {"discover_from_config":True})
+            response = self.put_req("discover", {"discover_from_config": True})
             if not response or response.get("result") == "Fail":
                 self.fail("Failed to discover devices")
-        
+
         response = self.get_req("device")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        
+
         for device in response.json():
             self.device_ips.append(device["mgt_ip"])
 
@@ -35,11 +37,13 @@ class ORCATest(APITestCase):
             if not intfs or not isinstance(intfs, list):
                 return
             while len(self.ether_names) < 5:
-                if (
-                    (ifc := intfs.pop())
-                    and ifc["name"].startswith("Ethernet")
-                ):
+                if (ifc := intfs.pop()) and ifc["name"].startswith("Ethernet"):
                     self.ether_names.append(ifc["name"])
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        super().tearDownClass()
+        gnmi_unsubscribe_for_all_devices_in_db()
 
     def perform_del_port_chnl(self, request_body):
         """
@@ -65,9 +69,7 @@ class ORCATest(APITestCase):
         for data in (
             request_body
             if isinstance(request_body, list)
-            else [request_body]
-            if request_body
-            else []
+            else [request_body] if request_body else []
         ):
             response = self.get_req("device_port_chnl", data)
             if data.get("members"):
@@ -94,9 +96,7 @@ class ORCATest(APITestCase):
         for data in (
             request_body
             if isinstance(request_body, list)
-            else [request_body]
-            if request_body
-            else []
+            else [request_body] if request_body else []
         ):
             device_ip = data.get("mgt_ip")
 
@@ -225,24 +225,39 @@ class ORCATest(APITestCase):
             speed_to_set = "SPEED_25GB"
         return speed_to_set
 
-
     def get_common_speed_to_set(self, speed):
-            """
-            Get the speed to set based on the given speed.
+        """
+        Get the speed to set based on the given speed.
 
-            Args:
-                speed (str): The current speed.
+        Args:
+            speed (str): The current speed.
 
-            Returns:
-                str: The speed to set.
+        Returns:
+            str: The speed to set.
 
-            Raises:
-                None
-            """
-            if speed in ["SPEED_40GB", "SPEED_100GB"]:
-                speed_to_set = "SPEED_40GB"
-            elif speed in ["SPEED_10GB", "SPEED_25GB"]:
-                speed_to_set = "SPEED_10GB"
-            else:
-                speed_to_set = "SPEED_10GB"
-            return speed_to_set
+        Raises:
+            None
+        """
+        if speed in ["SPEED_40GB", "SPEED_100GB"]:
+            speed_to_set = "SPEED_40GB"
+        elif speed in ["SPEED_10GB", "SPEED_25GB"]:
+            speed_to_set = "SPEED_10GB"
+        else:
+            speed_to_set = "SPEED_10GB"
+        return speed_to_set
+
+
+import time
+
+
+def call_with_timeout(
+    assert_func, assert_arg, req_func, path, data, timeout=1, retries=15
+):
+    for _ in range(retries):
+        try:
+            assert_func(req_func(path, data), assert_arg)
+            return
+        except AssertionError:
+            time.sleep(timeout)
+            continue
+    assert_func(req_func(path, data), assert_arg)

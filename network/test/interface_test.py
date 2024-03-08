@@ -2,9 +2,9 @@
 This module contains tests for the Interface API.
 """
 
+from time import sleep
 from rest_framework import status
-
-from network.test.test_common import ORCATest
+from network.test.test_common import ORCATest, call_with_timeout
 
 
 class InterfaceTest(ORCATest):
@@ -13,25 +13,7 @@ class InterfaceTest(ORCATest):
     """
 
     def test_interface_enable_config(self):
-        """
-        Test the enable configuration for the interface.
-
-        This function tests the enable configuration for the interface by performing the following steps:
-        1. Retrieve the device IP and Ethernet name using the 'retrieve_device' function.
-        2. Send a GET request to the 'device_interface_list' endpoint with the device IP and Ethernet name as parameters.
-        3. Extract the 'enabled' value from the response JSON.
-        4. Create a request body with two dictionaries:
-           a. The first dictionary has the device IP, Ethernet name, and the negation of the 'enabled' value.
-           b. The second dictionary has the device IP, Ethernet name, and the 'enabled' value.
-        5. Iterate over the request body and perform the following steps for each dictionary:
-           a. Send a PUT request to the 'device_interface_list' endpoint with the dictionary as data.
-           b. Send a GET request to the 'device_interface_list' endpoint with the device IP and Ethernet name as parameters.
-           c. Assert that the 'enabled' value in the response JSON is equal to the 'enabled' value in the dictionary.
-
-        This function does not have any parameters.
-
-        This function does not return any values.
-        """
+        
         device_ip = self.device_ips[0]
         ether_name = self.ether_names[1]
         response = self.get_req(
@@ -45,13 +27,18 @@ class InterfaceTest(ORCATest):
             {"mgt_ip": device_ip, "name": ether_name, "enabled": enb},
         ]
         for data in request_body:
-            response = self.put_req("device_interface_list", data)
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            response = self.get_req(
+            req = lambda path, data: self.put_req(path, data).status_code
+            call_with_timeout(
+                self.assertEqual, status.HTTP_200_OK, req, "device_interface_list", data
+            )
+            req = lambda path, data: self.get_req(path, data).json()["enabled"]
+            call_with_timeout(
+                self.assertEqual,
+                data["enabled"],
+                req,
                 "device_interface_list",
                 {"mgt_ip": device_ip, "intfc_name": ether_name},
             )
-            self.assertEqual(response.json()["enabled"], data["enabled"])
 
     def test_interface_mtu_config(self):
         """
@@ -174,14 +161,15 @@ class InterfaceTest(ORCATest):
             response = self.put_req("device_interface_list", data)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             response = self.get_req(
-                "device_interface_list", {"mgt_ip": data.get("mgt_ip"), "intfc_name": data.get("name")}
+                "device_interface_list",
+                {"mgt_ip": data.get("mgt_ip"), "intfc_name": data.get("name")},
             )
             self.assertEqual(response.json()["speed"], data["speed"])
             ## Also confirm the speed of respective port-group (if supported) has been updates as well.
             ## Also the speed of other member interfaces of the port-groupshould be updated.
             response = self.get_req("port_groups", {"mgt_ip": device_ip})
             for pg in response.json():
-                if (if_name:=data.get("name")) in pg.get("mem_intfs"):
+                if (if_name := data.get("name")) in pg.get("mem_intfs"):
                     ## This is the port group of the interface being tested.
 
                     ## Check that all interfaces have the same speed.
@@ -273,7 +261,7 @@ class InterfaceTest(ORCATest):
                 "mtu": mtu2 - 1,
                 "speed": self.get_speed_to_set(speed2),
                 "description": "Sample Description",
-            }
+            },
         ]
         response = self.put_req("device_interface_list", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -282,18 +270,17 @@ class InterfaceTest(ORCATest):
             "device_interface_list", {"mgt_ip": device_ip, "intfc_name": ether_name_1}
         )
         self.assertEqual(response1.json()["enabled"], not enb1)
-        self.assertEqual(response1.json()["mtu"], mtu1 -1 )
+        self.assertEqual(response1.json()["mtu"], mtu1 - 1)
         self.assertEqual(response1.json()["description"], "Sample Description")
         self.assertEqual(response1.json()["speed"], self.get_speed_to_set(speed1))
-        
+
         response2 = self.get_req(
             "device_interface_list", {"mgt_ip": device_ip, "intfc_name": ether_name_2}
         )
         self.assertEqual(response2.json()["enabled"], not enb2)
-        self.assertEqual(response2.json()["mtu"], mtu2-1)
+        self.assertEqual(response2.json()["mtu"], mtu2 - 1)
         self.assertEqual(response2.json()["description"], "Sample Description")
         self.assertEqual(response2.json()["speed"], self.get_speed_to_set(speed2))
-
 
         request_body = [
             {
@@ -315,15 +302,15 @@ class InterfaceTest(ORCATest):
         ]
         response = self.put_req("device_interface_list", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        
+
         response1 = self.get_req(
             "device_interface_list", {"mgt_ip": device_ip, "intfc_name": ether_name_1}
         )
         self.assertEqual(response1.json()["enabled"], enb1)
-        self.assertEqual(response1.json()["mtu"], mtu1  )
+        self.assertEqual(response1.json()["mtu"], mtu1)
         self.assertEqual(response1.json()["description"], desc1)
-        self.assertEqual(response1.json()["speed"],speed1)
-        
+        self.assertEqual(response1.json()["speed"], speed1)
+
         response2 = self.get_req(
             "device_interface_list", {"mgt_ip": device_ip, "intfc_name": ether_name_2}
         )

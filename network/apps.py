@@ -1,11 +1,11 @@
 import os
 from django.apps import AppConfig
-from orca_nw_lib.utils import load_orca_config
+from orca_nw_lib.setup import setup
 
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
-orca_config=f"{dname}/config/orca.yml"
-logging_config=f"{dname}/config/logging.yml"
+orca_config=f"{dname}/config/orca_nw_lib.yml"
+logging_config=f"{dname}/config/orca_nw_lib_logging.yml"
 
 class NetworkConfig(AppConfig):
     name = "network"
@@ -14,7 +14,7 @@ class NetworkConfig(AppConfig):
 
     def ready(self):
         if not self.orca_config_loaded:
-            load_orca_config(
+            setup(
                 orca_config_file=orca_config,
                 logging_config_file=logging_config,
                 force_reload=False,

@@ -60,7 +60,6 @@ def device_interfaces_list(request):
                 config_interface(
                     device_ip=device_ip,
                     intfc_name=req_data.get("name"),
-                    loopback=req_data.get("loopback"),
                     enable=True
                     if str(req_data.get("enabled")).lower() == "true"
                     else False

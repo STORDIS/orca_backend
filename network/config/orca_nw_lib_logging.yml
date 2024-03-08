@@ -10,16 +10,23 @@ handlers:
         level: INFO
     console:
         class: logging.StreamHandler
-        level: INFO
+        level: DEBUG
         formatter: format_1
         #args: (sys.stdout,)
+    debug_console:
+        class: logging.StreamHandler
+        level: DEBUG
+        formatter: debug_format
 
 formatters:
     format_1: 
         format: "[%(asctime)s][%(levelname)s][%(filename)s:%(lineno)d] %(message)s"
+    debug_format:
+        format: "[%(asctime)s][%(levelname)s][%(filename)s:%(lineno)d]:[%(threadName)s] %(message)s"
 
 root:
     level: NOTSET
     #handlers: [console,file]
+    #handlers: [debug_console]
     handlers: [console]
     propogate: yes
