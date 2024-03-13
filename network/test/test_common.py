@@ -2,6 +2,7 @@
 Test utility functions
 """
 
+import time
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
@@ -39,6 +40,15 @@ class ORCATest(APITestCase):
             while len(self.ether_names) < 5:
                 if (ifc := intfs.pop()) and ifc["name"].startswith("Ethernet"):
                     self.ether_names.append(ifc["name"])
+                    
+        ## Resync the interfaces, may be their state has been modified when ORCA was not up,
+        ## or state wasn't updated in DB due to cancelling the test case repmaturly because of debugging.
+        for ip in self.device_ips:
+            for if_name in self.ether_names:
+                response1 = self.post_req(
+                    "interface_resync", {"mgt_ip": ip, "name": if_name}
+                )
+                self.assertEqual(response1.status_code, status.HTTP_200_OK)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -199,6 +209,13 @@ class ORCATest(APITestCase):
             req_json,
             format="json",
         )
+        
+    def post_req(self, url_name: str, req_json):
+        return self.client.post(
+            reverse(url_name),
+            req_json,
+            format="json",
+        )
 
     def get_speed_to_set(self, speed):
         """
@@ -246,18 +263,53 @@ class ORCATest(APITestCase):
             speed_to_set = "SPEED_10GB"
         return speed_to_set
 
+    def send_req_and_assert(self, req_func, assert_func, *req_args, **assert_args):
+        response = req_func(*req_args)
+        for key, value in assert_args.items():
+            print(f"Asserting against key: {key}, value: {value}")
+            if key == "status":
+                print(f"Received {key} code: {response.status_code}")
+                if isinstance(value, list):
+                    ## Need to check multiple status codes
+                    self.assertTrue(
+                        response.status_code in value,
+                    )
+                else:
+                    assert_func(response.status_code, value)
+                continue
+            if response.status_code == status.HTTP_200_OK:
+                print(f"Received {key} value: {response.json()[key]}")
+                assert_func(response.json()[key], value)
+        return response
 
-import time
+    def assert_with_timeout_retry(
+        self, req_func, assert_func, *req_args, **assert_args
+    ):
+        """
+        Executes a given function with a timeout and retries in case of failure.
+        Usefull when executing a function that spawns a multiple athreads. Following can be the scenarios:
+        Case-1 :
+            While making update requests. Device might be subscribed but haven't received the sync_response:true message.
+            before receiving this message it will be ready to receive any subscription responses for any config done via any put, post, delete, patch requests.
+        Case-2 :
+            While making get requests for the config verification done previously, there can be delay in receiving the subscription response from the device.
 
-
-def call_with_timeout(
-    assert_func, assert_arg, req_func, path, data, timeout=1, retries=15
-):
-    for _ in range(retries):
-        try:
-            assert_func(req_func(path, data), assert_arg)
-            return
-        except AssertionError:
-            time.sleep(timeout)
-            continue
-    assert_func(req_func(path, data), assert_arg)
+        Args:
+            req_func (Callable): The function to make the request to orca.
+            assert_func (Callable): The function to assert the response returned by req_func.
+            *req_args: The arguments to pass to req_func. t.e. req url and payload.
+            **assert_args: The arguments to pass to assert_func. t.e. assert status code and response.
+        """
+        timeout = 2
+        retries = 10
+        for _ in range(retries):
+            try:
+                return self.send_req_and_assert(
+                    req_func, assert_func, *req_args, **assert_args
+                )
+            except AssertionError:
+                print(f"Assertion failed for request args: {req_args}, and assert args: {assert_args}")
+                print(f"Retrying in {timeout} seconds")
+                time.sleep(timeout)
+                continue
+        return self.send_req_and_assert(req_func, assert_func, *req_args, **assert_args)

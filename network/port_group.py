@@ -68,7 +68,7 @@ def port_groups(request):
                 )
             try:
                 set_port_group_speed(
-                    device_ip, port_group_id, Speed.get_enum_from_str(speed)
+                    device_ip=device_ip, port_group_id=port_group_id, speed=Speed.get_enum_from_str(speed)
                 )
                 add_msg_to_list(result, get_success_msg(request, req_data))
             except Exception as err:
