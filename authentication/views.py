@@ -54,7 +54,25 @@ class RegisterView(APIView):
 
 class LoginView(APIView):
 
+    """
+    This Used to login user based on username name and password
+    """
+
     def post(self, request):
+        """
+        A function to validate user and generate token.
+
+        Parameters:
+        - request: The Django request object.
+
+        Returns:
+        - If successful, returns a JSON response with token details and 200 ok status.
+        - If user error, returns a JSON response with token details and 401 unauthorized status.
+        - If fails returns a JSON response with 500 status.
+
+        Required Keys:
+        - username, password
+        """
         try:
             data = request.data
             user = User.objects.get(username=data["username"])
