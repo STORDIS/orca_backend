@@ -54,6 +54,7 @@ class LoginView(APIView):
     """
     This Used to login user based on username name and password
     """
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request):
         """
