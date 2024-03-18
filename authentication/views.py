@@ -1,5 +1,4 @@
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate
 from rest_framework import status, permissions, generics
 from rest_framework.authtoken.models import Token
 from rest_framework.generics import get_object_or_404
@@ -20,7 +19,6 @@ class UserList(generics.ListAPIView):
 
 
 class RegisterView(APIView):
-
     """
     This Class adds users to database
     """
@@ -53,7 +51,6 @@ class RegisterView(APIView):
 
 
 class LoginView(APIView):
-
     """
     This Used to login user based on username name and password
     """
@@ -82,6 +79,7 @@ class LoginView(APIView):
             return Response({'token': token.key}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(data={"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class GetUserView(APIView):
     """

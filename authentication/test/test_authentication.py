@@ -9,10 +9,13 @@ from rest_framework.test import APITestCase
 
 class TestAuthentication(APITestCase):
     """Test Authentication apis"""
+    user = None
     tkn = ""
 
-    def setUp(self):
-        User.objects.create(
+    @classmethod
+    def setUpClass(cls):
+        # creating admin user for testing
+        cls.user = User.objects.create(
             **{
                 "username": "test_admin",
                 "email": "test_admin@gmail.com",
@@ -22,12 +25,22 @@ class TestAuthentication(APITestCase):
                 "is_staff": True
             }
         )
+        cls.cls_atomics = cls._enter_atomics()
+        return cls
+
+    def setUp(self):
         resp = self.client.post(
             "/auth/login", {
                 "username": "test_admin",
                 "password": "test@123"
             }
         )
+        assert resp.status_code == 200
         self.tkn = f"Token {resp.json()['token']}"
         self.client.credentials(HTTP_AUTHORIZATION=self.tkn)
         return self
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.user.delete()
+        return cls

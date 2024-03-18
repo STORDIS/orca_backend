@@ -2,6 +2,7 @@ import re
 
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
+from rest_framework.exceptions import NotFound
 from rest_framework.permissions import BasePermission
 
 
@@ -18,7 +19,8 @@ class IsAdmin(BasePermission):
         Returns:
             is_staff of user details `bool`
         """
-        authorization = request.META["HTTP_AUTHORIZATION"]
+        if (authorization := request.META.get("HTTP_AUTHORIZATION")) is None:
+            raise NotFound("Authentication token not found")
         m = re.search(r'(Token)(\s)(.*)', authorization)
         token = m.group(3)
         token_user = Token.objects.get(key=token)

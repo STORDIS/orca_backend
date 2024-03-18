@@ -17,11 +17,14 @@ class TestRegister(TestAuthentication):
             },
             HTTP_AUTHORIZATION=self.tkn
         )
-        print(create_resp.content, "---------")
         assert create_resp.status_code == 200
         get_resp = self.client.get(
             "/auth/user/test_user"
         )
+        get_resp_json = get_resp.json()
+        assert get_resp_json["username"] == "test_user"
+        assert get_resp_json["first_name"] == "first_name"
+        assert get_resp_json["email"] == "test_user@gmail.com"
         assert get_resp.status_code == 200
 
     def test_failure(self):
