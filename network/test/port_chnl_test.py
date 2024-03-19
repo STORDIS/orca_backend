@@ -8,7 +8,6 @@ from network.test.test_common import ORCATest
 
 
 class PortChnlTest(ORCATest):
-
     """
     This class contains tests for the Port Channel API.
     """
@@ -110,9 +109,13 @@ class PortChnlTest(ORCATest):
             },
         ]
 
-        response = self.put_req("device_interface_list", itf_request_body)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
+        self.assert_with_timeout_retry(
+            lambda path, payload: self.put_req(path, payload),
+            self.assertEqual,
+            "device_interface_list",
+            itf_request_body,
+            status=status.HTTP_200_OK,
+        )
 
         ## Members of a port channel members should have same speed.
         request_body = [
@@ -122,21 +125,33 @@ class PortChnlTest(ORCATest):
             {"mgt_ip": device_ip, "name": ether_4, "speed": ""},
         ]
         for req in request_body:
-            response_1 = self.get_req(
+            response_1 = self.assert_with_timeout_retry(
+                lambda path, payload: self.get_req(path, payload),
+                self.assertEqual,
                 "device_interface_list",
-                {"mgt_ip": device_ip, "intfc_name": req["name"]},
+                {"mgt_ip": device_ip, "name": req["name"]},
+                status=status.HTTP_200_OK,
             )
-            speed_1 = response_1.json()["speed"]
-            req["speed"]=self.get_common_speed_to_set(speed_1)
-            
-            response = self.put_req("device_interface_list", req)
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            response = self.get_req(
-                "device_interface_list", {"mgt_ip": req.get("mgt_ip"), "intfc_name": req.get("name")}
-            )
-            self.assertEqual(response.json()["speed"], req["speed"])
-        
 
+            speed_1 = response_1.json()["speed"]
+            req["speed"] = self.get_common_speed_to_set(speed_1)
+
+            self.assert_with_timeout_retry(
+                lambda path, payload: self.put_req(path, payload),
+                self.assertEqual,
+                "device_interface_list",
+                req,
+                status=status.HTTP_200_OK,
+            )
+
+            self.assert_with_timeout_retry(
+                lambda path, payload: self.get_req(path, payload),
+                self.assertEqual,
+                "device_interface_list",
+                req,
+                status=status.HTTP_200_OK,
+                speed=req["speed"],
+            )
 
         request_body = [
             {
@@ -178,19 +193,17 @@ class PortChnlTest(ORCATest):
             {"mgt_ip": device_ip, "lag_name": "PortChannel101"},
             {"mgt_ip": device_ip, "lag_name": "PortChannel102"},
         ]
-        
-        ## If any member portchannel is member of vlan it wont be added to portchannel 
+
+        ## If any member portchannel is member of vlan it wont be added to portchannel
         ## So better delete All VLANs first.
-        response = self.del_req(
-            "vlan_config", {"mgt_ip": device_ip}
-        )
+        response = self.del_req("vlan_config", {"mgt_ip": device_ip})
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
                 "resource not found" in res.lower() for res in response.json()["result"]
             )
         )
-        
+
         self.perform_del_port_chnl(request_body_2)
         self.perform_add_port_chnl(request_body)
         self.perform_del_port_chnl(request_body)

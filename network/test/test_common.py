@@ -1,9 +1,12 @@
 """
 Test utility functions
 """
+
+import time
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
+from orca_nw_lib.gnmi_sub import gnmi_unsubscribe_for_all_devices_in_db
 
 
 class ORCATest(APITestCase):
@@ -17,13 +20,13 @@ class ORCATest(APITestCase):
     def setUp(self):
         response = self.get_req("device")
         if not response.data:
-            response = self.put_req("discover", {"discover_from_config":True})
+            response = self.put_req("discover", {"discover_from_config": True})
             if not response or response.get("result") == "Fail":
                 self.fail("Failed to discover devices")
-        
+
         response = self.get_req("device")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        
+
         for device in response.json():
             self.device_ips.append(device["mgt_ip"])
 
@@ -35,11 +38,27 @@ class ORCATest(APITestCase):
             if not intfs or not isinstance(intfs, list):
                 return
             while len(self.ether_names) < 5:
-                if (
-                    (ifc := intfs.pop())
-                    and ifc["name"].startswith("Ethernet")
-                ):
+                if (ifc := intfs.pop()) and ifc["name"].startswith("Ethernet"):
                     self.ether_names.append(ifc["name"])
+                    
+        # Resync the interfaces, because may be their state has been modified when ORCA was not up,
+        # or state wasn't updated in DB due to cancelling the test case prematurly because of debugging.
+        # Which may cause the test case to fail if , for example while changing the enable state of an interface,
+        # Test case might read DB first, to see the current value of enable state and apply opposite value.
+        # But if the enable state wasn't correct in DB it might lead to setting the same enable state again. 
+        # In this case subscription response will not be generated .
+        # Hence resulting in test failure.
+        for ip in self.device_ips:
+            for if_name in self.ether_names:
+                response1 = self.post_req(
+                    "interface_resync", {"mgt_ip": ip, "name": if_name}
+                )
+                self.assertEqual(response1.status_code, status.HTTP_200_OK)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        super().tearDownClass()
+        gnmi_unsubscribe_for_all_devices_in_db()
 
     def perform_del_port_chnl(self, request_body):
         """
@@ -65,9 +84,7 @@ class ORCATest(APITestCase):
         for data in (
             request_body
             if isinstance(request_body, list)
-            else [request_body]
-            if request_body
-            else []
+            else [request_body] if request_body else []
         ):
             response = self.get_req("device_port_chnl", data)
             if data.get("members"):
@@ -94,9 +111,7 @@ class ORCATest(APITestCase):
         for data in (
             request_body
             if isinstance(request_body, list)
-            else [request_body]
-            if request_body
-            else []
+            else [request_body] if request_body else []
         ):
             device_ip = data.get("mgt_ip")
 
@@ -199,6 +214,13 @@ class ORCATest(APITestCase):
             req_json,
             format="json",
         )
+        
+    def post_req(self, url_name: str, req_json):
+        return self.client.post(
+            reverse(url_name),
+            req_json,
+            format="json",
+        )
 
     def get_speed_to_set(self, speed):
         """
@@ -225,24 +247,76 @@ class ORCATest(APITestCase):
             speed_to_set = "SPEED_25GB"
         return speed_to_set
 
-
     def get_common_speed_to_set(self, speed):
-            """
-            Get the speed to set based on the given speed.
+        """
+        Get the speed to set based on the given speed.
 
-            Args:
-                speed (str): The current speed.
+        Args:
+            speed (str): The current speed.
 
-            Returns:
-                str: The speed to set.
+        Returns:
+            str: The speed to set.
 
-            Raises:
-                None
-            """
-            if speed in ["SPEED_40GB", "SPEED_100GB"]:
-                speed_to_set = "SPEED_40GB"
-            elif speed in ["SPEED_10GB", "SPEED_25GB"]:
-                speed_to_set = "SPEED_10GB"
-            else:
-                speed_to_set = "SPEED_10GB"
-            return speed_to_set
+        Raises:
+            None
+        """
+        if speed in ["SPEED_40GB", "SPEED_100GB"]:
+            speed_to_set = "SPEED_40GB"
+        elif speed in ["SPEED_10GB", "SPEED_25GB"]:
+            speed_to_set = "SPEED_10GB"
+        else:
+            speed_to_set = "SPEED_10GB"
+        return speed_to_set
+
+    def send_req_and_assert(self, req_func, assert_func, *req_args, **assert_args):
+        response = req_func(*req_args)
+        for key, value in assert_args.items():
+            print(f"Asserting against key: {key}, value: {value}")
+            if key == "status":
+                print(f"Received {key} code: {response.status_code}")
+                if isinstance(value, list):
+                    ## Need to check multiple status codes
+                    self.assertTrue(
+                        response.status_code in value,
+                    )
+                else:
+                    assert_func(response.status_code, value)
+                continue
+            if response.status_code not in [status.HTTP_200_OK, status.HTTP_204_NO_CONTENT, status.HTTP_201_CREATED]:
+                print(response.data)
+            if response.status_code == status.HTTP_200_OK:
+                print(f"Received {key} value: {response.json()[key]}")
+                assert_func(response.json()[key], value)
+        return response
+
+    def assert_with_timeout_retry(
+        self, req_func, assert_func, *req_args, **assert_args
+    ):
+        """
+        Executes a given function with a timeout and retries in case of failure.
+        Usefull when executing a function that spawns a multiple athreads. Following can be the scenarios:
+        Case-1 :
+            While making update requests. Device might be subscribed but haven't received the sync_response:true message.
+            before receiving this message it will be ready to receive any subscription responses for any config done via any put, post, delete, patch requests.
+        Case-2 :
+            While making get requests for the config verification done previously, there can be delay in receiving the subscription response from the device.
+
+        Args:
+            req_func (Callable): The function to make the request to orca.
+            assert_func (Callable): The function to assert the response returned by req_func.
+            *req_args: The arguments to pass to req_func. t.e. req url and payload.
+            **assert_args: The arguments to pass to assert_func. t.e. assert status code and response.
+        """
+        timeout = 2
+        retries = 10
+        for _ in range(retries):
+            try:
+                return self.send_req_and_assert(
+                    req_func, assert_func, *req_args, **assert_args
+                )
+            except AssertionError:
+                print(f"Assertion failed for request args: {req_args}, and assert args: {assert_args}")
+                print(f"Retrying in {timeout} seconds")
+                time.sleep(timeout)
+                continue
+        return self.send_req_and_assert(req_func, assert_func, *req_args, **assert_args)

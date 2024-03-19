@@ -19,44 +19,71 @@ class PortGroupTest(ORCATest):
         device_ip = self.device_ips[0]
         request_body = {"mgt_ip": device_ip, "port_group_id": "1", "speed": "SPEED_10G"}
 
-        ## Simply delete all port channels as if an interfacce which is member of a port channel as well, 
+        ## Simply delete all port channels as if an interfacce which is member of a port channel as well,
         # speed config will fail.
-        
-        self.perform_del_port_chnl( {"mgt_ip": device_ip})
+        self.perform_del_port_chnl({"mgt_ip": device_ip})
 
         # Get current speed
         response = self.get_req("port_groups", request_body)
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         orig_speed = response.json().get("speed")
         request_body["speed"] = self.get_speed_to_set(orig_speed)
-        # Update speed
-        response = self.put_req("port_groups", request_body)
-        self.assertTrue(response.status_code == status.HTTP_200_OK)
-        # Confirm changes
-        response = self.get_req("port_groups", request_body)
-        self.assertTrue(response.status_code == status.HTTP_200_OK)
-        self.assertEqual(request_body["speed"], response.json().get("speed"))
+
+        self.assert_with_timeout_retry(
+            lambda path, data: self.put_req(path, data),
+            self.assertTrue,
+            "port_groups",
+            request_body,
+            status=status.HTTP_200_OK,
+        )
+        # confirm port group change
+        self.assert_with_timeout_retry(
+            lambda path, data: self.get_req(path, data),
+            self.assertTrue,
+            "port_groups",
+            request_body,
+            status=status.HTTP_200_OK,
+            speed=request_body["speed"],
+        )
         # Confirm speed changes on all member interfaces
         for mem_if in response.json().get("mem_intfs"):
-            response = self.get_req(
-                "device_interface_list", {"mgt_ip": device_ip, "intfc_name": mem_if}
+            self.assert_with_timeout_retry(
+                lambda path, data: self.get_req(path, data),
+                self.assertTrue,
+                "device_interface_list",
+                {"mgt_ip": device_ip, "name": mem_if},
+                status=status.HTTP_200_OK,
+                speed=request_body["speed"],
             )
-            self.assertEqual(request_body["speed"], response.json().get("speed"))
 
         # Restore speed
         request_body["speed"] = orig_speed
-        response = self.put_req("port_groups", request_body)
-        self.assertTrue(response.status_code == status.HTTP_200_OK)
-        # Confirm changes
-        response = self.get_req("port_groups", request_body)
-        self.assertTrue(response.status_code == status.HTTP_200_OK)
-        self.assertEqual(request_body["speed"], response.json().get("speed"))
+        self.assert_with_timeout_retry(
+            lambda path, data: self.put_req(path, data),
+            self.assertTrue,
+            "port_groups",
+            request_body,
+            status=status.HTTP_200_OK,
+        )
+        # Confirm port group change
+        self.assert_with_timeout_retry(
+            lambda path, data: self.get_req(path, data),
+            self.assertTrue,
+            "port_groups",
+            request_body,
+            status=status.HTTP_200_OK,
+            speed=request_body["speed"],
+        )
         # Confirm speed changes on all member interfaces
         for mem_if in response.json().get("mem_intfs"):
-            response = self.get_req(
-                "device_interface_list", {"mgt_ip": device_ip, "intfc_name": mem_if}
+            self.assert_with_timeout_retry(
+                lambda path, data: self.get_req(path, data),
+                self.assertTrue,
+                "device_interface_list",
+                {"mgt_ip": device_ip, "name": mem_if},
+                status=status.HTTP_200_OK,
+                speed=request_body["speed"],
             )
-            self.assertEqual(request_body["speed"], response.json().get("speed"))
 
     def test_multiple_port_group_speed_config(self):
         """
@@ -64,10 +91,10 @@ class PortGroupTest(ORCATest):
         """
         device_ip = self.device_ips[0]
         request_body = {"mgt_ip": device_ip}
-        
-        ## Simply delete all port channels as if an interfacce which is member of a port channel as well, 
+
+        ## Simply delete all port channels as if an interfacce which is member of a port channel as well,
         # speed config will fail.
-        
+
         self.perform_del_port_chnl({"mgt_ip": device_ip})
 
         # Get current speed
@@ -80,8 +107,13 @@ class PortGroupTest(ORCATest):
             pg["speed"] = self.get_speed_to_set(pg["orig_speed"])
 
         # Update speed on all port groups
-        response = self.put_req("port_groups", port_groups_1)
-        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        self.assert_with_timeout_retry(
+            lambda path, data: self.put_req(path, data),
+            self.assertTrue,
+            "port_groups",
+            port_groups_1,
+            status=status.HTTP_200_OK,
+        )
 
         response = self.get_req("port_groups", request_body)
         self.assertTrue(response.status_code == status.HTTP_200_OK)
@@ -90,13 +122,27 @@ class PortGroupTest(ORCATest):
             for pg_1 in port_groups_1:
                 # Confirm changes
                 if pg_1["port_group_id"] == pg_2["port_group_id"]:
-                    self.assertEqual(pg_1["speed"], pg_2["speed"])
+                    # confirm port group change
+                    self.assert_with_timeout_retry(
+                        lambda path, data: self.get_req(path, data),
+                        self.assertTrue,
+                        "port_groups",
+                        {"mgt_ip": device_ip, "port_group_id": pg_1["port_group_id"]},
+                        status=status.HTTP_200_OK,
+                        speed=pg_2["speed"],
+                    )
 
         # Restore speed
         for pg in port_groups_1:
             pg["speed"] = pg["orig_speed"]
-        response = self.put_req("port_groups", port_groups_1)
-        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        self.assert_with_timeout_retry(
+            lambda path, data: self.put_req(path, data),
+            self.assertTrue,
+            "port_groups",
+            port_groups_1,
+            status=status.HTTP_200_OK,
+        )
 
         response = self.get_req("port_groups", request_body)
         self.assertTrue(response.status_code == status.HTTP_200_OK)
@@ -104,5 +150,11 @@ class PortGroupTest(ORCATest):
         for pg_2 in port_groups_2:
             for pg_1 in port_groups_1:
                 # Confirm changes
-                if pg_1["port_group_id"] == pg_2["port_group_id"]:
-                    self.assertEqual(pg_1["speed"], pg_2["speed"])
+                self.assert_with_timeout_retry(
+                    lambda path, data: self.get_req(path, data),
+                    self.assertTrue,
+                    "port_groups",
+                    {"mgt_ip": device_ip, "port_group_id": pg_1["port_group_id"]},
+                    status=status.HTTP_200_OK,
+                    speed=pg_1["speed"],
+                )

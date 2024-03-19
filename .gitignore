@@ -1,8 +1,9 @@
 db.sqlite3
-.vscode
 **/migrations
 *venv
 **/__pycache__
 dist
 *code-workspace
+orca_nw_lib.log
+
 .idea
