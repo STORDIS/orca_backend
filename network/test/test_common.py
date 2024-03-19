@@ -41,8 +41,13 @@ class ORCATest(APITestCase):
                 if (ifc := intfs.pop()) and ifc["name"].startswith("Ethernet"):
                     self.ether_names.append(ifc["name"])
                     
-        ## Resync the interfaces, may be their state has been modified when ORCA was not up,
-        ## or state wasn't updated in DB due to cancelling the test case repmaturly because of debugging.
+        # Resync the interfaces, because may be their state has been modified when ORCA was not up,
+        # or state wasn't updated in DB due to cancelling the test case prematurly because of debugging.
+        # Which may cause the test case to fail if , for example while changing the enable state of an interface,
+        # Test case might read DB first, to see the current value of enable state and apply opposite value.
+        # But if the enable state wasn't correct in DB it might lead to setting the same enable state again. 
+        # In this case subscription response will not be generated .
+        # Hence resulting in test failure.
         for ip in self.device_ips:
             for if_name in self.ether_names:
                 response1 = self.post_req(
@@ -277,6 +282,8 @@ class ORCATest(APITestCase):
                 else:
                     assert_func(response.status_code, value)
                 continue
+            if response.status_code not in [status.HTTP_200_OK, status.HTTP_204_NO_CONTENT, status.HTTP_201_CREATED]:
+                print(response.data)
             if response.status_code == status.HTTP_200_OK:
                 print(f"Received {key} value: {response.json()[key]}")
                 assert_func(response.json()[key], value)

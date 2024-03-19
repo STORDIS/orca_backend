@@ -56,7 +56,7 @@ def device_interfaces_list(request):
             try:
                 config_interface(
                     device_ip=device_ip,
-                    intfc_name=req_data.get("name"),
+                    if_name=req_data.get("name"),
                     enable=(
                         True
                         if str(req_data.get("enabled")).lower() == "true"
