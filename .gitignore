@@ -1,5 +1,4 @@
 db.sqlite3
-.vscode
 **/migrations
 *venv
 **/__pycache__
