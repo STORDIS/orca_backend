@@ -12,6 +12,7 @@ from orca_nw_lib.vlan import (
 )
 from orca_nw_lib.common import VlanTagMode
 
+from log_manager.decorators import log_request
 from network.util import (
     add_msg_to_list,
     get_failure_msg,
@@ -20,6 +21,7 @@ from network.util import (
 
 
 @api_view(["GET", "PUT", "DELETE"])
+@log_request
 def vlan_config(request):
     """
     Generates the function comment for the given function body.
@@ -127,6 +129,7 @@ def vlan_config(request):
 
 
 @api_view(["DELETE"])
+@log_request
 def vlan_mem_config(request):
     """
     Deletes VLAN membership configuration.

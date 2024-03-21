@@ -1,0 +1,51 @@
+import datetime
+import json
+import time
+from functools import wraps
+
+from log_manager.serializers import LogSerializer
+
+
+def log_request(function):
+    @wraps(function)
+    def _wrapper(request, *args, **kwargs):
+        start = time.time()
+        response = function(request, *args, **kwargs)
+        data = {
+            "timestamp": str(datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")),
+            "processing_time": time.time() - start,
+            "status_code": response.status_code
+        }
+        if response.status_code >= 400:
+            data["status"] = "failed"
+        else:
+            data["status"] = "success"
+        response_data = response.data
+        if (result := response_data.get("result")) is None:
+            responses = create_request_response_data(request_data=request.data, response_data=response_data)
+        else:
+            responses = create_request_response_data(request_data=request.data, response_data=result)
+        for i in responses:
+            serializer = LogSerializer(data={**data, **i, "http_method": request.method})
+            if serializer.is_valid():
+                serializer.save()
+        return response
+
+    return _wrapper
+
+
+def create_request_response_data(request_data, response_data):
+    response_data = [i for i in response_data if i != "\n" and i]
+    if isinstance(response_data, list):
+        if isinstance(request_data, list) and len(response_data) == len(request_data):
+            return [
+                {"response": response_data[i], "request_json": request_data[i]} for i in range(len(response_data))
+            ]
+        else:
+            return [
+                {"response": response_data[i], "request_json": request_data} for i in range(len(response_data))
+            ]
+    else:
+        return [
+            {"response": response_data, "request_json": request_data}
+        ]

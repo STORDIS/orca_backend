@@ -11,10 +11,12 @@ from orca_nw_lib.port_chnl import (
     del_port_chnl_mem,
 )
 
+from log_manager.decorators import log_request
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg
 
 
 @api_view(["GET", "PUT", "DELETE"])
+@log_request
 def device_port_chnl_list(request):
     """
     Handles the device port channel list API.

@@ -5,12 +5,15 @@ from rest_framework.decorators import api_view
 from orca_nw_lib.device import get_device_details
 from orca_nw_lib.discovery import discover_device
 
+from log_manager.decorators import log_request
+
 
 @api_view(
     [
         "DELETE",
     ]
 )
+@log_request
 def delete_db(request):
     """
     A function that deletes the database.
@@ -38,6 +41,7 @@ def delete_db(request):
         "PUT",
     ]
 )
+@log_request
 def discover(request):
     """
     This function is an API view that handles the HTTP PUT request for the 'discover' endpoint.
@@ -74,6 +78,7 @@ def discover(request):
         "GET",
     ]
 )
+@log_request
 def device_list(request):
     """
     A view function that handles the GET request for the device_list endpoint.
