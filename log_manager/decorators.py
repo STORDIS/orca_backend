@@ -1,5 +1,4 @@
 import datetime
-import json
 import time
 from functools import wraps
 
@@ -24,10 +23,10 @@ def log_request(function):
         else:
             data["status"] = "success"
         response_data = response.data
-        if (result := response_data.get("result")) is None:
-            responses = create_request_response_data(request_data=request.data, response_data=response_data)
+        if "result" in response_data:
+            responses = create_request_response_data(request_data=request.data, response_data=response_data["result"])
         else:
-            responses = create_request_response_data(request_data=request.data, response_data=result)
+            responses = create_request_response_data(request_data=request.data, response_data=response_data)
         for i in responses:
             serializer = LogSerializer(data={**data, **i, "http_method": request.method})
             if serializer.is_valid():
