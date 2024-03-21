@@ -31,6 +31,9 @@ class LogSerializer(serializers.ModelSerializer):
         return self
 
     def _read_adjust_rows_length(self):
+        """
+        function to delete first row if greater than 1000
+        """
         items = Logs.objects.all()
         if items.count() > 1000:
             items.first().delete()  # deleting first row

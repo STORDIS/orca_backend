@@ -2,6 +2,9 @@ from django.db import models
 
 
 class Logs(models.Model):
+    """
+    Model to create log data base
+    """
     timestamp = models.CharField(max_length=64)
     request_json = models.JSONField()
     status = models.CharField(max_length=32)
