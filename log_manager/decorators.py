@@ -7,6 +7,9 @@ from log_manager.serializers import LogSerializer
 
 
 def log_request(function):
+    """
+    Decorator function to add data.
+    """
     @wraps(function)
     def _wrapper(request, *args, **kwargs):
         start = time.time()
@@ -35,8 +38,8 @@ def log_request(function):
 
 
 def create_request_response_data(request_data, response_data):
-    response_data = [i for i in response_data if i != "\n" and i]
     if isinstance(response_data, list):
+        response_data = [i for i in response_data if i != "\n" and i]
         if isinstance(request_data, list) and len(response_data) == len(request_data):
             return [
                 {"response": response_data[i], "request_json": request_data[i]} for i in range(len(response_data))
