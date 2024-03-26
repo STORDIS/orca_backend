@@ -11,28 +11,28 @@ def log_request(function):
     """
     @wraps(function)
     def _wrapper(request, *args, **kwargs):
-        start = time.time()
-        response = function(request, *args, **kwargs)
-        data = {
-            "timestamp": str(datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")),
-            "processing_time": time.time() - start,
-            "status_code": response.status_code
-        }
-        if response.status_code >= 400:
-            data["status"] = "failed"
-        else:
-            data["status"] = "success"
-        response_data = response.data
-        if "result" in response_data:
-            responses = create_request_response_data(request_data=request.data, response_data=response_data["result"])
-        else:
-            responses = create_request_response_data(request_data=request.data, response_data=response_data)
-        for i in responses:
-            serializer = LogSerializer(data={**data, **i, "http_method": request.method})
-            if serializer.is_valid():
-                serializer.save()
-        return response
-
+        if request.method != "GET":
+            start = time.time()
+            response = function(request, *args, **kwargs)
+            data = {
+                "timestamp": str(datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")),
+                "processing_time": time.time() - start,
+                "status_code": response.status_code
+            }
+            if response.status_code >= 400:
+                data["status"] = "failed"
+            else:
+                data["status"] = "success"
+            response_data = response.data
+            if "result" in response_data:
+                responses = create_request_response_data(request_data=request.data, response_data=response_data["result"])
+            else:
+                responses = create_request_response_data(request_data=request.data, response_data=response_data)
+            for i in responses:
+                serializer = LogSerializer(data={**data, **i, "http_method": request.method})
+                if serializer.is_valid():
+                    serializer.save()
+            return response
     return _wrapper
 
 
