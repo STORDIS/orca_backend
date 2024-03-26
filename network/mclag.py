@@ -14,6 +14,7 @@ from orca_nw_lib.mclag import (
     del_mclag_member,
 )
 
+from log_manager.decorators import log_request
 from network.util import (
     add_msg_to_list,
     get_failure_msg,
@@ -22,6 +23,7 @@ from network.util import (
 
 
 @api_view(["GET", "PUT", "DELETE"])
+@log_request
 def device_mclag_list(request):
     """
     Retrieves a list of device MCLAGs.
@@ -143,6 +145,7 @@ def device_mclag_list(request):
 
 
 @api_view(["GET", "PUT", "DELETE"])
+@log_request
 def mclag_gateway_mac(request):
     """
     Retrieves or configures the MCLAG gateway MAC address.

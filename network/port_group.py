@@ -9,6 +9,7 @@ from orca_nw_lib.portgroup import (
     set_port_group_speed,
 )
 
+from log_manager.decorators import log_request
 from network.util import (
     add_msg_to_list,
     get_failure_msg,
@@ -17,6 +18,7 @@ from network.util import (
 
 
 @api_view(["GET", "PUT"])
+@log_request
 def port_groups(request):
     """
     This function handles the API view for listing and updating port groups.
@@ -87,6 +89,7 @@ def port_groups(request):
         "GET",
     ]
 )
+@log_request
 def port_group_members(request):
     """
     This function handles the API view for listing port group members.
