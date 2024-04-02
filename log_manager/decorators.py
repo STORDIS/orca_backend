@@ -33,6 +33,8 @@ def log_request(function):
                 if serializer.is_valid():
                     serializer.save()
             return response
+        else:
+            return function(request, *args, **kwargs)
     return _wrapper
 
 
