@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class AuthenticationConfig(AppConfig):
+class LogManagerConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "authentication"
+    name = "log_manager"

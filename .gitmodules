@@ -1,0 +1,3 @@
+[submodule "orcask/model"]
+	path = orcask/model
+	url = https://github.com/STORDIS/ORCASK.git

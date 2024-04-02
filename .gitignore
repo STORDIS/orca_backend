@@ -7,3 +7,4 @@ dist
 orca_nw_lib.log
 
 .idea
+!log_manager/migrations/__init__.py

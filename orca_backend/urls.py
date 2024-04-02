@@ -23,4 +23,7 @@ urlpatterns = [
     path("", include("network.urls")),
     path("admin/", admin.site.urls),
     path("auth/", include("authentication.urls")),
+    path("logs/", include("log_manager.urls")),
+    path("orcask/", include("orcask.urls"))
 ]
+
