@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'authentication',
     'rest_framework.authtoken',
     'log_manager',
+    'orcask'
 ]
 
 MIDDLEWARE = [
