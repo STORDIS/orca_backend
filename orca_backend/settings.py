@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'network',
     'authentication',
     'rest_framework.authtoken',
+    'log_manager'
 ]
 
 MIDDLEWARE = [

@@ -1,5 +1,5 @@
 db.sqlite3
-**/migrations
+**/migrations/*
 *venv
 **/__pycache__
 dist
@@ -7,3 +7,5 @@ dist
 orca_nw_lib.log
 
 .idea
+!log_manager/migrations/__init__.py
+orca.log
