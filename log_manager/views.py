@@ -35,3 +35,24 @@ def get_logs(request: Request, **kwargs):
         print(str(e))
         print(traceback.format_exc())
         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['delete'])
+def delete_logs(request: Request, **kwargs):
+    """
+    function to delete all logs
+
+    Parameters:
+    - request: The Django request object.
+
+    Returns:
+    - If successful, returns a JSON response with logs list and 200 ok status.
+    - If fails returns a JSON response with 500 status.
+    """
+    try:
+        Logs.objects.all().delete()
+        return Response({"message": "deleted successfully."}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(str(e))
+        print(traceback.format_exc())
+        return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
