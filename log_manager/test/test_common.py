@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from rest_framework.test import APITestCase, APIRequestFactory
 from log_manager.models import Logs
 
+
 class TestCommon(APITestCase):
     user = None
     tkn = ""

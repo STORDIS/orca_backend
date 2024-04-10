@@ -20,6 +20,7 @@ class TestAddLogs(TestCommon):
             "response": {
                 "key": "value"
             },
+            "http_method": "POST",
             "status_code": 200
         }
         serializer = LogSerializer(data=data)
@@ -39,6 +40,7 @@ class TestAddLogs(TestCommon):
             "response": {
                 "key": "value"
             },
+            "http_method": "POST",
             "status_code": 200
         }
         serializer = LogSerializer(data=data)
@@ -50,6 +52,7 @@ class TestAddLogs(TestCommon):
         assert logs_1.status == "processing"
         data["status"] = "failure"
         data["processing_time"] = 10
+        data["timestamp"] = "timestamp_1"
         serializer = LogSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
@@ -59,6 +62,7 @@ class TestAddLogs(TestCommon):
         assert logs_2.processing_time == '10'
         data["status"] = "success"
         data["processing_time"] = '15'
+        data["timestamp"] = "timestamp_2"
         serializer = LogSerializer(data=data)
         if serializer.is_valid():
             serializer.save()

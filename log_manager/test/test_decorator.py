@@ -9,7 +9,7 @@ from log_manager.decorators import log_request
 from log_manager.test.test_common import TestCommon
 
 
-@api_view(["GET"])
+@api_view(["POST"])
 @permission_classes([permissions.AllowAny])
 @log_request
 def stub1(request):
@@ -26,7 +26,7 @@ def stub2(request):
 class TestDecorator(TestCommon):
 
     def test_decorator_1(self):
-        self.request = self.factory.get("/stub/path", format="json")
+        self.request = self.factory.post("/stub/path", format="json")
         response = stub1(self.request)
         assert response.status_code == 200
         get_response = self.client.get(
@@ -66,3 +66,14 @@ class TestDecorator(TestCommon):
             assert i["response"] in ["test_1", "test_2", "test_3"]
             assert i["request_json"] in [{'key_1': "value_1"}, {'key_2': "value_2"}, {'key_3': "value_3"}]
 
+    def test_decorator_ignore_get_request(self):
+        self.request = self.factory.get("/stub/path", format="json")
+        response = stub2(self.request)
+        assert response.status_code == 200
+        get_response = self.client.get(
+            path="/logs/all/1",
+            HTTP_AUTHORIZATION=self.tkn
+        )
+        print(get_response.data)
+        assert get_response.status_code == 200
+        assert len(get_response.data) == 0

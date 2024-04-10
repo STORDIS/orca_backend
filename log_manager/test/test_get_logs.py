@@ -16,13 +16,14 @@ class TestGetLogs(TestCommon):
             "response": {
                 "key": "value"
             },
+            "http_method": "POST",
             "status_code": 200
         }
         serializer = LogSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
         response = self.client.get(
-            "/logs/1?size=1000",
+            "/logs/all/1?size=1000",
             HTTP_AUTHORIZATION=self.tkn
         )
         assert any([i["timestamp"] == "timestamp" for i in response.json()])
@@ -40,13 +41,14 @@ class TestGetLogs(TestCommon):
                     "response": {
                         "key": "value"
                     },
+                    "http_method": "POST",
                     "status_code": 200
                 }
             )
             if serializer.is_valid():
                 serializer.save()
         response = self.client.get(
-            f"/logs/1?size=5",
+            f"/logs/all/1?size=5",
             HTTP_AUTHORIZATION=self.tkn
         )
         response_json = response.json()
