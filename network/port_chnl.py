@@ -83,6 +83,10 @@ def device_port_chnl_list(request):
                     admin_status=req_data.get("admin_sts"),
                     mtu=int(req_data.get("mtu")) if "mtu" in req_data else None,
                 )
+                req_copy = req_data.copy()
+                req_copy.pop("members", None)
+                add_msg_to_list(result, get_success_msg(request, req_copy))
+
                 if members := req_data.get("members"):
                     add_port_chnl_mem(
                         device_ip,
