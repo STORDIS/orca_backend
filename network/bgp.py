@@ -12,6 +12,7 @@ from orca_nw_lib.bgp import (
     del_all_bgp_neighbors,
 )
 
+from log_manager.decorators import log_request
 from network.util import (
     add_msg_to_list,
     get_failure_msg,
@@ -20,6 +21,7 @@ from network.util import (
 
 
 @api_view(["GET", "PUT", "DELETE"])
+@log_request
 def device_bgp_global(request):
     """
     A view function that handles GET, PUT, and DELETE requests for device BGP global settings.
@@ -123,6 +125,7 @@ def device_bgp_global(request):
 
 
 @api_view(["GET", "PUT", "DELETE"])
+@log_request
 def bgp_nbr_config(request):
     """
     A view function that handles GET, PUT, and DELETE requests for BGP neighbor configuration.

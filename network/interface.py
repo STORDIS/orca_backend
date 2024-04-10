@@ -5,10 +5,13 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from orca_nw_lib.interface import get_interface, config_interface, get_pg_of_if,discover_interfaces
 from orca_nw_lib.common import Speed, PortFec
+
+from log_manager.decorators import log_request
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg
 
 
 @api_view(["GET", "PUT"])
+@log_request
 def device_interfaces_list(request):
     """
     This function handles the API view for listing and updating device interfaces.
@@ -112,6 +115,7 @@ def interface_pg(request):
     return Response({}, status.HTTP_204_NO_CONTENT)
 
 @api_view(["POST"])
+@log_request
 def interface_resync(request):
     result = []
     http_status = True
