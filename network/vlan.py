@@ -72,13 +72,13 @@ def vlan_config(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             vlanid = req_data.get("vlanid", "")
-            if not vlan_name:
+            if not vlanid:
                 return Response(
                     {"status": "Required field device vlanid not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             try:
-                config_vlan(device_ip, vlan_name, vlanid)
+                config_vlan(device_ip, vlan_name, vlanid,mtu=req_data.get("mtu", ""))
                 add_msg_to_list(result, get_success_msg(request, req_data))
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request, req_data))

@@ -7,6 +7,7 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
 from orca_nw_lib.gnmi_sub import gnmi_unsubscribe_for_all_devices_in_db
+from django.contrib.auth.models import User
 
 
 class ORCATest(APITestCase):
@@ -18,6 +19,10 @@ class ORCATest(APITestCase):
     ether_names = []
 
     def setUp(self):
+        ## Autheticate the user
+        user = User.objects.create_user(username='testuser', password='testpassword')
+        self.client.force_authenticate(user)
+        
         response = self.get_req("device")
         if not response.data:
             response = self.put_req("discover", {"discover_from_config": True})

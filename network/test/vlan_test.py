@@ -40,7 +40,7 @@ class VlanTestCase(ORCATest):
 
         response = self.put_req(
             "vlan_config",
-            {"mgt_ip": device_ip, "name": self.vlan_name, "vlanid": self.vlan_id},
+            {"mgt_ip": device_ip, "name": self.vlan_name, "vlanid": self.vlan_id,"mtu": 9000},
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -49,6 +49,7 @@ class VlanTestCase(ORCATest):
         )
         self.assertEqual(response.json()["name"], self.vlan_name)
         self.assertEqual(response.json()["vlanid"], self.vlan_id)
+        self.assertEqual(response.json()["mtu"], 9000)
 
         response = self.del_req(
             "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
@@ -133,9 +134,7 @@ class VlanTestCase(ORCATest):
         self.assertEqual(response.json()["members"][ether_2], "untagged")
 
         # Delete VLAN members.
-        response = self.del_req(
-            "vlan_mem_delete", request_body
-        )
+        response = self.del_req("vlan_mem_delete", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Confirm deletion of VLAN members.
         response = self.get_req(
@@ -143,7 +142,7 @@ class VlanTestCase(ORCATest):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.json()["members"])
-        
+
         ## Delete VLAN
         response = self.del_req(
             "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
