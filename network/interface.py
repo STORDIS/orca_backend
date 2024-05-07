@@ -3,14 +3,20 @@
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
-from orca_nw_lib.interface import get_interface, config_interface, get_pg_of_if,discover_interfaces
-from orca_nw_lib.common import Speed, PortFec
+from orca_nw_lib.interface import (
+    get_interface,
+    config_interface,
+    get_pg_of_if,
+    discover_interfaces,
+    remove_vlan,
+)
+from orca_nw_lib.common import Speed, PortFec, IFMode
 
 from log_manager.decorators import log_request
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg
 
 
-@api_view(["GET", "PUT"])
+@api_view(["GET", "PUT", "DELETE"])
 @log_request
 def device_interfaces_list(request):
     """
@@ -79,6 +85,39 @@ def device_interfaces_list(request):
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request, req_data))
                 http_status = http_status and False
+    elif request.method == "DELETE":
+        req_data_list = (
+            request.data if isinstance(request.data, list) else [request.data]
+        )
+        for req_data in req_data_list:
+            device_ip = req_data.get("mgt_ip", "")
+            if not device_ip:
+                return Response(
+                    {"status": "Required field device mgt_ip not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if not req_data.get("name"):
+                return Response(
+                    {"status": "Required field name not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if not req_data.get("if_mode"):
+                return Response(
+                    {"status": "Required field if_mode not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                remove_vlan(
+                    device_ip=device_ip,
+                    intfc_name=req_data.get("name"),
+                    if_mode=IFMode.get_enum_from_str(req_data.get("if_mode")),
+                )
+                add_msg_to_list(result, get_success_msg(request, req_data))
+                http_status = http_status and True
+            except Exception as err:
+                add_msg_to_list(result, get_failure_msg(err, request, req_data))
+                http_status = http_status and False
 
     return Response(
         {"result": result},
@@ -113,6 +152,7 @@ def interface_pg(request):
             else Response({}, status.HTTP_204_NO_CONTENT)
         )
     return Response({}, status.HTTP_204_NO_CONTENT)
+
 
 @api_view(["POST"])
 @log_request

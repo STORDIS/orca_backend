@@ -1,6 +1,7 @@
 {
     "python.testing.pytestArgs": [
-        "network/test"
+        "network/test",
+        "ORCASK/test"
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true
