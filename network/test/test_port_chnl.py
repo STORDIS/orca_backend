@@ -4,10 +4,10 @@ This module contains tests for the Interface API.
 
 from rest_framework import status
 
-from network.test.test_common import ORCATest
+from network.test.test_common import TestORCA
 
 
-class PortChnlTest(ORCATest):
+class TestPortChnl(TestORCA):
     """
     This class contains tests for the Port Channel API.
     """
@@ -194,16 +194,29 @@ class PortChnlTest(ORCATest):
             {"mgt_ip": device_ip, "lag_name": "PortChannel102"},
         ]
 
-        ## If any member portchannel is member of vlan it wont be added to portchannel
-        ## So better delete All VLANs first.
-        response = self.del_req("vlan_config", {"mgt_ip": device_ip})
+        ## If any portchannel member interface is also a member of vlan it wont be added to portchannel
+        ## So better remove all vlans from Interfaces first.
+        for req in request_body:
+            for mem in req["members"]:
+                response = self.del_req(
+                    "device_interface_list", {"mgt_ip": device_ip, "name": mem}
+                )
+                self.assertTrue(
+                    response.status_code == status.HTTP_200_OK
+                    or any(
+                        "resource not found" in res.lower()
+                        for res in response.json()["result"]
+                    )
+                )
+        ## Delete MCLAG if exists, because if the port channel being deleted in the next steps is being used in MCLAG, 
+        # deletion will fail.
+        response = self.del_req("device_mclag_list", request_body)
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
                 "resource not found" in res.lower() for res in response.json()["result"]
             )
         )
-
         self.perform_del_port_chnl(request_body_2)
         self.perform_add_port_chnl(request_body)
         self.perform_del_port_chnl(request_body)

@@ -3,10 +3,10 @@ This module contains tests for the Interface API.
 """
 
 from rest_framework import status
-from network.test.test_common import ORCATest
+from network.test.test_common import TestORCA
 
 
-class MclagTest(ORCATest):
+class TestMclag(TestORCA):
     """
     This class contains tests for the Mclag API.
     """

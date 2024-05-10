@@ -10,7 +10,7 @@ from orca_nw_lib.gnmi_sub import gnmi_unsubscribe_for_all_devices_in_db
 from django.contrib.auth.models import User
 
 
-class ORCATest(APITestCase):
+class TestORCA(APITestCase):
     """
     Test utility functions
     """
@@ -20,9 +20,9 @@ class ORCATest(APITestCase):
 
     def setUp(self):
         ## Autheticate the user
-        user = User.objects.create_user(username='testuser', password='testpassword')
+        user = User.objects.create_user(username="testuser", password="testpassword")
         self.client.force_authenticate(user)
-        
+
         response = self.get_req("device")
         if not response.data:
             response = self.put_req("discover", {"discover_from_config": True})
@@ -45,12 +45,12 @@ class ORCATest(APITestCase):
             while len(self.ether_names) < 5:
                 if (ifc := intfs.pop()) and ifc["name"].startswith("Ethernet"):
                     self.ether_names.append(ifc["name"])
-                    
+
         # Resync the interfaces, because may be their state has been modified when ORCA was not up,
         # or state wasn't updated in DB due to cancelling the test case prematurly because of debugging.
         # Which may cause the test case to fail if , for example while changing the enable state of an interface,
         # Test case might read DB first, to see the current value of enable state and apply opposite value.
-        # But if the enable state wasn't correct in DB it might lead to setting the same enable state again. 
+        # But if the enable state wasn't correct in DB it might lead to setting the same enable state again.
         # In this case subscription response will not be generated .
         # Hence resulting in test failure.
         for ip in self.device_ips:
@@ -138,8 +138,8 @@ class ORCATest(APITestCase):
                 response.json()["mtu"] == data["mtu"] if data.get("mtu") else True
             )
             self.assertTrue(
-                response.json()["admin_sts"] == data.get("admin_sts")
-                if data.get("admin_sts")
+                response.json()["admin_sts"] == data.get("admin_status")
+                if data.get("admin_status")
                 else True
             )
 
@@ -219,7 +219,7 @@ class ORCATest(APITestCase):
             req_json,
             format="json",
         )
-        
+
     def post_req(self, url_name: str, req_json):
         return self.client.post(
             reverse(url_name),
@@ -287,7 +287,11 @@ class ORCATest(APITestCase):
                 else:
                     assert_func(response.status_code, value)
                 continue
-            if response.status_code not in [status.HTTP_200_OK, status.HTTP_204_NO_CONTENT, status.HTTP_201_CREATED]:
+            if response.status_code not in [
+                status.HTTP_200_OK,
+                status.HTTP_204_NO_CONTENT,
+                status.HTTP_201_CREATED,
+            ]:
                 print(response.data)
             if response.status_code == status.HTTP_200_OK:
                 print(f"Received {key} value: {response.json()[key]}")
@@ -299,7 +303,7 @@ class ORCATest(APITestCase):
     ):
         """
         Executes a given function with a timeout and retries in case of failure.
-        Usefull when executing a function that spawns a multiple athreads. Following can be the scenarios:
+        Usefull when executing a function that spawns a multiple a threads. Following can be the scenarios:
         Case-1 :
             While making update requests. Device might be subscribed but haven't received the sync_response:true message.
             before receiving this message it will be ready to receive any subscription responses for any config done via any put, post, delete, patch requests.
@@ -320,7 +324,9 @@ class ORCATest(APITestCase):
                     req_func, assert_func, *req_args, **assert_args
                 )
             except AssertionError:
-                print(f"Assertion failed for request args: {req_args}, and assert args: {assert_args}")
+                print(
+                    f"Assertion failed for request args: {req_args}, and assert args: {assert_args}"
+                )
                 print(f"Retrying in {timeout} seconds")
                 time.sleep(timeout)
                 continue

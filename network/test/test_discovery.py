@@ -1,9 +1,9 @@
 from rest_framework import status
 
-from network.test.test_common import ORCATest
+from network.test.test_common import TestORCA
 
 
-class DiscoverTest(ORCATest):
+class TestDiscovery(TestORCA):
     """
     This class contains tests for the BGP API.
     """

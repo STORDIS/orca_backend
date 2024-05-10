@@ -102,16 +102,11 @@ def device_interfaces_list(request):
                     {"status": "Required field name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            if not req_data.get("if_mode"):
-                return Response(
-                    {"status": "Required field if_mode not found."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
             try:
                 remove_vlan(
                     device_ip=device_ip,
                     intfc_name=req_data.get("name"),
-                    if_mode=IFMode.get_enum_from_str(req_data.get("if_mode")),
+                    if_mode= if_mode if (if_mode := IFMode.get_enum_from_str(req_data.get("if_mode"))) else None
                 )
                 add_msg_to_list(result, get_success_msg(request, req_data))
                 http_status = http_status and True

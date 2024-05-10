@@ -3,10 +3,10 @@ This module contains tests for the Interface API.
 """
 
 from rest_framework import status
-from network.test.test_common import ORCATest
+from network.test.test_common import TestORCA
 
 
-class VlanTestCase(ORCATest):
+class TestVlan(TestORCA):
     """
     Test the VLAN API.
     """
@@ -22,7 +22,7 @@ class VlanTestCase(ORCATest):
         """
         device_ip = self.device_ips[0]
 
-        response = self.del_req("remove", {"mgt_ip": device_ip, "name": self.vlan_name})
+        response = self.del_req("vlan_ip_remove", {"mgt_ip": device_ip, "name": self.vlan_name})
         response = self.del_req(
             "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
         )

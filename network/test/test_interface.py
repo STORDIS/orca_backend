@@ -3,10 +3,10 @@ This module contains tests for the Interface API.
 """
 
 from rest_framework import status
-from network.test.test_common import ORCATest
+from network.test.test_common import TestORCA
 
 
-class InterfaceTest(ORCATest):
+class TestInterface(TestORCA):
     """
     This class contains tests for the Interface API.
     """
@@ -270,13 +270,9 @@ class InterfaceTest(ORCATest):
                 "description": "Sample Description",
             },
         ]
-        self.assert_with_timeout_retry(
-            lambda path, payload: self.put_req(path, payload),
-            self.assertEqual,
-            "device_interface_list",
-            request_body,
-            status=status.HTTP_200_OK,
-        )
+        
+        self.assertTrue(self.put_req("device_interface_list", request_body).status_code == status.HTTP_200_OK)
+        
         self.assert_with_timeout_retry(
             lambda path, payload: self.get_req(path, payload),
             self.assertEqual,
@@ -320,13 +316,7 @@ class InterfaceTest(ORCATest):
             },
         ]
 
-        self.assert_with_timeout_retry(
-            lambda path, payload: self.put_req(path, payload),
-            self.assertEqual,
-            "device_interface_list",
-            request_body,
-            status=status.HTTP_200_OK,
-        )
+        self.assertTrue(self.put_req("device_interface_list", request_body).status_code == status.HTTP_200_OK)
 
         self.assert_with_timeout_retry(
             lambda path, payload: self.get_req(path, payload),

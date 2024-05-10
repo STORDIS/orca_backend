@@ -4,10 +4,10 @@ This module contains tests for the BGP API.
 
 from rest_framework import status
 
-from network.test.test_common import ORCATest
+from network.test.test_common import TestORCA
 
 
-class PortGroupTest(ORCATest):
+class TestPortGroup(TestORCA):
     """
     Test class for the BGP API.
     """
@@ -19,7 +19,17 @@ class PortGroupTest(ORCATest):
         device_ip = self.device_ips[0]
         request_body = {"mgt_ip": device_ip, "port_group_id": "1", "speed": "SPEED_10G"}
 
-        ## Simply delete all port channels as if an interfacce which is member of a port channel as well,
+        ## Delete MCLAG because if the port channel being deleted in the next step is being used in MCLAG, deletion will fail.
+        response = self.del_req("device_mclag_list", {"mgt_ip": device_ip})
+
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "resource not found" in res.lower() for res in response.json()["result"]
+            )
+        )
+
+        ## Simply delete all port channels as if an interface which is member of a port channel as well,
         # speed config will fail.
         self.perform_del_port_chnl({"mgt_ip": device_ip})
 
