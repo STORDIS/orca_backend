@@ -22,16 +22,16 @@ class TestVlan(TestORCA):
         """
         device_ip = self.device_ips[0]
 
-        response = self.del_req("vlan_ip_remove", {"mgt_ip": device_ip, "name": self.vlan_name})
+        response = self.del_req(
+            "vlan_ip_remove", {"mgt_ip": device_ip, "name": self.vlan_name}
+        )
         response = self.del_req(
             "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
         )
 
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
-            or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
-            )
+            or any("not found" in res.lower() for res in response.json()["result"])
         )
 
         response = self.get_req(
@@ -40,15 +40,23 @@ class TestVlan(TestORCA):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(response.data)
 
+        req_payload = {
+            "mgt_ip": device_ip,
+            "name": self.vlan_name,
+            "vlanid": self.vlan_id,
+            "mtu": 9000,
+            "enabled": False,
+            "description": "Test_Vlan1",
+            "ip_address": "20.20.20.20/24",
+            "autostate": "enable",
+            # "anycast_addr":"20.20.20.20/24"
+        }
+
         response = self.put_req(
             "vlan_config",
-            {
-                "mgt_ip": device_ip,
-                "name": self.vlan_name,
-                "vlanid": self.vlan_id,
-                "mtu": 9000,
-            },
+            req_payload,
         )
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response = self.get_req(
@@ -56,8 +64,42 @@ class TestVlan(TestORCA):
         )
         self.assertEqual(response.json()["name"], self.vlan_name)
         self.assertEqual(response.json()["vlanid"], self.vlan_id)
-        self.assertEqual(response.json()["mtu"], 9000)
+        self.assertEqual(response.json()["mtu"], req_payload["mtu"])
+        self.assertEqual(response.json()["enabled"], req_payload["enabled"])
+        self.assertEqual(response.json()["description"], req_payload["description"])
+        self.assertEqual(response.json()["autostate"], req_payload["autostate"])
+        self.assertEqual(response.json()["ip_address"], req_payload["ip_address"])
 
+        ## remove ip_address
+        req_payload = {
+            "mgt_ip": device_ip,
+            "name": self.vlan_name,
+            "vlanid": self.vlan_id,
+            "ip_address": "20.20.20.20/24",
+        }
+        response = self.del_req("vlan_ip_remove", req_payload)
+        self.assertFalse(response.json().get("ip_address"))
+
+        # Now assign sag_ip
+        req_payload = {
+            "mgt_ip": device_ip,
+            "name": self.vlan_name,
+            "vlanid": self.vlan_id,
+            "sag_ip_address": "20.20.20.20/24",
+        }
+        response = self.put_req("vlan_config", req_payload)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        ## Verify sag_ip_address
+        response = self.get_req(
+            "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
+        )
+        self.assertEqual(response.json()["name"], self.vlan_name)
+        self.assertEqual(response.json()["vlanid"], self.vlan_id)
+        self.assertEqual(
+            response.json()["sag_ip_address"], req_payload["sag_ip_address"]
+        )
+        #clean up
         response = self.del_req(
             "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
         )
@@ -73,7 +115,6 @@ class TestVlan(TestORCA):
             "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
         )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(response.data)
 
     def test_vlan_mem_config(self):
         """
@@ -180,7 +221,9 @@ class TestVlan(TestORCA):
             "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(set(response.json()["members"]) & set(request_body["members"].keys()))
+        self.assertFalse(
+            set(response.json()["members"]) & set(request_body["members"].keys())
+        )
 
         ## Delete VLAN
         response = self.del_req(

@@ -31,6 +31,25 @@ class TestPortChnl(TestORCA):
         None
         """
         device_ip = self.device_ips[0]
+        
+        
+        # First delete mclag, if it exists.
+        # port channel deletion will fail if port channel is found to be a member of mclag.
+
+        response = self.del_req("device_mclag_list", {"mgt_ip": device_ip})
+
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "resource not found" in res.lower() for res in response.json()["result"]
+            )
+        )
+        response = self.get_req("device_mclag_list", {"mgt_ip": device_ip})
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
+        
+        
+        
         request_body = [
             {
                 "mgt_ip": device_ip,
@@ -47,24 +66,9 @@ class TestPortChnl(TestORCA):
         ]
 
         ## Better cleanup all port channels first may be there are existing
-        # port channels withe member interfaces which are of interest of this
+        # port channels with member interfaces which are of interest of this
         # test case.
         self.perform_del_port_chnl({"mgt_ip": device_ip})
-
-        # First delete mclag, if it exists.
-        # port channel deletion will fail if port channel is found to be a member of mclag.
-
-        response = self.del_req("device_mclag_list", {"mgt_ip": device_ip})
-
-        self.assertTrue(
-            response.status_code == status.HTTP_200_OK
-            or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
-            )
-        )
-        response = self.get_req("device_mclag_list", {"mgt_ip": device_ip})
-        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
-        self.assertFalse(response.data)
 
         # Now delete port channels
         self.perform_del_add_del_port_chnl(request_body)

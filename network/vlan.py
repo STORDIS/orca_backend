@@ -8,12 +8,11 @@ from orca_nw_lib.vlan import (
     del_vlan,
     config_vlan,
     get_vlan_members,
-    add_vlan_mem,
     del_vlan_mem,
     remove_ip_from_vlan,
     remove_anycast_ip_from_vlan,
 )
-from orca_nw_lib.common import IFMode
+from orca_nw_lib.common import IFMode, VlanAutoState
 
 from log_manager.decorators import log_request
 from network.util import (
@@ -78,30 +77,38 @@ def vlan_config(request):
                     {"status": "Required field device vlanid not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            
-            members={}
-            if mem:=req_data.get("members"):
+
+            members = {}
+            if mem := req_data.get("members"):
                 ## Update members dictionary with tagging mode Enum
                 for mem_if, tagging_mode in mem.items():
                     members[mem_if] = IFMode.get_enum_from_str(tagging_mode)
-            
+
             try:
-                config_vlan(device_ip, vlan_name, vlanid, mtu=req_data.get("mtu", ""),mem_ifs=members)
+                config_vlan(
+                    device_ip,
+                    vlan_name,
+                    vlanid,
+                    enabled=req_data.get("enabled", None),
+                    descr=req_data.get("description", ""),
+                    mtu=req_data.get("mtu", ""),
+                    ip_addr_with_prefix=req_data.get("ip_address", ""),
+                    autostate=(
+                        auto_st
+                        if (
+                            auto_st := VlanAutoState.get_enum_from_str(
+                                req_data.get("autostate")
+                            )
+                        )
+                        else None
+                    ),
+                    anycast_addr=req_data.get("sag_ip_address", ""),
+                    mem_ifs=members,
+                )
                 add_msg_to_list(result, get_success_msg(request, req_data))
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request, req_data))
                 http_status = http_status and False
-
-            # try:
-            #     if members := req_data.get("members"):
-            #         ## Update members dictionary with tagging mode Enum
-            #         for mem_if, tagging_mode in members.items():
-            #             members[mem_if] = IFMode.get_enum_from_str(tagging_mode)
-            #         add_vlan_mem(device_ip, vlanid, members)
-            #         add_msg_to_list(result, get_success_msg(request, req_data))
-            # except Exception as err:
-            #     add_msg_to_list(result, get_failure_msg(err, request, req_data))
-            #     http_status = http_status and False
 
         elif request.method == "DELETE":
             device_ip = req_data.get("mgt_ip", "")
@@ -116,7 +123,12 @@ def vlan_config(request):
                     ## Update members dictionary with tagging mode Enum
                     for mem_if, tagging_mode in members.items():
                         try:
-                            del_vlan_mem(device_ip, vlan_name, mem_if)
+                            del_vlan_mem(
+                                device_ip,
+                                vlan_name,
+                                mem_if,
+                                IFMode.get_enum_from_str(tagging_mode),
+                            )
                             add_msg_to_list(result, get_success_msg(request, req_data))
                         except Exception as err:
                             add_msg_to_list(
@@ -165,9 +177,9 @@ def remove_vlan_ip_address(request):
             add_msg_to_list(result, get_failure_msg(err, request, req_data))
             http_status = http_status and False
 
-        vlan_anycast_ip_addr = req_data.get("vlan_anycast_ip_addr", None)
+        sag_ip_address = req_data.get("sag_ip_address", None)
         try:
-            remove_anycast_ip_from_vlan(device_ip, vlan_name, vlan_anycast_ip_addr)
+            remove_anycast_ip_from_vlan(device_ip, vlan_name, sag_ip_address)
             add_msg_to_list(result, get_success_msg(request, req_data))
         except Exception as err:
             add_msg_to_list(result, get_failure_msg(err, request, req_data))
@@ -219,12 +231,14 @@ def vlan_mem_config(request):
                     {"status": "Required field device vlanid not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            
+
             if members := req_data.get("members"):
                 ## Update members dicxtionary with tagging mode Enum
-                for mem_if,if_mode in members.items():
+                for mem_if, if_mode in members.items():
                     try:
-                        del_vlan_mem(device_ip, vlanid, mem_if, IFMode.get_enum_from_str(if_mode))
+                        del_vlan_mem(
+                            device_ip, vlanid, mem_if, IFMode.get_enum_from_str(if_mode)
+                        )
                         add_msg_to_list(result, get_success_msg(request, req_data))
                     except Exception as err:
                         add_msg_to_list(result, get_failure_msg(err, request, req_data))
