@@ -37,10 +37,11 @@ To install all dependencies of ORCA backend use the following command :
 >       `export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring`
 
 ## Configuration
-Configuration for network app are available under orca_backend/network/config/ directory.
-Which has 2 files for configuration :
-- orca.yml - Device and Neo4j access information. Also the device or newtwork information which needs to be discovered.
-- logging.yml - A standard python logging configuration for orca_nw_lib.
+The major configuration required here is for orca_nw_lib. orca_nw_lib is defined as a dependency in [pyproject.toml](./pyproject.toml). Once all the dependencies of orca_backend are installed, orca_nw_lib is available under:             
+`<python_venv_path>/lib/python_<version>/site-packages/orca_nw_lib`
+In the above directory, following files have update options.
+- orca_nw_lib.yml - Device and Neo4j access information. Also the device or network information which needs to be discovered.
+- orca_nw_lib_logging.yml - A standard python logging configuration for orca_nw_lib.
 
 ## Run ORCA Backend:
 orca_backend runs like normal django server as follows\
@@ -48,7 +49,7 @@ orca_backend runs like normal django server as follows\
         python manage.py runserver
 
 ## APIs
-Under orca_backend/network there are python modules for configuration.
+When not using [orca_ui](https://github.com/STORDIS/orca_ui), APIs from orca_backend can also be used. Under orca_backend/network there are python modules for configuration.
 API can be directly used from browser with django rest framework's web interface. URLs are available under network/urls.py.\
 e.g. \
 - http://localhost:8000/interfaces?mgt_ip=10.10.130.210
