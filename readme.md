@@ -1,5 +1,20 @@
 # ORCA Backend
 ORCA Backend is a REST API server written using Django framework to access orca_nw_lib functionalities. It is a backend service that can be used by applications to interact with SONiC Netowrk and devices.
+
+
+- [ORCA Backend](#orca-backend)
+  - [Installing Dependencies](#installing-dependencies)
+    - [Install Neo4j](#install-neo4j)
+    - [Install ORCA Backend dependencies](#install-orca-backend-dependencies)
+  - [Configuration](#configuration)
+  - [Run ORCA Backend:](#run-orca-backend)
+  - [Run ORCA Backend in docker container](#run-orca-backend-in-docker-container)
+    - [Create docker image](#create-docker-image)
+  - [APIs](#apis)
+  - [To execute tests](#to-execute-tests)
+
+
+
 ## Installing Dependencies
 ### Install Neo4j
 One of the dependencies for ORCA backend orca_nw_lib uses neo4j to store the network topology. To install neo4j easiest is to run Neo4j Docker image in container with the following command :
@@ -44,9 +59,30 @@ In the above directory, following files have update options.
 - orca_nw_lib_logging.yml - A standard python logging configuration for orca_nw_lib.
 
 ## Run ORCA Backend:
-orca_backend runs like normal django server as follows\
+orca_backend runs like normal django server as follows:
 
         python manage.py runserver
+
+## Run ORCA Backend in docker container
+Docker image of orca_backend can be created and container cane started as follows:
+### Create docker image
+First create the docker image as follows:
+
+        cd orca_backend
+        docker build -t orca_backend .
+
+If docker image is to be transferred to other machine to run there, first save the image, transfer to desired machine and load there as follows:
+
+        docker save -o orca_backend.tar.gz orca_backend:latest
+        scp orca_backend.tar.gz <user_name>@host:<path to copy the image>
+        ssh <user_name>@host
+        cd <path to copy the image>
+        docker load -i orca_backend.tar.gz
+
+Docker container can be started as follows:
+
+        docker run --net="host" orca_backend
+
 
 ## APIs
 When not using [orca_ui](https://github.com/STORDIS/orca_ui), APIs from orca_backend can also be used. Under orca_backend/network there are python modules for configuration.
@@ -56,5 +92,5 @@ e.g. \
 - http://localhost:8000/devices
 
 
-## To execute tests :
+## To execute tests
         python manage.py test network.test.interface_test

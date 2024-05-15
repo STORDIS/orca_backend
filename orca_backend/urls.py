@@ -24,5 +24,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("auth/", include("authentication.urls")),
     path("logs/", include("log_manager.urls")),
-    path("orcask/", include("ORCASK.urls")),
+    #path("orcask/", include("ORCASK.urls")),
 ]

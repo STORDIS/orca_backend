@@ -5,7 +5,8 @@ db.sqlite3
 dist
 *code-workspace
 orca_nw_lib.log
-
+poetry.lock
 .idea
 !log_manager/migrations/__init__.py
 orca.log
+models
