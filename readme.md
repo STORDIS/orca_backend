@@ -10,7 +10,8 @@ ORCA Backend is a REST API server written using Django framework to access orca_
   - [Run ORCA Backend:](#run-orca-backend)
   - [Run ORCA Backend in docker container](#run-orca-backend-in-docker-container)
     - [Create docker image](#create-docker-image)
-  - [APIs](#apis)
+  - [APIs and ORCA UI](#apis-and-orca-ui)
+    - [Steps to Use APIs](#steps-to-use-apis)
   - [To execute tests](#to-execute-tests)
 
 
@@ -84,28 +85,27 @@ Docker container can be started as follows:
         docker run --net="host" orca_backend
 
 
-## APIs
-When not using [orca_ui](https://github.com/STORDIS/orca_ui), APIs from orca_backend can also be used. Under orca_backend/network there are python modules for configuration.
-API can be directly used from browser with django rest framework's web interface. URLs are available under network/urls.py.\
+## APIs and ORCA UI
+Users can always use [orca_ui](https://github.com/STORDIS/orca_ui) which already implements the orca_backend APIs and straight forward when it comes to use ORCA as a whole client server application, User can still use orca_backend REST APIs with out using [orca_ui](https://github.com/STORDIS/orca_ui) to develop custom apps for example.
+For a quick start, APIs can be directly used from browser with django rest framework's web interface or from Postman like tools. URLs are available under network/urls.py. Before using APIs a user authentication is required as well. Following is the procedure to use orca_backend APIs using simple curl - 
 
 ### Steps to Use APIs
 
-1. Create superuser using the command below:
-
-    ```bash
-    python manage.py createsuperuser
-    ```
-
-2. After creating the superuser, use the login API to generate a token:
-
-    ```bash
-    curl --location 'http://localhost:8000/auth/login' \
-    --header 'Content-Type: application/json' \
-    --data-raw '{
-        "username": "<username>",
-        "password": "<password>"
-    }'
-    ```
+1. Create superuser in Django orca_backend using the command below:
+   ```bash
+        cd orca_backend
+        python manage.py createsuperuser
+   ```
+   user_name and password is sufficient to start with.
+2. After creating the superuser, use the following login API to generate a token for the user created above:
+   ```bash
+        curl --location 'http://localhost:8000/auth/login' \
+        --header 'Content-Type: application/json' \
+        --data-raw '{
+                "username": "<username>",
+                "password": "<password>"
+        }'
+   ```
 
     Example Response:
     ```json
@@ -114,17 +114,12 @@ API can be directly used from browser with django rest framework's web interface
     }
     ```
 
-3. Use the generated token in subsequent API requests by including it in the Authorization header:
+3. Use the generated token above in subsequent API requests by including it in the request header with the key named "Authorization":
 
     ```bash
     curl --location 'http://localhost:8000/interfaces?mgt_ip=10.10.130.210' \
     --header 'Authorization: Token f2cb8adc5c0fadc0b38b9505c93378515f96dc98'
     ```
-
-Example URL:
-- [http://localhost:8000/interfaces?mgt_ip=10.10.130.210](http://localhost:8000/interfaces?mgt_ip=10.10.130.210)
-- [http://localhost:8000/devices](http://localhost:8000/devices)
-
 
 ## To execute tests
         python manage.py test network.test.interface_test
