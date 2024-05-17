@@ -94,6 +94,7 @@ For a quick start, APIs can be directly used from browser with django rest frame
 1. Create superuser in Django orca_backend using the command below:
    ```bash
         cd orca_backend
+        python manage.py migrate
         python manage.py createsuperuser
    ```
    user_name and password is sufficient to start with.
