@@ -87,9 +87,43 @@ Docker container can be started as follows:
 ## APIs
 When not using [orca_ui](https://github.com/STORDIS/orca_ui), APIs from orca_backend can also be used. Under orca_backend/network there are python modules for configuration.
 API can be directly used from browser with django rest framework's web interface. URLs are available under network/urls.py.\
-e.g. \
-- http://localhost:8000/interfaces?mgt_ip=10.10.130.210
-- http://localhost:8000/devices
+
+### Steps to Use APIs
+
+1. Create superuser using the command below:
+
+    ```bash
+    python manage.py createsuperuser
+    ```
+
+2. After creating the superuser, use the login API to generate a token:
+
+    ```bash
+    curl --location 'http://localhost:8000/auth/login' \
+    --header 'Content-Type: application/json' \
+    --data-raw '{
+        "username": "<username>",
+        "password": "<password>"
+    }'
+    ```
+
+    Example Response:
+    ```json
+    {
+        "token": "f2cb8adc5c0fadc0b38b9505c93378515f96dc98"
+    }
+    ```
+
+3. Use the generated token in subsequent API requests by including it in the Authorization header:
+
+    ```bash
+    curl --location 'http://localhost:8000/interfaces?mgt_ip=10.10.130.210' \
+    --header 'Authorization: Token f2cb8adc5c0fadc0b38b9505c93378515f96dc98'
+    ```
+
+Example URL:
+- [http://localhost:8000/interfaces?mgt_ip=10.10.130.210](http://localhost:8000/interfaces?mgt_ip=10.10.130.210)
+- [http://localhost:8000/devices](http://localhost:8000/devices)
 
 
 ## To execute tests
