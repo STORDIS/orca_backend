@@ -248,7 +248,7 @@ class TestVlan(TestORCA):
             "mgt_ip": self.device_ips[0],
             "name": self.vlan_name,
             "vlanid": self.vlan_id,
-            "members": {
+            "mem_ifs": {
                 self.ether_names[0]: "TRUNK",
                 self.ether_names[1]: "ACCESS",
             },
