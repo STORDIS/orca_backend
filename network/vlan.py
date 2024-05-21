@@ -46,7 +46,7 @@ def vlan_config(request):
         vlan_name = request.GET.get("name", "")
         data = get_vlan(device_ip, vlan_name)
         for vlan_data in data if isinstance(data, list) else [data] if data else []:
-            vlan_data["members"] = get_vlan_members(device_ip, vlan_data["name"])
+            vlan_data["mem_ifs"] = get_vlan_members(device_ip, vlan_data["name"])
         return (
             Response(data, status=status.HTTP_200_OK)
             if data
@@ -119,7 +119,7 @@ def vlan_config(request):
                 )
             vlan_name = req_data.get("name", "")
             if vlan_name:
-                if members := req_data.get("members"):
+                if members := req_data.get("mem_ifs"):
                     ## Update members dictionary with tagging mode Enum
                     for mem_if, tagging_mode in members.items():
                         try:
@@ -232,7 +232,7 @@ def vlan_mem_config(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            if members := req_data.get("members"):
+            if members := req_data.get("mem_ifs"):
                 ## Update members dicxtionary with tagging mode Enum
                 for mem_if, if_mode in members.items():
                     try:

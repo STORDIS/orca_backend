@@ -11,6 +11,7 @@ class TestPortGroup(TestORCA):
     """
     Test class for the BGP API.
     """
+    vlan_name = "Vlan2"
 
     def test_port_group_speed_config(self):
         """
@@ -27,6 +28,18 @@ class TestPortGroup(TestORCA):
             or any(
                 "resource not found" in res.lower() for res in response.json()["result"]
             )
+        )
+
+        ## Delete VLANs then delete port channels in next steps.
+        response = self.del_req(
+            "vlan_ip_remove", {"mgt_ip": device_ip, "name": self.vlan_name}
+        )
+        response = self.del_req(
+            "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
+        )
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any("not found" in res.lower() for res in response.json()["result"])
         )
 
         ## Simply delete all port channels as if an interface which is member of a port channel as well,
