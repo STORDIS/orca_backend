@@ -331,3 +331,15 @@ class TestORCA(APITestCase):
                 time.sleep(timeout)
                 continue
         return self.send_req_and_assert(req_func, assert_func, *req_args, **assert_args)
+
+    def remove_mclag(self, device_ip):
+        response = self.del_req("device_mclag_list", {"mgt_ip": device_ip})
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "resource not found" in res.lower() for res in response.json()["result"]
+            )
+        )
+        response = self.get_req("device_mclag_list", {"mgt_ip": device_ip})
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
