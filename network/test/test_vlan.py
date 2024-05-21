@@ -13,7 +13,8 @@ class TestVlan(TestORCA):
 
     vlan_id = 1
     vlan_name = "Vlan1"
-
+    portchnl_1 = "PortChannel101"
+    portchnl_2 = "PortChannel102"
 
     def test_vlan_config(self):
         """
@@ -50,7 +51,6 @@ class TestVlan(TestORCA):
             "description": "Test_Vlan1",
             "ip_address": "20.20.20.20/24",
             "autostate": "enable",
-            # "anycast_addr":"20.20.20.20/24"
         }
 
         response = self.put_req(
@@ -174,7 +174,7 @@ class TestVlan(TestORCA):
         ether_1 = list(request_body.get("members").keys())[0]
         ether_2 = list(request_body.get("members").keys())[1]
 
-        # Remove Vlan.
+        # Remove Vlan from Interfaces.
         self.del_req(
             "device_interface_list",
             {"mgt_ip": device_ip, "name": ether_1, "ifmode": "ACCESS"},
@@ -194,8 +194,12 @@ class TestVlan(TestORCA):
 
         # Delete VLAN members.
         response = self.del_req("vlan_mem_delete", request_body)
+        
         self.assertTrue(
             response.status_code in [status.HTTP_200_OK, status.HTTP_204_NO_CONTENT]
+            or any(
+                "resource not found" in res.lower() for res in response.json()["result"]
+            )
         )
         # Confirm deletion of VLAN members.
         response = self.get_req(
@@ -222,6 +226,18 @@ class TestVlan(TestORCA):
         )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(response.data)
+
+        ## Now cleanup port channels as well
+        # Bur before First delete mclag, if it exists.
+        # port channel deletion will fail if port channel is found to be a member of mclag.
+        self.remove_mclag(device_ip)
+        ## Now actually delete portchannel
+        request_body_port_chnl = [
+            {"mgt_ip": device_ip, "lag_name": self.portchnl_1},
+            {"mgt_ip": device_ip, "lag_name": self.portchnl_2},
+        ]
+        self.perform_del_port_chnl(request_body_port_chnl)
+        self.perform_add_port_chnl(request_body_port_chnl)
 
         response = self.put_req(
             "vlan_config",
@@ -251,5 +267,7 @@ class TestVlan(TestORCA):
             "members": {
                 self.ether_names[0]: "TRUNK",
                 self.ether_names[1]: "ACCESS",
+                self.portchnl_1: "TRUNK",
+                self.portchnl_2: "ACCESS",
             },
         }

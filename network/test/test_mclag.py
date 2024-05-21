@@ -71,20 +71,8 @@ class TestMclag(TestORCA):
         self.assertEqual(response.json().get("peer_addr"), device_ip_2)
         self.assertEqual(response.json().get("peer_link"), self.peer_link)
         self.assertEqual(response.json().get("mclag_sys_mac"), self.mclag_sys_mac)
-
         # Finally remove mclag
-
-        response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
-
-        self.assertTrue(
-            response.status_code == status.HTTP_200_OK
-            or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
-            )
-        )
-        response = self.get_req("device_mclag_list", {"mgt_ip": device_ip_1})
-        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
-        self.assertFalse(response.data)
+        self.remove_mclag(device_ip_1)
 
     def test_mclag_member_config(self):
         """

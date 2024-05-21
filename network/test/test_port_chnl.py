@@ -31,25 +31,11 @@ class TestPortChnl(TestORCA):
         None
         """
         device_ip = self.device_ips[0]
-        
-        
+
         # First delete mclag, if it exists.
         # port channel deletion will fail if port channel is found to be a member of mclag.
+        self.remove_mclag(device_ip)
 
-        response = self.del_req("device_mclag_list", {"mgt_ip": device_ip})
-
-        self.assertTrue(
-            response.status_code == status.HTTP_200_OK
-            or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
-            )
-        )
-        response = self.get_req("device_mclag_list", {"mgt_ip": device_ip})
-        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
-        self.assertFalse(response.data)
-        
-        
-        
         request_body = [
             {
                 "mgt_ip": device_ip,
@@ -176,23 +162,9 @@ class TestPortChnl(TestORCA):
 
         # delete mclag, if it exists.
         # port channel deletion will fail if port channel is found to be a member of mclag.
-
-        response = self.del_req("device_mclag_list", {"mgt_ip": device_ip})
-
-        self.assertTrue(
-            response.status_code == status.HTTP_200_OK
-            or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
-            )
-        )
-
-        response = self.get_req("device_mclag_list", {"mgt_ip": device_ip})
-
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(response.data)
+        self.remove_mclag(device_ip)
 
         # Now delete port channels
-
         request_body_2 = [
             {"mgt_ip": device_ip, "lag_name": "PortChannel101"},
             {"mgt_ip": device_ip, "lag_name": "PortChannel102"},
@@ -212,7 +184,7 @@ class TestPortChnl(TestORCA):
                         for res in response.json()["result"]
                     )
                 )
-        ## Delete MCLAG if exists, because if the port channel being deleted in the next steps is being used in MCLAG, 
+        ## Delete MCLAG if exists, because if the port channel being deleted in the next steps is being used in MCLAG,
         # deletion will fail.
         response = self.del_req("device_mclag_list", request_body)
         self.assertTrue(
