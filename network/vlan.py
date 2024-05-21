@@ -79,7 +79,7 @@ def vlan_config(request):
                 )
 
             members = {}
-            if mem := req_data.get("members"):
+            if mem := req_data.get("mem_ifs"):
                 ## Update members dictionary with tagging mode Enum
                 for mem_if, tagging_mode in mem.items():
                     members[mem_if] = IFMode.get_enum_from_str(tagging_mode)

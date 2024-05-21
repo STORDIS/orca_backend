@@ -171,8 +171,8 @@ class TestVlan(TestORCA):
         Almost similar to other test cases just that this test ase doesn't cleanup the config.
         """
         device_ip = request_body["mgt_ip"]
-        ether_1 = list(request_body.get("members").keys())[0]
-        ether_2 = list(request_body.get("members").keys())[1]
+        ether_1 = list(request_body.get("mem_ifs").keys())[0]
+        ether_2 = list(request_body.get("mem_ifs").keys())[1]
 
         # Remove Vlan from Interfaces.
         self.del_req(
