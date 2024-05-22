@@ -46,7 +46,9 @@ def vlan_config(request):
         vlan_name = request.GET.get("name", "")
         data = get_vlan(device_ip, vlan_name)
         for vlan_data in data if isinstance(data, list) else [data] if data else []:
-            vlan_data["mem_ifs"] = get_vlan_members(device_ip, vlan_data["name"])
+            vlan_data['mem_ifs']={}
+            for if_name, tagging_mode in get_vlan_members(device_ip, vlan_data["name"]).items():
+                vlan_data['mem_ifs'][if_name] = str(tagging_mode)
         return (
             Response(data, status=status.HTTP_200_OK)
             if data
