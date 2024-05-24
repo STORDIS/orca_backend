@@ -9,10 +9,9 @@ def get_failure_msg(err: Exception, request: Request):
     Args:
         err (Exception): The exception that was raised.
         request (Request): The request object.
-        req_data (dict): The data associated with the request.
 
     Returns:
-        str: The error message.
+        dict: The failure message with the error details and status.
     """
     message = f"{request.method} request failed, Reason: {err.details() if isinstance(err, RpcError) else str(err)}"
     return {"status": "failed", "message": message}
@@ -24,10 +23,9 @@ def get_success_msg(request: Request):
 
     Args:
         request (Request): The request object.
-        req_data (dict): The data associated with the request.
 
     Returns:
-        str: The success message.
+        dict: The success message and status.
     """
     message = f"{request.method} request successful"
     return {"status": "success", "message": message}
