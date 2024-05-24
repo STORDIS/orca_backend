@@ -89,9 +89,9 @@ def device_port_chnl_list(request):
                         req_data.get("lag_name"),
                         members,
                     )
-                add_msg_to_list(result, get_success_msg(request, req_data))
+                add_msg_to_list(result, get_success_msg(request))
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request, req_data))
+                add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
 
     elif request.method == "DELETE":
@@ -119,9 +119,9 @@ def device_port_chnl_list(request):
                         )
                 else:
                     del_port_chnl(device_ip, req_data.get("lag_name"))
-                add_msg_to_list(result, get_success_msg(request, req_data))
+                add_msg_to_list(result, get_success_msg(request))
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request, req_data))
+                add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
 
     return Response(

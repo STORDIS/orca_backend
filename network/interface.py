@@ -80,10 +80,10 @@ def device_interfaces_list(request):
                     fec=PortFec.get_enum_from_str(req_data.get("fec")),
                     speed=Speed.get_enum_from_str(req_data.get("speed")),
                 )
-                add_msg_to_list(result, get_success_msg(request, req_data))
+                add_msg_to_list(result, get_success_msg(request))
                 http_status = http_status and True
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request, req_data))
+                add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
     elif request.method == "DELETE":
         req_data_list = (
@@ -108,10 +108,10 @@ def device_interfaces_list(request):
                     intfc_name=req_data.get("name"),
                     if_mode= if_mode if (if_mode := IFMode.get_enum_from_str(req_data.get("if_mode"))) else None
                 )
-                add_msg_to_list(result, get_success_msg(request, req_data))
+                add_msg_to_list(result, get_success_msg(request))
                 http_status = http_status and True
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request, req_data))
+                add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
 
     return Response(
@@ -165,10 +165,10 @@ def interface_resync(request):
 
         try:
             discover_interfaces(device_ip, intfc_name)
-            add_msg_to_list(result, get_success_msg(request, request.data))
+            add_msg_to_list(result, get_success_msg(request))
             http_status = http_status and True
         except Exception as err:
-            add_msg_to_list(result, get_failure_msg(err, request, request.data))
+            add_msg_to_list(result, get_failure_msg(err, request))
             http_status = http_status and False
     return Response(
         {"result": result},
