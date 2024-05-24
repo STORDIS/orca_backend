@@ -6,6 +6,7 @@ from orca_nw_lib.device import get_device_details
 from orca_nw_lib.discovery import discover_device
 
 from log_manager.decorators import log_request
+from network.util import add_msg_to_list, get_failure_msg, get_success_msg
 
 
 @api_view(
@@ -60,17 +61,19 @@ def discover(request):
         for req_data in req_data_list:
             if req_data.get("discover_from_config", False):
                 from orca_nw_lib.discovery import discover_device_from_config
-                if temp_res:=discover_device_from_config():
-                    result += temp_res
-            if addr := req_data.get("address", ""):
-                if temp_res:=discover_device(ip_or_nw=addr):
-                    result += temp_res
+                if discover_device_from_config():
+                    add_msg_to_list(result, get_success_msg(request))
+            addresses= req_data.get("address") if isinstance(req_data.get("address"), list) else [req_data.get("address")]
+            for addr in addresses or []:
+                if addr and discover_device(ip_or_nw=addr):
+                    add_msg_to_list(result, get_success_msg(request))
+
         if not result:
             # Because orca_nw_lib returns report for errors in discovery.
-            result.append("Discovery Successful.")
+            add_msg_to_list(result,get_success_msg(request))
         else:
-            result.append("Discovery is partially successful or failed.")
-        return Response({"result": result}, status=status.HTTP_200_OK)
+            add_msg_to_list(result,get_failure_msg(Exception("Discovery is partially successful or failed."),request))
+        return Response({"result": result}, status=status.HTTP_100_CONTINUE)
 
 
 @api_view(
