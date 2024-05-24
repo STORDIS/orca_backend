@@ -19,10 +19,10 @@ def log_request(function):
                 "processing_time": time.time() - start,
                 "status_code": response.status_code
             }
-            if response.status_code >= 400:
-                data["status"] = "failed"
-            else:
-                data["status"] = "success"
+            # if response.status_code >= 400:
+            #     data["status"] = "failed"
+            # else:
+            #     data["status"] = "success"
             response_data = response.data
             if "result" in response_data:
                 responses = create_request_response_data(request_data=request.data, response_data=response_data["result"])
@@ -43,11 +43,19 @@ def create_request_response_data(request_data, response_data):
         response_data = [i for i in response_data if i != "\n" and i]
         if isinstance(request_data, list) and len(response_data) == len(request_data):
             return [
-                {"response": response_data[i], "request_json": request_data[i]} for i in range(len(response_data))
+                {
+                    "response": response_data[i]["message"],
+                    "status": response_data[i]["status"],
+                    "request_json": request_data[i]
+                } for i in range(len(response_data))
             ]
         else:
             return [
-                {"response": response_data[i], "request_json": request_data} for i in range(len(response_data))
+                {
+                    "response": response_data[i]["message"],
+                    "status": response_data[i]["status"],
+                    "request_json": request_data
+                } for i in range(len(response_data))
             ]
     else:
         return [

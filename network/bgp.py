@@ -86,9 +86,9 @@ def device_bgp_global(request):
                 config_bgp_global(
                     device_ip, local_asn, device_ip, vrf_name=req_data.get("vrf_name")
                 )
-                add_msg_to_list(result, get_success_msg(request, req_data))
+                add_msg_to_list(result, get_success_msg(request))
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request, req_data))
+                add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
 
     elif request.method == "DELETE":
@@ -111,9 +111,9 @@ def device_bgp_global(request):
                 )
             try:
                 del_bgp_global(device_ip, vrf_name)
-                add_msg_to_list(result, get_success_msg(request, req_data))
+                add_msg_to_list(result, get_success_msg(request))
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request, req_data))
+                add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
 
     return Response(
@@ -201,9 +201,9 @@ def bgp_nbr_config(request):
 
             try:
                 config_bgp_neighbors(device_ip, remote_asn, neighbor_ip, remote_vrf)
-                add_msg_to_list(result, get_success_msg(request, req_data))
+                add_msg_to_list(result, get_success_msg(request))
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request, req_data))
+                add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
     elif request.method == "DELETE":
         req_data_list = (
@@ -218,9 +218,9 @@ def bgp_nbr_config(request):
                 )
             try:
                 del_all_bgp_neighbors(device_ip)
-                add_msg_to_list(result, get_success_msg(request, req_data))
+                add_msg_to_list(result, get_success_msg(request))
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request, req_data))
+                add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
 
     return Response(

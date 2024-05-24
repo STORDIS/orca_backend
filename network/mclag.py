@@ -77,16 +77,16 @@ def device_mclag_list(request):
             if mclag_members:
                 try:
                     del_mclag_member(device_ip)
-                    add_msg_to_list(result, get_success_msg(request, req_data))
+                    add_msg_to_list(result, get_success_msg(request))
                 except Exception as err:
-                    add_msg_to_list(result, get_failure_msg(err, request, req_data))
+                    add_msg_to_list(result, get_failure_msg(err, request))
                     http_status = http_status and False
             else:
                 try:
                     del_mclag(device_ip)
-                    add_msg_to_list(result, get_success_msg(request, req_data))
+                    add_msg_to_list(result, get_success_msg(request))
                 except Exception as err:
-                    add_msg_to_list(result, get_failure_msg(err, request, req_data))
+                    add_msg_to_list(result, get_failure_msg(err, request))
                     http_status = http_status and False
 
     elif request.method == "PUT":
@@ -123,17 +123,17 @@ def device_mclag_list(request):
                         peer_link,
                         mclag_sys_mac,
                     )
-                    add_msg_to_list(result, get_success_msg(request, req_data))
+                    add_msg_to_list(result, get_success_msg(request))
                 except Exception as err:
-                    add_msg_to_list(result, get_failure_msg(err, request, req_data))
+                    add_msg_to_list(result, get_failure_msg(err, request))
                     http_status = http_status and False
 
             for mem in mclag_members:
                 try:
                     config_mclag_mem_portchnl(device_ip, domain_id, mem)
-                    add_msg_to_list(result, get_success_msg(request, req_data))
+                    add_msg_to_list(result, get_success_msg(request))
                 except Exception as err:
-                    add_msg_to_list(result, get_failure_msg(err, request, req_data))
+                    add_msg_to_list(result, get_failure_msg(err, request))
                     http_status = http_status and False
 
     return Response(
@@ -183,12 +183,12 @@ def mclag_gateway_mac(request):
         try:
             del_mclag_gw_mac(device_ip)
             return Response(
-                {"result": get_success_msg(request, request.data)},
+                {"result": get_success_msg(request)},
                 status=status.HTTP_200_OK,
             )
         except Exception as err:
             return Response(
-                {"result": get_failure_msg(err, request, request.data)},
+                {"result": get_failure_msg(err, request)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
     elif request.method == "PUT":
@@ -207,11 +207,11 @@ def mclag_gateway_mac(request):
         try:
             config_mclag_gw_mac(device_ip, gw_mac)
             return Response(
-                {"result": get_success_msg(request, request.data)},
+                {"result": get_success_msg(request)},
                 status=status.HTTP_200_OK,
             )
         except Exception as err:
             return Response(
-                {"result": get_failure_msg(err, request, request.data)},
+                {"result": get_failure_msg(err, request)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

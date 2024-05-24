@@ -2,33 +2,33 @@ from grpc import RpcError
 from rest_framework.request import Request
 
 
-def get_failure_msg(err: Exception, request: Request, req_data: dict):
+def get_failure_msg(err: Exception, request: Request):
     """
     Generate a message for a failed request.
 
     Args:
         err (Exception): The exception that was raised.
         request (Request): The request object.
-        req_data (dict): The data associated with the request.
 
     Returns:
-        str: The error message.
+        dict: The failure message with the error details and status.
     """
-    return f"{request.method} request failed : {req_data} Reason: {err.details() if isinstance(err, RpcError) else str(err)}"
+    message = f"{request.method} request failed, Reason: {err.details() if isinstance(err, RpcError) else str(err)}"
+    return {"status": "failed", "message": message}
 
 
-def get_success_msg(request: Request, req_data: dict):
+def get_success_msg(request: Request):
     """
     Generate a message for a successful request.
 
     Args:
         request (Request): The request object.
-        req_data (dict): The data associated with the request.
 
     Returns:
-        str: The success message.
+        dict: The success message and status.
     """
-    return f"{request.method} request successful : {req_data}"
+    message = f"{request.method} request successful"
+    return {"status": "success", "message": message}
 
 
 def add_msg_to_list(msg_list: [], msg):
