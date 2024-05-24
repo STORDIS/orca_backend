@@ -72,9 +72,9 @@ def port_groups(request):
                 set_port_group_speed(
                     device_ip=device_ip, port_group_id=port_group_id, speed=Speed.get_enum_from_str(speed)
                 )
-                add_msg_to_list(result, get_success_msg(request, req_data))
+                add_msg_to_list(result, get_success_msg(request))
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request, req_data))
+                add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
     return Response(
         {"result": result},

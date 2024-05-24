@@ -46,9 +46,7 @@ def vlan_config(request):
         vlan_name = request.GET.get("name", "")
         data = get_vlan(device_ip, vlan_name)
         for vlan_data in data if isinstance(data, list) else [data] if data else []:
-            vlan_data['mem_ifs']={}
-            for if_name, tagging_mode in get_vlan_members(device_ip, vlan_data["name"]).items():
-                vlan_data['mem_ifs'][if_name] = str(tagging_mode)
+            vlan_data["mem_ifs"] = get_vlan_members(device_ip, vlan_data["name"])
         return (
             Response(data, status=status.HTTP_200_OK)
             if data
@@ -107,9 +105,9 @@ def vlan_config(request):
                     anycast_addr=req_data.get("sag_ip_address", ""),
                     mem_ifs=members,
                 )
-                add_msg_to_list(result, get_success_msg(request, req_data))
+                add_msg_to_list(result, get_success_msg(request))
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request, req_data))
+                add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
 
         elif request.method == "DELETE":
@@ -131,17 +129,17 @@ def vlan_config(request):
                                 mem_if,
                                 IFMode.get_enum_from_str(tagging_mode),
                             )
-                            add_msg_to_list(result, get_success_msg(request, req_data))
+                            add_msg_to_list(result, get_success_msg(request))
                         except Exception as err:
                             add_msg_to_list(
-                                result, get_failure_msg(err, request, req_data)
+                                result, get_failure_msg(err, request)
                             )
                             http_status = http_status and False
             try:
                 del_vlan(device_ip, vlan_name)
-                add_msg_to_list(result, get_success_msg(request, req_data))
+                add_msg_to_list(result, get_success_msg(request))
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request, req_data))
+                add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
 
     return Response(
@@ -174,17 +172,17 @@ def remove_vlan_ip_address(request):
         vlan_ip_addr = req_data.get("vlan_ip_addr", None)
         try:
             remove_ip_from_vlan(device_ip, vlan_name, vlan_ip_addr)
-            add_msg_to_list(result, get_success_msg(request, req_data))
+            add_msg_to_list(result, get_success_msg(request))
         except Exception as err:
-            add_msg_to_list(result, get_failure_msg(err, request, req_data))
+            add_msg_to_list(result, get_failure_msg(err, request))
             http_status = http_status and False
 
         sag_ip_address = req_data.get("sag_ip_address", None)
         try:
             remove_anycast_ip_from_vlan(device_ip, vlan_name, sag_ip_address)
-            add_msg_to_list(result, get_success_msg(request, req_data))
+            add_msg_to_list(result, get_success_msg(request))
         except Exception as err:
-            add_msg_to_list(result, get_failure_msg(err, request, req_data))
+            add_msg_to_list(result, get_failure_msg(err, request))
             http_status = http_status and False
 
     return Response(
@@ -241,9 +239,9 @@ def vlan_mem_config(request):
                         del_vlan_mem(
                             device_ip, vlanid, mem_if, IFMode.get_enum_from_str(if_mode)
                         )
-                        add_msg_to_list(result, get_success_msg(request, req_data))
+                        add_msg_to_list(result, get_success_msg(request))
                     except Exception as err:
-                        add_msg_to_list(result, get_failure_msg(err, request, req_data))
+                        add_msg_to_list(result, get_failure_msg(err, request))
                         http_status = http_status and False
 
     return Response(
