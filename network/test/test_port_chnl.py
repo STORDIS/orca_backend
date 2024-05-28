@@ -182,6 +182,7 @@ class TestPortChnl(TestORCA):
                     or any(
                         "resource not found" in res.get("message", "").lower()
                         for res in response.json()["result"]
+                        if res != "\n"
                     )
                 )
         ## Delete MCLAG if exists, because if the port channel being deleted in the next steps is being used in MCLAG,
@@ -191,6 +192,7 @@ class TestPortChnl(TestORCA):
             response.status_code == status.HTTP_200_OK
             or any(
                 "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                if res != "\n"
             )
         )
         self.perform_del_port_chnl(request_body_2)

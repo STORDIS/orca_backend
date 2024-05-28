@@ -262,7 +262,7 @@ class TestVlan(TestORCA):
                 for m in response.json()["mem_ifs"]
             )
         )
-        print("-------------resp---------------", response.json())
+        print(response.json())
         self.assertEqual(
             response.json()["mem_ifs"][ether_1],
             request_body["mem_ifs"][self.ether_names[0]],
