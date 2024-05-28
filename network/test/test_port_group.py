@@ -26,7 +26,7 @@ class TestPortGroup(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
             )
         )
 
@@ -39,7 +39,7 @@ class TestPortGroup(TestORCA):
         )
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
-            or any("not found" in res.lower() for res in response.json()["result"])
+            or any("not found" in res.get("message", "").lower() for res in response.json()["result"])
         )
 
         ## Simply delete all port channels as if an interface which is member of a port channel as well,

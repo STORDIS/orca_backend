@@ -39,7 +39,7 @@ class TestBGP(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
             )
         )
         response = self.get_req("bgp_global", request_body)
@@ -56,7 +56,7 @@ class TestBGP(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
             )
         )
         response = self.get_req("bgp_global", request_body)
@@ -84,7 +84,7 @@ class TestBGP(TestORCA):
             self.assertTrue(
                 response.status_code == status.HTTP_200_OK
                 or any(
-                    "resource not found" in res.lower()
+                    "resource not found" in res.get("message", "").lower()
                     for res in response.json()["result"]
                 )
             )
@@ -137,7 +137,7 @@ class TestBGP(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
             )
         )
         response = self.get_req("bgp_nbr", nbr_req)
@@ -164,7 +164,7 @@ class TestBGP(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
             )
         )
 
@@ -172,7 +172,7 @@ class TestBGP(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
             )
         )
         response = self.get_req("bgp_global", request_body)

@@ -180,7 +180,7 @@ class TestPortChnl(TestORCA):
                 self.assertTrue(
                     response.status_code == status.HTTP_200_OK
                     or any(
-                        "resource not found" in res.lower()
+                        "resource not found" in res.get("message", "").lower()
                         for res in response.json()["result"]
                     )
                 )
@@ -190,7 +190,7 @@ class TestPortChnl(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
             )
         )
         self.perform_del_port_chnl(request_body_2)

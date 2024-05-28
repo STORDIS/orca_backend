@@ -37,7 +37,7 @@ def add_msg_to_list(msg_list: [], msg):
 
     Args:
         msg_list (list): The list of messages.
-        msg (str): The message to add.
+        msg (dict): The message to add.
     """
     if msg_list:
         msg_list.append("\n")
