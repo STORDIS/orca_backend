@@ -83,7 +83,8 @@ class TestORCA(APITestCase):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                if res != "\n"
             )
         )
         for data in (
@@ -337,7 +338,8 @@ class TestORCA(APITestCase):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                if res != "\n"
             )
         )
         response = self.get_req("device_mclag_list", {"mgt_ip": device_ip})

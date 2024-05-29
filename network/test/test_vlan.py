@@ -35,7 +35,7 @@ class TestVlan(TestORCA):
 
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
-            or any("not found" in res.lower() for res in response.json()["result"])
+            or any("not found" in res.get("message", "").lower() for res in response.json()["result"] if res != "\n")
         )
 
         response = self.get_req(
@@ -110,7 +110,8 @@ class TestVlan(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                if res != "\n"
             )
         )
 
@@ -158,7 +159,8 @@ class TestVlan(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                if res != "\n"
             )
         )
 
@@ -200,7 +202,8 @@ class TestVlan(TestORCA):
         self.assertTrue(
             response.status_code in [status.HTTP_200_OK, status.HTTP_204_NO_CONTENT]
             or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                if res != "\n"
             )
         )
         # Confirm deletion of VLAN members.
@@ -219,7 +222,8 @@ class TestVlan(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                if res != "\n"
             )
         )
 
@@ -258,21 +262,22 @@ class TestVlan(TestORCA):
                 for m in response.json()["mem_ifs"]
             )
         )
+        print(response.json())
         self.assertEqual(
             response.json()["mem_ifs"][ether_1],
-            request_body["mem_ifs"][self.ether_names[0]],
+            IFMode.get_enum_from_str(request_body["mem_ifs"][self.ether_names[0]]),
         )
         self.assertEqual(
             response.json()["mem_ifs"][ether_2],
-            request_body["mem_ifs"][self.ether_names[1]],
+            IFMode.get_enum_from_str(request_body["mem_ifs"][self.ether_names[1]]),
         )
         self.assertEqual(
             response.json()["mem_ifs"][self.portchnl_1],
-            request_body["mem_ifs"][self.portchnl_1],
+            IFMode.get_enum_from_str(request_body["mem_ifs"][self.portchnl_1]),
         )
         self.assertEqual(
             response.json()["mem_ifs"][self.portchnl_2],
-            request_body["mem_ifs"][self.portchnl_2],
+            IFMode.get_enum_from_str(request_body["mem_ifs"][self.portchnl_2]),
         )
 
     def get_req_body(self):
