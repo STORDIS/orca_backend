@@ -1,3 +1,15 @@
+<p align="center">
+<a href="https://github.com/stordis/orca_backend/issues">
+      <img alt="Issues" src="https://img.shields.io/github/issues/stordis/orca_backend?color=0088ff" />
+</a>
+<a href="https://github.com/stordis/orca_backend/graphs/contributors">
+      <img alt="GitHub Contributors" src="https://img.shields.io/github/contributors/stordis/orca_backend" />
+</a>
+<a href="https://github.com/stordis/orca_backend/pulls?q=">
+      <img alt="GitHub pull requests" src="https://img.shields.io/github/issues-pr/stordis/orca_backend?color=0088ff" />
+</a>
+</p>
+
 # ORCA Backend
 ORCA Backend is a REST API server written using Django framework to access orca_nw_lib functionalities. It is a backend service that can be used by applications to interact with SONiC Netowrk and devices.
 
