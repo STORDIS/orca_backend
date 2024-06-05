@@ -39,6 +39,48 @@ def delete_db(request):
 
 @api_view(
     [
+        "DELETE",
+    ]
+)
+@log_request
+def delete_db_for_ip(request):
+    """
+    A function that deletes the database.
+
+    Parameters:
+        request (HttpRequest): The HTTP request object.
+
+    Returns:
+        Response: The HTTP response object with the result of the deletion operation.
+    """
+    
+    result = []
+
+    if request.method == "DELETE":
+        from orca_nw_lib.device_db import delete_device
+        
+        try:
+            req_data_list = (
+                request.data if isinstance(request.data, list) else [request.data]
+            )
+            for req_data in req_data_list:
+                device_ip = req_data.get("mgt_ip", "")
+                del_res = delete_device(device_ip)
+                
+                if del_res:
+                    add_msg_to_list(result, get_success_msg(request))
+                else:
+                    add_msg_to_list(result,get_failure_msg(Exception("Failed to Delete"),request))
+                
+        except Exception as e:
+            return Response(
+                {"result": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        return Response({"result": result}, status=status.HTTP_200_OK)
+
+
+@api_view(
+    [
         "PUT",
     ]
 )
