@@ -7,7 +7,7 @@ class TestDelete(TestORCA):
     
     def test_delete_device(self):
         
-        device_ip = "10.10.229.58"
+        device_ip = self.device_ips[0]
         request_body = {
             "mgt_ip": device_ip,
         }
@@ -39,7 +39,7 @@ class TestDelete(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_200_OK or response.status_code == status.HTTP_204_NO_CONTENT)
             
         # delete the ip and its related connection from db
-        response=self.del_req("del_db_for_ip", request_body)
+        response=self.del_req("del_db", request_body)
         self.assertTrue(response.status_code ==  status.HTTP_200_OK or response.status_code == status.HTTP_204_NO_CONTENT) 
         
         # get discover device
