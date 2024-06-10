@@ -13,14 +13,14 @@ from log_manager.test.test_common import TestCommon
 @permission_classes([permissions.AllowAny])
 @log_request
 def stub1(request):
-    return Response({"result": "testing"}, status=200)
+    return Response({"result": [{"message": "testing", "status": "success"}]}, status=200)
 
 
 @api_view(["GET", "POST"])
 @permission_classes([permissions.AllowAny])
 @log_request
 def stub2(request):
-    return Response({"result": ["test_1", "test_2", "test_3"]}, status=200)
+    return Response({"result": [{"message": "test_1", "status": "success"}, {"message": "test_2", "status": "success"}, {"message": "test_3", "status": "success"}]}, status=200)
 
 
 class TestDecorator(TestCommon):

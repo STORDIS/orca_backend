@@ -1,12 +1,13 @@
 """ View for network. """
+from celery import shared_task
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
 from orca_nw_lib.device import get_device_details
 from orca_nw_lib.discovery import discover_device
 
-from log_manager.decorators import log_request
-from network.util import add_msg_to_list, get_failure_msg, get_success_msg
+from log_manager.decorators import log_request, log_task
+from network.util import add_msg_to_list, get_failure_msg, get_success_msg, save_log
 
 
 @api_view(
@@ -27,14 +28,28 @@ def delete_db(request):
     """
     if request.method == "DELETE":
         from orca_nw_lib.utils import clean_db
-
         try:
             clean_db()
         except Exception as e:
             return Response(
                 {"result": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        return Response({"result": "Success"}, status=status.HTTP_200_OK)
+        return Response(
+            {"result": get_success_msg(request)}, status=status.HTTP_200_OK
+        )
+
+
+@shared_task
+@log_task
+def delete_db_task():
+    from orca_nw_lib.utils import clean_db
+    try:
+        clean_db()
+    except Exception as e:
+        return Response(
+            {"result": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    return Response({"result": "Success"}, status=status.HTTP_200_OK)
 
 
 @api_view(
@@ -42,7 +57,6 @@ def delete_db(request):
         "PUT",
     ]
 )
-@log_request
 def discover(request):
     """
     This function is an API view that handles the HTTP PUT request for the 'discover' endpoint.
@@ -58,22 +72,32 @@ def discover(request):
         req_data_list = (
             request.data if isinstance(request.data, list) else [request.data]
         )
-        for req_data in req_data_list:
-            if req_data.get("discover_from_config", False):
-                from orca_nw_lib.discovery import discover_device_from_config
-                if discover_device_from_config():
-                    add_msg_to_list(result, get_success_msg(request))
-            addresses= req_data.get("address") if isinstance(req_data.get("address"), list) else [req_data.get("address")]
-            for addr in addresses or []:
-                if addr and discover_device(ip_or_nw=addr):
-                    add_msg_to_list(result, get_success_msg(request))
 
-        if not result:
-            # Because orca_nw_lib returns report for errors in discovery.
-            add_msg_to_list(result,get_success_msg(request))
-        else:
-            add_msg_to_list(result,get_failure_msg(Exception("Discovery is partially successful or failed."),request))
-        return Response({"result": result}, status=status.HTTP_100_CONTINUE)
+        task_id = save_log(req_data_list, request.method)
+        task = discover_task.apply_async((req_data_list, request.method, task_id), task_id=task_id)
+        return Response({"result": "Task Queued"}, status=status.HTTP_100_CONTINUE)
+
+
+@shared_task
+@log_task
+def discover_task(request_data: list, method: str, task_id: str):
+    result = []
+    for req_data in request_data:
+        if req_data.get("discover_from_config", False):
+            from orca_nw_lib.discovery import discover_device_from_config
+            if discover_device_from_config():
+                add_msg_to_list(result, get_success_msg(method))
+        addresses = req_data.get("address") if isinstance(req_data.get("address"), list) else [req_data.get("address")]
+        for addr in addresses or []:
+            if addr and discover_device(ip_or_nw=addr):
+                add_msg_to_list(result, get_success_msg(method))
+
+    if not result:
+        # Because orca_nw_lib returns report for errors in discovery.
+        add_msg_to_list(result, get_success_msg(method))
+    else:
+        add_msg_to_list(result, get_failure_msg(Exception("Discovery is partially successful or failed."), method))
+    return Response({"result": result}, status=status.HTTP_200_OK)
 
 
 @api_view(

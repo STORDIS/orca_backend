@@ -28,7 +28,7 @@ class TestInterface(TestORCA):
         ]
         for data in request_body:
             self.assert_with_timeout_retry(
-                lambda path, payload: self.put_req(path, payload),
+                lambda path, payload: self.put_and_wait(path, payload),
                 self.assertEqual,
                 "device_interface_list",
                 data,
@@ -58,7 +58,7 @@ class TestInterface(TestORCA):
         for data in request_body:
 
             self.assert_with_timeout_retry(
-                lambda path, payload: self.put_req(path, payload),
+                lambda path, payload: self.put_and_wait(path, payload),
                 self.assertEqual,
                 "device_interface_list",
                 data,
@@ -82,7 +82,7 @@ class TestInterface(TestORCA):
         ]
         for data in request_body:
             self.assert_with_timeout_retry(
-                lambda path, payload: self.put_req(path, payload),
+                lambda path, payload: self.put_and_wait(path, payload),
                 self.assertEqual,
                 "device_interface_list",
                 data,
@@ -130,7 +130,7 @@ class TestInterface(TestORCA):
         ]
         for data in request_body:
             self.assert_with_timeout_retry(
-                lambda path, payload: self.put_req(path, payload),
+                lambda path, payload: self.put_and_wait(path, payload),
                 self.assertEqual,
                 "device_interface_list",
                 data,
@@ -207,7 +207,7 @@ class TestInterface(TestORCA):
         ]
         for data in request_body:
             self.assert_with_timeout_retry(
-                lambda path, payload: self.put_req(path, payload),
+                lambda path, payload: self.put_and_wait(path, payload),
                 self.assertEqual,
                 "device_interface_list",
                 data,
@@ -272,7 +272,7 @@ class TestInterface(TestORCA):
             },
         ]
         
-        self.assertTrue(self.put_req("device_interface_list", request_body).status_code == status.HTTP_200_OK)
+        self.assertTrue(self.put_and_wait("device_interface_list", request_body).status_code == status.HTTP_200_OK)
         
         self.assert_with_timeout_retry(
             lambda path, payload: self.get_req(path, payload),
@@ -317,7 +317,7 @@ class TestInterface(TestORCA):
             },
         ]
 
-        self.assertTrue(self.put_req("device_interface_list", request_body).status_code == status.HTTP_200_OK)
+        self.assertTrue(self.put_and_wait("device_interface_list", request_body).status_code == status.HTTP_200_OK)
 
         self.assert_with_timeout_retry(
             lambda path, payload: self.get_req(path, payload),

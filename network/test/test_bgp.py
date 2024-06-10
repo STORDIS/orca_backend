@@ -35,7 +35,7 @@ class TestBGP(TestORCA):
             "router_id": device_ip,
         }
 
-        response = self.del_req("bgp_global", request_body)
+        response = self.del_and_wait("bgp_global", request_body)
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
@@ -47,13 +47,13 @@ class TestBGP(TestORCA):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(response.data)
 
-        response = self.put_req("bgp_global", request_body)
+        response = self.put_and_wait("bgp_global", request_body)
         response = self.get_req("bgp_global", request_body)
         self.assertEqual(request_body.get("local_asn"), response.json()["local_asn"])
         self.assertEqual(request_body.get("vrf_name"), response.json()["vrf_name"])
         self.assertEqual(request_body.get("router_id"), response.json()["router_id"])
 
-        response = self.del_req("bgp_global", request_body)
+        response = self.del_and_wait("bgp_global", request_body)
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
@@ -80,7 +80,7 @@ class TestBGP(TestORCA):
         None
         """
         for device_ip in self.device_ips:
-            response = self.del_req(
+            response = self.del_and_wait(
                 "bgp_global", {"mgt_ip": device_ip, "vrf_name": "default"}
             )
             self.assertTrue(
@@ -103,7 +103,7 @@ class TestBGP(TestORCA):
             "router_id": device_ip_1,
         }
 
-        response = self.put_req("bgp_global", request_body)
+        response = self.put_and_wait("bgp_global", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = self.get_req("bgp_global", request_body)
         self.assertEqual(request_body.get("local_asn"), response.json()["local_asn"])
@@ -120,7 +120,7 @@ class TestBGP(TestORCA):
             "router_id": device_ip_2,
         }
 
-        response = self.put_req("bgp_global", request_body)
+        response = self.put_and_wait("bgp_global", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = self.get_req("bgp_global", request_body)
         self.assertEqual(request_body.get("local_asn"), response.json()["local_asn"])
@@ -136,7 +136,7 @@ class TestBGP(TestORCA):
             "neighbor_ip": "1.1.1.0",
         }
 
-        response = self.del_req("bgp_nbr", nbr_req)
+        response = self.del_and_wait("bgp_nbr", nbr_req)
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
@@ -148,7 +148,7 @@ class TestBGP(TestORCA):
         self.assertFalse(response.json().get("nbr_sub_if"))
         self.assertFalse(response.json().get("nbr_bgp"))
 
-        response = self.put_req("bgp_nbr", nbr_req)
+        response = self.put_and_wait("bgp_nbr", nbr_req)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response = self.get_req("bgp_nbr", nbr_req)
@@ -164,7 +164,7 @@ class TestBGP(TestORCA):
             response.json().get("nbr_bgp")[0].get("vrf_name"), nbr_req["remote_vrf"]
         )
 
-        response = self.del_req("bgp_nbr", nbr_req)
+        response = self.del_and_wait("bgp_nbr", nbr_req)
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
@@ -173,7 +173,7 @@ class TestBGP(TestORCA):
             )
         )
 
-        response = self.del_req("bgp_global", request_body)
+        response = self.del_and_wait("bgp_global", request_body)
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(

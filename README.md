@@ -71,6 +71,26 @@ In the above directory, following files have update options.
 - orca_nw_lib.yml - Device and Neo4j access information. Also the device or network information which needs to be discovered.
 - orca_nw_lib_logging.yml - A standard python logging configuration for orca_nw_lib.
 
+## Celery
+
+Celery is an open-source, distributed task queue framework for managing and executing tasks asynchronously. It is designed for real-time processing and also supports scheduling. Celery can be used for a wide range of applications, from simple background jobs to complex task workflows.
+
+## Run Celery worker:
+
+One of the dependencies for running celery worker is to run redis docker container. To run docker execute below command:
+
+```bash
+docker run -d -p 6379:6379 redis
+```
+
+In one terminal, start a Celery worker:
+
+```bash
+poetry run celery -A orca_backend worker --loglevel=info -P solo
+```
+
+After starting Celery worker run orca_backend 
+
 ## Run ORCA Backend:
 orca_backend runs like normal django server as follows:
 

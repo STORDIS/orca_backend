@@ -1,5 +1,5 @@
 """ VLAN API. """
-
+from celery import shared_task
 from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework.response import Response
@@ -14,16 +14,15 @@ from orca_nw_lib.vlan import (
 )
 from orca_nw_lib.common import IFMode, VlanAutoState
 
-from log_manager.decorators import log_request
+from log_manager.decorators import log_task
 from network.util import (
     add_msg_to_list,
     get_failure_msg,
-    get_success_msg,
+    get_success_msg, save_log,
 )
 
 
 @api_view(["GET", "PUT", "DELETE"])
-@log_request
 def vlan_config(request):
     """
     Generates the function comment for the given function body.
@@ -53,12 +52,31 @@ def vlan_config(request):
             else Response({}, status=status.HTTP_204_NO_CONTENT)
         )
 
-    for req_data in (
+    req_data_list = (
         request.data
         if isinstance(request.data, list)
         else [request.data] if request.data else []
-    ):
-        if request.method == "PUT":
+    )
+
+    task_id = save_log(req_data_list, request.method)
+    vlan_task.apply_async((req_data_list, request.method, task_id), task_id=task_id)
+    add_msg_to_list(result, {"message": "Task queued successfully.", "status": "success"})
+
+    return Response(
+        {"result": result},
+        status=(
+            status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR
+        ),
+    )
+
+
+@shared_task
+@log_task
+def vlan_task(request_data, method, task_id):
+    result = []
+    http_status = True
+    for req_data in request_data:
+        if method == "PUT":
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
                 return Response(
@@ -105,12 +123,12 @@ def vlan_config(request):
                     anycast_addr=req_data.get("sag_ip_address", ""),
                     mem_ifs=members,
                 )
-                add_msg_to_list(result, get_success_msg(request))
+                add_msg_to_list(result, get_success_msg(method))
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request))
+                add_msg_to_list(result, get_failure_msg(err, method))
                 http_status = http_status and False
 
-        elif request.method == "DELETE":
+        elif method == "DELETE":
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
                 return Response(
@@ -129,62 +147,33 @@ def vlan_config(request):
                                 mem_if,
                                 IFMode.get_enum_from_str(tagging_mode),
                             )
-                            add_msg_to_list(result, get_success_msg(request))
+                            add_msg_to_list(result, get_success_msg(method))
                         except Exception as err:
                             add_msg_to_list(
-                                result, get_failure_msg(err, request)
+                                result, get_failure_msg(err, method)
                             )
                             http_status = http_status and False
             try:
                 del_vlan(device_ip, vlan_name)
-                add_msg_to_list(result, get_success_msg(request))
+                add_msg_to_list(result, get_success_msg(method))
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request))
+                add_msg_to_list(result, get_failure_msg(err, method))
                 http_status = http_status and False
-
     return Response(
         {"result": result},
-        status=(
-            status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR
-        ),
+        status=status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR
     )
 
 
 @api_view(["DELETE"])
-@log_request
 def remove_vlan_ip_address(request):
     result = []
     http_status = True
     if request.method == "DELETE":
-        req_data = request.data
-        device_ip = req_data.get("mgt_ip", "")
-        if not device_ip:
-            return Response(
-                {"status": "Required field device mgt_ip not found."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        vlan_name = req_data.get("name", "")
-        if not vlan_name:
-            return Response(
-                {"status": "Required field device vlan_name not found."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        vlan_ip_addr = req_data.get("vlan_ip_addr", None)
-        try:
-            remove_ip_from_vlan(device_ip, vlan_name, vlan_ip_addr)
-            add_msg_to_list(result, get_success_msg(request))
-        except Exception as err:
-            add_msg_to_list(result, get_failure_msg(err, request))
-            http_status = http_status and False
-
-        sag_ip_address = req_data.get("sag_ip_address", None)
-        try:
-            remove_anycast_ip_from_vlan(device_ip, vlan_name, sag_ip_address)
-            add_msg_to_list(result, get_success_msg(request))
-        except Exception as err:
-            add_msg_to_list(result, get_failure_msg(err, request))
-            http_status = http_status and False
-
+        request_data = request.data
+        task_id = save_log(request_data, request.method)
+        remove_vlan_ip_address_task.apply_async(args=[request_data, request.method, task_id], task_id=task_id)
+        add_msg_to_list(result, {"message": "Task queued successfully.", "status": "success"})
     return Response(
         {"result": result},
         status=(
@@ -193,8 +182,45 @@ def remove_vlan_ip_address(request):
     )
 
 
+@shared_task
+@log_task
+def remove_vlan_ip_address_task(request_data: dict, method: str, task_id: str):
+    result = []
+    http_status = True
+    device_ip = request_data.get("mgt_ip", "")
+    if not device_ip:
+        return Response(
+            {"status": "Required field device mgt_ip not found."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    vlan_name = request_data.get("name", "")
+    if not vlan_name:
+        return Response(
+            {"status": "Required field device vlan_name not found."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    vlan_ip_addr = request_data.get("vlan_ip_addr", None)
+    try:
+        remove_ip_from_vlan(device_ip, vlan_name, vlan_ip_addr)
+        add_msg_to_list(result, get_success_msg(method))
+    except Exception as err:
+        add_msg_to_list(result, get_failure_msg(err, method))
+        http_status = http_status and False
+
+    sag_ip_address = request_data.get("sag_ip_address", None)
+    try:
+        remove_anycast_ip_from_vlan(device_ip, vlan_name, sag_ip_address)
+        add_msg_to_list(result, get_success_msg(method))
+    except Exception as err:
+        add_msg_to_list(result, get_failure_msg(err, method))
+        http_status = http_status and False
+    return Response(
+        {"result": result, "task_id": task_id},
+        status=status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
+
+
 @api_view(["DELETE"])
-@log_request
 def vlan_mem_config(request):
     """
     Deletes VLAN membership configuration.
@@ -208,41 +234,14 @@ def vlan_mem_config(request):
     result = []
     http_status = True
     if request.method == "DELETE":
-        for req_data in (
+        req_data_list = (
             request.data
             if isinstance(request.data, list)
             else [request.data] if request.data else []
-        ):
-            device_ip = req_data.get("mgt_ip", "")
-            if not device_ip:
-                return Response(
-                    {"status": "Required field device mgt_ip not found."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            vlan_name = req_data.get("name", "")
-            if not vlan_name:
-                return Response(
-                    {"status": "Required field device vlan_name not found."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            vlanid = req_data.get("vlanid", "")
-            if not vlanid:
-                return Response(
-                    {"status": "Required field device vlanid not found."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            if members := req_data.get("mem_ifs"):
-                ## Update members dicxtionary with tagging mode Enum
-                for mem_if, if_mode in members.items():
-                    try:
-                        del_vlan_mem(
-                            device_ip, vlanid, mem_if, IFMode.get_enum_from_str(if_mode)
-                        )
-                        add_msg_to_list(result, get_success_msg(request))
-                    except Exception as err:
-                        add_msg_to_list(result, get_failure_msg(err, request))
-                        http_status = http_status and False
+        )
+        task_id = save_log(req_data_list, request.method)
+        vlan_mem_config_task.apply_async(args=[req_data_list, request.method, task_id], task_id=task_id)
+        add_msg_to_list(result, {"message": "Task queued successfully.", "status": "success"})
 
     return Response(
         {"result": result},
@@ -250,3 +249,45 @@ def vlan_mem_config(request):
             status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR
         ),
     )
+
+
+@shared_task
+@log_task
+def vlan_mem_config_task(request_data: list, method: str, task_id: str):
+    result = []
+    http_status = True
+    for req_data in request_data:
+        device_ip = req_data.get("mgt_ip", "")
+        if not device_ip:
+            return Response(
+                {"status": "Required field device mgt_ip not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        vlan_name = req_data.get("name", "")
+        if not vlan_name:
+            return Response(
+                {"status": "Required field device vlan_name not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        vlanid = req_data.get("vlanid", "")
+        if not vlanid:
+            return Response(
+                {"status": "Required field device vlanid not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if members := req_data.get("mem_ifs"):
+            ## Update members dicxtionary with tagging mode Enum
+            for mem_if, if_mode in members.items():
+                try:
+                    del_vlan_mem(
+                        device_ip, vlanid, mem_if, IFMode.get_enum_from_str(if_mode)
+                    )
+                    add_msg_to_list(result, get_success_msg(method))
+                except Exception as err:
+                    add_msg_to_list(result, get_failure_msg(err, method))
+                    http_status = http_status and False
+        return Response(
+            {"result": result},
+            status=status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
