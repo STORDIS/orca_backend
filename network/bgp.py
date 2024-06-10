@@ -1,4 +1,5 @@
 """ BGP API views. """
+from celery import shared_task
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
@@ -12,16 +13,15 @@ from orca_nw_lib.bgp import (
     del_all_bgp_neighbors,
 )
 
-from log_manager.decorators import log_request
+from log_manager.decorators import log_task
 from network.util import (
     add_msg_to_list,
     get_failure_msg,
-    get_success_msg,
+    get_success_msg, save_log,
 )
 
 
 @api_view(["GET", "PUT", "DELETE"])
-@log_request
 def device_bgp_global(request):
     """
     A view function that handles GET, PUT, and DELETE requests for device BGP global settings.
@@ -65,11 +65,27 @@ def device_bgp_global(request):
             if data
             else Response({}, status.HTTP_204_NO_CONTENT)
         )
-    if request.method == "PUT":
-        req_data_list = (
-            request.data if isinstance(request.data, list) else [request.data]
-        )
-        for req_data in req_data_list:
+
+    req_data_list = request.data if isinstance(request.data, list) else [request.data]
+    task_id = save_log(req_data_list, request.method)
+    device_bgp_global_task.apply_async((req_data_list, request.method, task_id), task_id=task_id)
+    add_msg_to_list(result, {"message": "Task queued successfully.", "status": "success"})
+
+    return Response(
+        {"result": result},
+        status=status.HTTP_200_OK
+        if http_status
+        else status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
+
+
+@shared_task
+@log_task
+def device_bgp_global_task(request_data, method, task_id):
+    result = []
+    http_status = True
+    if method == "PUT":
+        for req_data in request_data:
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
                 return Response(
@@ -86,16 +102,13 @@ def device_bgp_global(request):
                 config_bgp_global(
                     device_ip, local_asn, device_ip, vrf_name=req_data.get("vrf_name")
                 )
-                add_msg_to_list(result, get_success_msg(request))
+                add_msg_to_list(result, get_success_msg(method))
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request))
+                add_msg_to_list(result, get_failure_msg(err, method))
                 http_status = http_status and False
 
-    elif request.method == "DELETE":
-        req_data_list = (
-            request.data if isinstance(request.data, list) else [request.data]
-        )
-        for req_data in req_data_list:
+    elif method == "DELETE":
+        for req_data in request_data:
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
                 return Response(
@@ -111,11 +124,10 @@ def device_bgp_global(request):
                 )
             try:
                 del_bgp_global(device_ip, vrf_name)
-                add_msg_to_list(result, get_success_msg(request))
+                add_msg_to_list(result, get_success_msg(method))
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request))
+                add_msg_to_list(result, get_failure_msg(err, method))
                 http_status = http_status and False
-
     return Response(
         {"result": result},
         status=status.HTTP_200_OK
@@ -125,7 +137,6 @@ def device_bgp_global(request):
 
 
 @api_view(["GET", "PUT", "DELETE"])
-@log_request
 def bgp_nbr_config(request):
     """
     A view function that handles GET, PUT, and DELETE requests for BGP neighbor configuration.
@@ -167,11 +178,31 @@ def bgp_nbr_config(request):
             if data
             else Response({}, status.HTTP_204_NO_CONTENT)
         )
-    if request.method == "PUT":
-        req_data_list = (
-            request.data if isinstance(request.data, list) else [request.data]
-        )
-        for req_data in req_data_list:
+    req_data_list = (
+        request.data
+        if isinstance(request.data, list)
+        else [request.data] if request.data else []
+    )
+
+    task_id = save_log(req_data_list, request.method)
+    bgp_nbr_task.apply_async((req_data_list, request.method, task_id), task_id=task_id)
+    add_msg_to_list(result, {"message": "Task queued successfully.", "status": "success"})
+
+    return Response(
+        {"result": result},
+        status=status.HTTP_200_OK
+        if http_status
+        else status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
+
+
+@shared_task
+@log_task
+def bgp_nbr_task(request_data: list, method: str, task_id: str):
+    result = []
+    http_status = True
+    if method == "PUT":
+        for req_data in request_data:
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
                 return Response(
@@ -201,15 +232,12 @@ def bgp_nbr_config(request):
 
             try:
                 config_bgp_neighbors(device_ip, remote_asn, neighbor_ip, remote_vrf)
-                add_msg_to_list(result, get_success_msg(request))
+                add_msg_to_list(result, get_success_msg(method))
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request))
+                add_msg_to_list(result, get_failure_msg(err, method))
                 http_status = http_status and False
-    elif request.method == "DELETE":
-        req_data_list = (
-            request.data if isinstance(request.data, list) else [request.data]
-        )
-        for req_data in req_data_list:
+    elif method == "DELETE":
+        for req_data in request_data:
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
                 return Response(
@@ -218,14 +246,13 @@ def bgp_nbr_config(request):
                 )
             try:
                 del_all_bgp_neighbors(device_ip)
-                add_msg_to_list(result, get_success_msg(request))
+                add_msg_to_list(result, get_success_msg(method))
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request))
+                add_msg_to_list(result, get_failure_msg(err, method))
                 http_status = http_status and False
-
     return Response(
-        {"result": result},
+        data={"result": result},
         status=status.HTTP_200_OK
         if http_status
-        else status.HTTP_500_INTERNAL_SERVER_ERROR,
+        else status.HTTP_500_INTERNAL_SERVER_ERROR
     )

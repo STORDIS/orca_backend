@@ -1,8 +1,6 @@
 """
 This module contains tests for the Interface API.
 """
-
-
 from rest_framework import status
 from network.test.test_common import TestORCA
 from orca_nw_lib.common import IFMode
@@ -26,10 +24,10 @@ class TestVlan(TestORCA):
         """
         device_ip = self.device_ips[0]
 
-        response = self.del_req(
+        response = self.del_and_wait(
             "vlan_ip_remove", {"mgt_ip": device_ip, "name": self.vlan_name}
         )
-        response = self.del_req(
+        response = self.del_and_wait(
             "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
         )
 
@@ -55,11 +53,10 @@ class TestVlan(TestORCA):
             "autostate": "enable",
         }
 
-        response = self.put_req(
+        response = self.put_and_wait(
             "vlan_config",
             req_payload,
         )
-
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response = self.get_req(
@@ -80,7 +77,7 @@ class TestVlan(TestORCA):
             "vlanid": self.vlan_id,
             "ip_address": "20.20.20.20/24",
         }
-        response = self.del_req("vlan_ip_remove", req_payload)
+        response = self.del_and_wait("vlan_ip_remove", req_payload)
         self.assertFalse(response.json().get("ip_address"))
 
         # Now assign sag_ip
@@ -90,20 +87,21 @@ class TestVlan(TestORCA):
             "vlanid": self.vlan_id,
             "sag_ip_address": "20.20.20.20/24",
         }
-        response = self.put_req("vlan_config", req_payload)
+        response = self.put_and_wait("vlan_config", req_payload)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         ## Verify sag_ip_address
         response = self.get_req(
             "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
         )
+        print(response.json())
         self.assertEqual(response.json()["name"], self.vlan_name)
         self.assertEqual(response.json()["vlanid"], self.vlan_id)
         self.assertEqual(
             response.json()["sag_ip_address"], req_payload["sag_ip_address"]
         )
         # clean up
-        response = self.del_req(
+        response = self.del_and_wait(
             "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
         )
 
@@ -140,7 +138,7 @@ class TestVlan(TestORCA):
     def cleanup_vlan_mem_and_config(self, request_body):
         device_ip = request_body["mgt_ip"]
         # Delete VLAN members.
-        response = self.del_req("vlan_mem_delete", request_body)
+        response = self.del_and_wait("vlan_mem_delete", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Confirm deletion of VLAN members.
         response = self.get_req(
@@ -152,7 +150,7 @@ class TestVlan(TestORCA):
         )
 
         ## Delete VLAN
-        response = self.del_req(
+        response = self.del_and_wait(
             "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -179,25 +177,25 @@ class TestVlan(TestORCA):
         ether_2 = list(request_body.get("mem_ifs").keys())[1]
 
         # Remove Vlan from Interfaces.
-        self.del_req(
+        self.del_and_wait(
             "device_interface_list",
             {"mgt_ip": device_ip, "name": ether_1, "ifmode": "ACCESS"},
         )
-        self.del_req(
+        self.del_and_wait(
             "device_interface_list",
             {"mgt_ip": device_ip, "name": ether_1, "ifmode": "TRUNK"},
         )
-        self.del_req(
+        self.del_and_wait(
             "device_interface_list",
             {"mgt_ip": device_ip, "name": ether_2, "ifmode": "ACCESS"},
         )
-        self.del_req(
+        self.del_and_wait(
             "device_interface_list",
             {"mgt_ip": device_ip, "name": ether_2, "ifmode": "TRUNK"},
         )
 
         # Delete VLAN members.
-        response = self.del_req("vlan_mem_delete", request_body)
+        response = self.del_and_wait("vlan_mem_delete", request_body)
 
         self.assertTrue(
             response.status_code in [status.HTTP_200_OK, status.HTTP_204_NO_CONTENT]
@@ -215,7 +213,7 @@ class TestVlan(TestORCA):
         )
 
         # Now delete VLAN
-        response = self.del_req(
+        response = self.del_and_wait(
             "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
         )
 
@@ -245,7 +243,7 @@ class TestVlan(TestORCA):
         self.perform_del_port_chnl(request_body_port_chnl)
         self.perform_add_port_chnl(request_body_port_chnl)
 
-        response = self.put_req(
+        response = self.put_and_wait(
             "vlan_config",
             request_body,
         )

@@ -28,9 +28,10 @@ class TestMclag(TestORCA):
 
         :return: None
         """
+        print("-------------", self.device_ips)
         device_ip_1 = self.device_ips[0]
         device_ip_2 = self.device_ips[1]
-        response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
+        response = self.del_and_wait("device_mclag_list", {"mgt_ip": device_ip_1})
 
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
@@ -60,7 +61,7 @@ class TestMclag(TestORCA):
             "mclag_sys_mac": self.mclag_sys_mac,
         }
 
-        response = self.put_req("device_mclag_list", request_body)
+        response = self.put_and_wait("device_mclag_list", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response = self.get_req(
@@ -89,7 +90,7 @@ class TestMclag(TestORCA):
         device_ip_1 = self.device_ips[0]
         device_ip_2 = self.device_ips[1]
 
-        response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
+        response = self.del_and_wait("device_mclag_list", {"mgt_ip": device_ip_1})
 
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
@@ -120,7 +121,7 @@ class TestMclag(TestORCA):
             "mclag_sys_mac": self.mclag_sys_mac,
         }
 
-        response = self.put_req("device_mclag_list", request_body)
+        response = self.put_and_wait("device_mclag_list", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response = self.get_req(
@@ -156,7 +157,7 @@ class TestMclag(TestORCA):
             "mclag_members": [self.mem_port_chnl, self.mem_port_chnl_2],
         }
 
-        response = self.del_req("device_mclag_list", request_body_members)
+        response = self.del_and_wait("device_mclag_list", request_body_members)
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
@@ -164,7 +165,7 @@ class TestMclag(TestORCA):
                 if res != "\n"
             )
         )
-        response = self.put_req("device_mclag_list", request_body_members)
+        response = self.put_and_wait("device_mclag_list", request_body_members)
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         response = self.get_req("device_mclag_list", request_body_members)
         self.assertTrue(response.status_code == status.HTTP_200_OK)
@@ -175,7 +176,7 @@ class TestMclag(TestORCA):
             )
 
         # cleanup members
-        response = self.del_req("device_mclag_list", request_body_members)
+        response = self.del_and_wait("device_mclag_list", request_body_members)
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
@@ -184,7 +185,7 @@ class TestMclag(TestORCA):
             )
         )
         # cleanup mclag
-        response = self.del_req("device_mclag_list", request_body)
+        response = self.del_and_wait("device_mclag_list", request_body)
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
@@ -207,7 +208,7 @@ class TestMclag(TestORCA):
 
         device_ip_1 = self.device_ips[0]
         gw_mac = "aa:bb:aa:bb:aa:bb"
-        response = self.del_req("mclag_gateway_mac", {"mgt_ip": device_ip_1})
+        response = self.del_and_wait("mclag_gateway_mac", {"mgt_ip": device_ip_1})
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
@@ -225,7 +226,7 @@ class TestMclag(TestORCA):
             "mgt_ip": device_ip_1,
             "gateway_mac": gw_mac,
         }
-        response = self.put_req("mclag_gateway_mac", request_body)
+        response = self.put_and_wait("mclag_gateway_mac", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = self.get_req(
             "mclag_gateway_mac", {"mgt_ip": device_ip_1, "gateway_mac": gw_mac}
@@ -234,7 +235,7 @@ class TestMclag(TestORCA):
 
         # Finally remove mclag gateway mac
 
-        response = self.del_req("mclag_gateway_mac", {"mgt_ip": device_ip_1})
+        response = self.del_and_wait("mclag_gateway_mac", {"mgt_ip": device_ip_1})
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(

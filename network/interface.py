@@ -1,5 +1,5 @@
 """ Interface view. """
-
+from celery import shared_task
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -12,12 +12,11 @@ from orca_nw_lib.interface import (
 )
 from orca_nw_lib.common import Speed, PortFec, IFMode
 
-from log_manager.decorators import log_request
-from network.util import add_msg_to_list, get_failure_msg, get_success_msg
+from log_manager.decorators import log_request, log_task
+from network.util import add_msg_to_list, get_failure_msg, get_success_msg, save_log
 
 
 @api_view(["GET", "PUT", "DELETE"])
-@log_request
 def device_interfaces_list(request):
     """
     This function handles the API view for listing and updating device interfaces.
@@ -44,12 +43,30 @@ def device_interfaces_list(request):
             if data
             else Response({}, status.HTTP_204_NO_CONTENT)
         )
+    req_data_list = (
+        request.data
+        if isinstance(request.data, list)
+        else [request.data] if request.data else []
+    )
+    task_id = save_log(req_data_list, request.method)
+    device_interface_list_task.apply_async(args=[req_data_list, request.method, task_id], task_id=task_id)
+    add_msg_to_list(result, {"message": "Task queued successfully.", "status": "success"})
 
-    elif request.method == "PUT":
-        req_data_list = (
-            request.data if isinstance(request.data, list) else [request.data]
-        )
-        for req_data in req_data_list:
+    return Response(
+        {"result": result},
+        status=(
+            status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR
+        ),
+    )
+
+
+@shared_task
+@log_task
+def device_interface_list_task(request_data, method, task_id):
+    result = []
+    http_status = True
+    if method == "PUT":
+        for req_data in request_data:
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
                 return Response(
@@ -90,16 +107,14 @@ def device_interfaces_list(request):
                     ),
                     adv_speeds=req_data.get("adv_speeds"),
                 )
-                add_msg_to_list(result, get_success_msg(request))
+                add_msg_to_list(result, get_success_msg(method))
                 http_status = http_status and True
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request))
+                add_msg_to_list(result, get_failure_msg(err, method))
                 http_status = http_status and False
-    elif request.method == "DELETE":
-        req_data_list = (
-            request.data if isinstance(request.data, list) else [request.data]
-        )
-        for req_data in req_data_list:
+
+    elif method == "DELETE":
+        for req_data in request_data:
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
                 return Response(
@@ -116,12 +131,12 @@ def device_interfaces_list(request):
                 remove_vlan(
                     device_ip=device_ip,
                     intfc_name=req_data.get("name"),
-                    if_mode= if_mode if (if_mode := IFMode.get_enum_from_str(req_data.get("if_mode"))) else None
+                    if_mode=if_mode if (if_mode := IFMode.get_enum_from_str(req_data.get("if_mode"))) else None
                 )
-                add_msg_to_list(result, get_success_msg(request))
+                add_msg_to_list(result, get_success_msg(method))
                 http_status = http_status and True
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request))
+                add_msg_to_list(result, get_failure_msg(err, method))
                 http_status = http_status and False
 
     return Response(

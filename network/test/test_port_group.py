@@ -21,7 +21,7 @@ class TestPortGroup(TestORCA):
         request_body = {"mgt_ip": device_ip, "port_group_id": "1", "speed": "SPEED_10G"}
 
         ## Delete MCLAG because if the port channel being deleted in the next step is being used in MCLAG, deletion will fail.
-        response = self.del_req("device_mclag_list", {"mgt_ip": device_ip})
+        response = self.del_and_wait("device_mclag_list", {"mgt_ip": device_ip})
 
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
@@ -32,10 +32,10 @@ class TestPortGroup(TestORCA):
         )
 
         ## Delete VLANs then delete port channels in next steps.
-        response = self.del_req(
+        response = self.del_and_wait(
             "vlan_ip_remove", {"mgt_ip": device_ip, "name": self.vlan_name}
         )
-        response = self.del_req(
+        response = self.del_and_wait(
             "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
         )
         self.assertTrue(
@@ -55,7 +55,7 @@ class TestPortGroup(TestORCA):
         request_body["speed"] = self.get_speed_to_set(orig_speed)
 
         self.assert_with_timeout_retry(
-            lambda path, data: self.put_req(path, data),
+            lambda path, data: self.put_and_wait(path, data),
             self.assertTrue,
             "port_groups",
             request_body,
@@ -84,7 +84,7 @@ class TestPortGroup(TestORCA):
         # Restore speed
         request_body["speed"] = orig_speed
         self.assert_with_timeout_retry(
-            lambda path, data: self.put_req(path, data),
+            lambda path, data: self.put_and_wait(path, data),
             self.assertTrue,
             "port_groups",
             request_body,
@@ -133,7 +133,7 @@ class TestPortGroup(TestORCA):
 
         # Update speed on all port groups
         self.assert_with_timeout_retry(
-            lambda path, data: self.put_req(path, data),
+            lambda path, data: self.put_and_wait(path, data),
             self.assertTrue,
             "port_groups",
             port_groups_1,
@@ -162,7 +162,7 @@ class TestPortGroup(TestORCA):
             pg["speed"] = pg["orig_speed"]
 
         self.assert_with_timeout_retry(
-            lambda path, data: self.put_req(path, data),
+            lambda path, data: self.put_and_wait(path, data),
             self.assertTrue,
             "port_groups",
             port_groups_1,

@@ -10,7 +10,7 @@ class LogSerializer(serializers.ModelSerializer):
         model = Logs
         fields = (
             'timestamp', 'request_json', "status", "processing_time",
-            "response", "status_code", "http_method"
+            "response", "status_code", "http_method", "task_id"
         )
         extra_kwargs = {
             'timestamp': {'required': True},
@@ -19,7 +19,8 @@ class LogSerializer(serializers.ModelSerializer):
             "processing_time": {'required': True},
             "response": {'required': True},
             "status_code": {'required': True},
-            "http_method": {'required': True}
+            "http_method": {'required': True},
+            "task_id": {'required': True},
         }
 
     def save(self, **kwargs):
