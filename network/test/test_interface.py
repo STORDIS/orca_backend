@@ -245,7 +245,7 @@ class TestInterface(TestORCA):
         response = self.put_req("device_interface_list", request_body)
         self.assertTrue(response.status_code == status.HTTP_200_OK)
 
-        response_2 = self.assert_with_timeout_retry(
+        self.assert_with_timeout_retry(
             lambda path, payload: self.get_req(path, payload),
             self.assertEqual,
             "device_interface_list",
