@@ -1,4 +1,5 @@
 """ MCLAG API """
+from celery import shared_task
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
@@ -14,16 +15,15 @@ from orca_nw_lib.mclag import (
     del_mclag_member,
 )
 
-from log_manager.decorators import log_request
+from log_manager.decorators import log_task
 from network.util import (
     add_msg_to_list,
     get_failure_msg,
-    get_success_msg,
+    get_success_msg, save_log,
 )
 
 
 @api_view(["GET", "PUT", "DELETE"])
-@log_request
 def device_mclag_list(request):
     """
     Retrieves a list of device MCLAGs.
@@ -55,14 +55,29 @@ def device_mclag_list(request):
             if data
             else Response({}, status=status.HTTP_204_NO_CONTENT)
         )
-    if request.method == "DELETE":
-        for req_data in (
-            request.data
-            if isinstance(request.data, list)
-            else [request.data]
-            if request.data
-            else []
-        ):
+    req_data_list = (
+        request.data
+        if isinstance(request.data, list)
+        else [request.data] if request.data else []
+    )
+    task_id = save_log(req_data_list, request.method)
+    device_mclag_list_task.apply_async((req_data_list, request.method, task_id), task_id=task_id)
+
+    return Response(
+        {"result": result},
+        status=status.HTTP_200_OK
+        if http_status
+        else status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
+
+
+@shared_task
+@log_task
+def device_mclag_list_task(request_data, method, task_id):
+    result = []
+    http_status = True
+    if method == "DELETE":
+        for req_data in request_data:
             device_ip = req_data.get("mgt_ip", "")
             mclag_members = req_data.get("mclag_members", None)
 
@@ -77,26 +92,20 @@ def device_mclag_list(request):
             if mclag_members:
                 try:
                     del_mclag_member(device_ip)
-                    add_msg_to_list(result, get_success_msg(request))
+                    add_msg_to_list(result, get_success_msg(method))
                 except Exception as err:
-                    add_msg_to_list(result, get_failure_msg(err, request))
+                    add_msg_to_list(result, get_failure_msg(err, method))
                     http_status = http_status and False
             else:
                 try:
                     del_mclag(device_ip)
-                    add_msg_to_list(result, get_success_msg(request))
+                    add_msg_to_list(result, get_success_msg(method))
                 except Exception as err:
-                    add_msg_to_list(result, get_failure_msg(err, request))
+                    add_msg_to_list(result, get_failure_msg(err, method))
                     http_status = http_status and False
 
-    elif request.method == "PUT":
-        for req_data in (
-            request.data
-            if isinstance(request.data, list)
-            else [request.data]
-            if request.data
-            else []
-        ):
+    elif method == "PUT":
+        for req_data in request_data:
             device_ip = req_data.get("mgt_ip", "")
             domain_id = req_data.get("domain_id", "")
             src_addr = req_data.get("source_address", "")
@@ -123,19 +132,18 @@ def device_mclag_list(request):
                         peer_link,
                         mclag_sys_mac,
                     )
-                    add_msg_to_list(result, get_success_msg(request))
+                    add_msg_to_list(result, get_success_msg(method))
                 except Exception as err:
-                    add_msg_to_list(result, get_failure_msg(err, request))
+                    add_msg_to_list(result, get_failure_msg(err, method))
                     http_status = http_status and False
 
             for mem in mclag_members:
                 try:
                     config_mclag_mem_portchnl(device_ip, domain_id, mem)
-                    add_msg_to_list(result, get_success_msg(request))
+                    add_msg_to_list(result, get_success_msg(method))
                 except Exception as err:
-                    add_msg_to_list(result, get_failure_msg(err, request))
+                    add_msg_to_list(result, get_failure_msg(err, method))
                     http_status = http_status and False
-
     return Response(
         {"result": result},
         status=status.HTTP_200_OK
@@ -145,7 +153,6 @@ def device_mclag_list(request):
 
 
 @api_view(["GET", "PUT", "DELETE"])
-@log_request
 def mclag_gateway_mac(request):
     """
     Retrieves or configures the MCLAG gateway MAC address.
@@ -173,8 +180,20 @@ def mclag_gateway_mac(request):
             if data
             else Response({}, status=status.HTTP_204_NO_CONTENT)
         )
-    if request.method == "DELETE":
-        device_ip = request.data.get("mgt_ip", "")
+    req_data = request.data
+    task_id = save_log(req_data, request.method)
+    mclag_gateway_mac_task.apply_async((req_data, request.method, task_id), task_id=task_id)
+    return Response(
+        {"result": "Task queued successfully.", "status": "success"},
+        status=status.HTTP_200_OK,
+    )
+
+
+@shared_task
+@log_task
+def mclag_gateway_mac_task(request_data, method, task_id):
+    if method == "DELETE":
+        device_ip = request_data.get("mgt_ip", "")
         if not device_ip:
             return Response(
                 {"status": "Required field device mgt_ip not found."},
@@ -183,22 +202,22 @@ def mclag_gateway_mac(request):
         try:
             del_mclag_gw_mac(device_ip)
             return Response(
-                {"result": get_success_msg(request)},
+                {"result": get_success_msg(method)},
                 status=status.HTTP_200_OK,
             )
         except Exception as err:
             return Response(
-                {"result": get_failure_msg(err, request)},
+                {"result": get_failure_msg(err, method)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-    elif request.method == "PUT":
-        device_ip = request.data.get("mgt_ip", "")
+    elif method == "PUT":
+        device_ip = request_data.get("mgt_ip", "")
         if not device_ip:
             return Response(
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        gw_mac = request.data.get("gateway_mac", "")
+        gw_mac = request_data.get("gateway_mac", "")
         if not gw_mac:
             return Response(
                 {"status": "Required field device mclag_gateway_mac not found."},
@@ -207,11 +226,15 @@ def mclag_gateway_mac(request):
         try:
             config_mclag_gw_mac(device_ip, gw_mac)
             return Response(
-                {"result": get_success_msg(request)},
+                {"result": get_success_msg(method)},
                 status=status.HTTP_200_OK,
             )
         except Exception as err:
             return Response(
-                {"result": get_failure_msg(err, request)},
+                {"result": get_failure_msg(err, method)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+    return Response(
+        {"result": get_success_msg(method)},
+        status=status.HTTP_200_OK
+    )

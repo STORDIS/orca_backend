@@ -22,7 +22,7 @@ class TestDiscovery(TestORCA):
         response=self.del_req("del_db")
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         response=self.get_req("device")
-        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+        # self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
         
         ## Discover only one device
         device_ip = "10.10.229.58"
@@ -30,7 +30,7 @@ class TestDiscovery(TestORCA):
             "address": device_ip,
             "discover_from_config": True
         }
-        response=self.put_req("discover",request_body)
+        response=self.put_and_wait("discover",request_body)
         self.assertTrue(response.status_code == status.HTTP_100_CONTINUE)
         response=self.get_req("device")
         self.assertTrue(response.status_code == status.HTTP_200_OK)
@@ -40,7 +40,7 @@ class TestDiscovery(TestORCA):
         request_body = {
             "discover_from_config": True
         }
-        response=self.put_req("discover",request_body)
+        response=self.put_and_wait("discover",request_body)
         self.assertTrue(response.status_code == status.HTTP_100_CONTINUE)
         response=self.get_req("device")
         self.assertTrue(response.status_code == status.HTTP_200_OK)

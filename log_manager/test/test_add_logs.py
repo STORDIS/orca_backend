@@ -21,7 +21,8 @@ class TestAddLogs(TestCommon):
                 "key": "value"
             },
             "http_method": "POST",
-            "status_code": 200
+            "status_code": 200,
+            "task_id": "task_id"
         }
         serializer = LogSerializer(data=data)
         if serializer.is_valid():
@@ -41,7 +42,8 @@ class TestAddLogs(TestCommon):
                 "key": "value"
             },
             "http_method": "POST",
-            "status_code": 200
+            "status_code": 200,
+            "task_id": "task_id"
         }
         serializer = LogSerializer(data=data)
         if serializer.is_valid():

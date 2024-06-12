@@ -1,4 +1,5 @@
 """ Network Port Channel API. """
+from celery import shared_task
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
@@ -11,12 +12,11 @@ from orca_nw_lib.port_chnl import (
     del_port_chnl_mem,
 )
 
-from log_manager.decorators import log_request
-from network.util import add_msg_to_list, get_failure_msg, get_success_msg
+from log_manager.decorators import log_task
+from network.util import add_msg_to_list, get_failure_msg, get_success_msg, save_log
 
 
 @api_view(["GET", "PUT", "DELETE"])
-@log_request
 def device_port_chnl_list(request):
     """
     Handles the device port channel list API.
@@ -60,11 +60,31 @@ def device_port_chnl_list(request):
             else Response({}, status=status.HTTP_204_NO_CONTENT)
         )
 
-    if request.method == "PUT":
-        req_data_list = (
-            request.data if isinstance(request.data, list) else [request.data]
-        )
-        for req_data in req_data_list:
+    req_data_list = (
+        request.data
+        if isinstance(request.data, list)
+        else [request.data] if request.data else []
+    )
+
+    task_id = save_log(req_data_list, request.method)
+    port_chnl_task.apply_async((req_data_list, request.method, task_id), task_id=task_id)
+    add_msg_to_list(result, {"message": "Task queued successfully.", "status": "success"})
+
+    return Response(
+        {"result": result},
+        status=status.HTTP_200_OK
+        if http_status
+        else status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
+
+
+@shared_task
+@log_task
+def port_chnl_task(request_data: list, method: str, task_id: str):
+    result = []
+    http_status = True
+    if method == "PUT":
+        for req_data in request_data:
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
                 return Response(
@@ -89,16 +109,13 @@ def device_port_chnl_list(request):
                         req_data.get("lag_name"),
                         members,
                     )
-                add_msg_to_list(result, get_success_msg(request))
+                add_msg_to_list(result, get_success_msg(method))
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request))
+                add_msg_to_list(result, get_failure_msg(err, method))
                 http_status = http_status and False
 
-    elif request.method == "DELETE":
-        req_data_list = (
-            request.data if isinstance(request.data, list) else [request.data]
-        )
-        for req_data in req_data_list:
+    elif method == "DELETE":
+        for req_data in request_data:
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
                 return Response(
@@ -119,13 +136,12 @@ def device_port_chnl_list(request):
                         )
                 else:
                     del_port_chnl(device_ip, req_data.get("lag_name"))
-                add_msg_to_list(result, get_success_msg(request))
+                add_msg_to_list(result, get_success_msg(method))
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request))
+                add_msg_to_list(result, get_failure_msg(err, method))
                 http_status = http_status and False
-
     return Response(
-        {"result": result},
+        data={"result": result},
         status=status.HTTP_200_OK
         if http_status
         else status.HTTP_500_INTERNAL_SERVER_ERROR,

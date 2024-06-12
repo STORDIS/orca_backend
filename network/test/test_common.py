@@ -3,6 +3,10 @@ Test utility functions
 """
 
 import time
+import uuid
+from unittest.mock import patch
+
+from celery.result import AsyncResult
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
@@ -25,7 +29,7 @@ class TestORCA(APITestCase):
 
         response = self.get_req("device")
         if not response.data:
-            response = self.put_req("discover", {"discover_from_config": True})
+            response = self.put_and_wait("discover", {"address": "10.10.229.58"})
             if not response or response.get("result") == "Fail":
                 self.fail("Failed to discover devices")
 
@@ -79,7 +83,7 @@ class TestORCA(APITestCase):
             AssertionError: If the response status code is not 200 OK or if the response contains the message "resource not found".
                             If the response status code is not 204 NO CONTENT.
         """
-        response = self.del_req("device_port_chnl", request_body)
+        response = self.del_and_wait("device_port_chnl", request_body)
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
@@ -128,7 +132,7 @@ class TestORCA(APITestCase):
             self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
             self.assertFalse(response.data)
 
-            response = self.put_req("device_port_chnl", data)
+            response = self.put_and_wait("device_port_chnl", data)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             response = self.get_req(
                 "device_port_chnl",
@@ -334,7 +338,7 @@ class TestORCA(APITestCase):
         return self.send_req_and_assert(req_func, assert_func, *req_args, **assert_args)
 
     def remove_mclag(self, device_ip):
-        response = self.del_req("device_mclag_list", {"mgt_ip": device_ip})
+        response = self.del_and_wait("device_mclag_list", {"mgt_ip": device_ip})
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
@@ -345,3 +349,39 @@ class TestORCA(APITestCase):
         response = self.get_req("device_mclag_list", {"mgt_ip": device_ip})
         self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
         self.assertFalse(response.data)
+
+    def put_and_wait(self,  url_name: str, req_json: dict):
+        task_id = uuid.uuid4()
+        with patch("uuid.uuid4") as mock_uuid:
+            mock_uuid.return_value = task_id
+            response = self.put_req(
+                url_name,
+                req_json,
+            )
+
+        while True:
+            result = AsyncResult(task_id.hex)
+            if result.status != "PENDING":
+                break
+        print("--------------", task_id)
+        print(req_json, url_name)
+        print(result.result)
+        return response
+
+    def del_and_wait(self,  url_name: str, req_json: dict = None):
+        task_id = uuid.uuid4()
+        with patch("uuid.uuid4") as mock_uuid:
+            mock_uuid.return_value = task_id
+            response = self.del_req(
+                url_name,
+                req_json if req_json else {},
+            )
+        while True:
+            result = AsyncResult(task_id.hex)
+            if result.status != "PENDING":
+                break
+        print("--------------", task_id)
+        print(req_json, url_name)
+        print(result.result)
+        return response
+

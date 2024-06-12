@@ -100,7 +100,7 @@ class TestPortChnl(TestORCA):
         ]
 
         self.assert_with_timeout_retry(
-            lambda path, payload: self.put_req(path, payload),
+            lambda path, payload: self.put_and_wait(path, payload),
             self.assertEqual,
             "device_interface_list",
             itf_request_body,
@@ -127,7 +127,7 @@ class TestPortChnl(TestORCA):
             req["speed"] = self.get_common_speed_to_set(speed_1)
 
             self.assert_with_timeout_retry(
-                lambda path, payload: self.put_req(path, payload),
+                lambda path, payload: self.put_and_wait(path, payload),
                 self.assertEqual,
                 "device_interface_list",
                 req,
@@ -174,7 +174,7 @@ class TestPortChnl(TestORCA):
         ## So better remove all vlans from Interfaces first.
         for req in request_body:
             for mem in req["members"]:
-                response = self.del_req(
+                response = self.del_and_wait(
                     "device_interface_list", {"mgt_ip": device_ip, "name": mem}
                 )
                 self.assertTrue(
@@ -187,7 +187,7 @@ class TestPortChnl(TestORCA):
                 )
         ## Delete MCLAG if exists, because if the port channel being deleted in the next steps is being used in MCLAG,
         # deletion will fail.
-        response = self.del_req("device_mclag_list", request_body)
+        response = self.del_and_wait("device_mclag_list", request_body)
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
