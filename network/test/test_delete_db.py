@@ -17,8 +17,7 @@ class TestDelete(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         
         # storing count in variable for compaction
-        for device in response.json():
-            count_before_delete += 1
+        count_before_delete = len(response.json())
 
         # delete the one device 
         request_body = {
@@ -32,8 +31,7 @@ class TestDelete(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         
         # storing count in variable for compaction
-        for device in response.json():
-            count_after_delete += 1
+        count_after_delete = len(response.json())
         
         # checking if the counts are correct 
         # i. e device before deletion must be one grater than device after deletion
@@ -42,7 +40,7 @@ class TestDelete(TestORCA):
         # re discovering the deleted device
         request_body = {
             "address": self.device_ips[0],
-            "discover_from_config": True
+            "discover_from_config": False
         }
         response=self.put_req("discover",request_body)
         self.assertTrue(response.status_code == status.HTTP_100_CONTINUE)
@@ -52,8 +50,7 @@ class TestDelete(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         
         # storing count in variable for compaction
-        for device in response.json():
-            count_after_rediscovery += 1
+        count_after_rediscovery = len(response.json())
             
         # checking if the counts are correct after re discovering
         self.assertEqual(count_before_delete, count_after_rediscovery)
