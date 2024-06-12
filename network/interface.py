@@ -79,7 +79,15 @@ def device_interfaces_list(request):
                     description=req_data.get("description"),
                     fec=PortFec.get_enum_from_str(req_data.get("fec")),
                     speed=Speed.get_enum_from_str(req_data.get("speed")),
-                    autoneg=req_data.get("autoneg"),
+                    autoneg=(
+                        True
+                        if str(req_data.get("autoneg")).lower() == "on"
+                        else (
+                            False
+                            if str(req_data.get("autoneg")).lower() == "off"
+                            else None
+                        )
+                    ),
                     adv_speeds=req_data.get("adv_speeds"),
                 )
                 add_msg_to_list(result, get_success_msg(request))
