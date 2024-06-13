@@ -1,5 +1,4 @@
 """ View for network. """
-
 from celery import shared_task
 from rest_framework.response import Response
 from rest_framework import status
@@ -7,6 +6,8 @@ from rest_framework.decorators import api_view
 from orca_nw_lib.device import get_device_details
 from orca_nw_lib.discovery import discover_device
 
+from log_manager.decorators import log_request, log_task
+from network.util import add_msg_to_list, get_failure_msg, get_success_msg, save_log
 from log_manager.decorators import log_request, log_task
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg, save_log
 
