@@ -73,7 +73,7 @@ class TestInterface(TestORCA):
                 status=status.HTTP_200_OK,
             )
 
-    def test_interface_description_config(self):            
+    def test_interface_description_config(self):
         device_ip = self.device_ips[0]
         ether_name = self.ether_names[1]
         request_body = [
@@ -221,30 +221,37 @@ class TestInterface(TestORCA):
                 fec=data["fec"],
                 status=status.HTTP_200_OK,
             )
+
     def test_interface_autoneg_config(self):
         device_ip = self.device_ips[0]
         ether_name = self.ether_names[1]
 
+        # getting details of a single interface for a particular ip
         response_1 = self.get_req(
             "device_interface_list", {"mgt_ip": device_ip, "name": ether_name}
         )
+
+        # storing the auto-negotiate and advertised-speed
         pre_autoneg = response_1.json()["autoneg"]
         adv_speeds = response_1.json()["valid_speeds"]
-        
+
+        # setting the auto-negotiate to on or off with respective to previous auto-negotiate value
+        # and creating request body
         set_autoneg = "on" if pre_autoneg == "off" else "off"
-
         request_body = (
-                {
-                    "mgt_ip": device_ip,
-                    "name": ether_name,
-                    "autoneg": set_autoneg,
-                    "adv_speeds": adv_speeds,
-                },
-            )
+            {
+                "mgt_ip": device_ip,
+                "name": ether_name,
+                "autoneg": set_autoneg,
+                "adv_speeds": adv_speeds,
+            },
+        )
 
+        # changing the interface auto-negotiate and advertised-speed value
         response = self.put_req("device_interface_list", request_body)
         self.assertTrue(response.status_code == status.HTTP_200_OK)
 
+        # verifying the auto-negotiate and advertised-speed value after changing the auto-negotiate value
         self.assert_with_timeout_retry(
             lambda path, payload: self.get_req(path, payload),
             self.assertEqual,
@@ -253,7 +260,30 @@ class TestInterface(TestORCA):
             autoneg=set_autoneg,
             status=status.HTTP_200_OK,
         )
-    
+
+        # creating request to set the auto-negotiate and advertised-speed value to default
+        request_body = (
+            {
+                "mgt_ip": device_ip,
+                "name": ether_name,
+                "autoneg": pre_autoneg,
+                "adv_speeds": adv_speeds,
+            },
+        )
+        response = self.put_req("device_interface_list", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        
+        # verifying the auto-negotiate and advertised-speed value has set to default value
+        self.assert_with_timeout_retry(
+            lambda path, payload: self.get_req(path, payload),
+            self.assertEqual,
+            "device_interface_list",
+            {"mgt_ip": device_ip, "name": ether_name},
+            autoneg=pre_autoneg,
+            status=status.HTTP_200_OK,
+        )
+        
+
     @unittest.skip("Randomly fails, to be debugged")
     def test_multiple_interfaces_config(self):
         """
@@ -304,9 +334,12 @@ class TestInterface(TestORCA):
                 "description": "Sample Description",
             },
         ]
-        
-        self.assertTrue(self.put_req("device_interface_list", request_body).status_code == status.HTTP_200_OK)
-        
+
+        self.assertTrue(
+            self.put_req("device_interface_list", request_body).status_code
+            == status.HTTP_200_OK
+        )
+
         self.assert_with_timeout_retry(
             lambda path, payload: self.get_req(path, payload),
             self.assertEqual,
@@ -350,7 +383,10 @@ class TestInterface(TestORCA):
             },
         ]
 
-        self.assertTrue(self.put_req("device_interface_list", request_body).status_code == status.HTTP_200_OK)
+        self.assertTrue(
+            self.put_req("device_interface_list", request_body).status_code
+            == status.HTTP_200_OK
+        )
 
         self.assert_with_timeout_retry(
             lambda path, payload: self.get_req(path, payload),
