@@ -88,6 +88,15 @@ def device_interfaces_list(request):
                             else None
                         )
                     ),
+                    link_training=(
+                        True
+                        if str(req_data.get("link_training")).lower() == "on"
+                        else (
+                            False
+                            if str(req_data.get("link_training")).lower() == "off"
+                            else None
+                        )
+                    ),
                     adv_speeds=req_data.get("adv_speeds"),
                 )
                 add_msg_to_list(result, get_success_msg(request))
