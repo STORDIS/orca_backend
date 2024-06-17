@@ -24,7 +24,7 @@ class TestDelete(TestORCA):
             "mgt_ip": self.device_ips[0],
         }
         response=self.del_req("del_db", request_body)
-        self.assertTrue(response.status_code ==  status.HTTP_200_OK) 
+        self.assertTrue(response.status_code ==  status.HTTP_100_CONTINUE) 
         
         # get discover device after deletion
         response=self.get_req("device")

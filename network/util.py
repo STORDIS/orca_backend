@@ -40,7 +40,7 @@ def get_success_msg(method):
     return {"status": "success", "message": message}
 
 
-def add_msg_to_list(msg_list: [], msg):
+def add_msg_to_list(msg_list:list, msg):
     """
     Add a message to a list of messages.
 

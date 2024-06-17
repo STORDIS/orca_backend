@@ -33,11 +33,7 @@ def log_request(function):
             else:
                 responses = create_request_response_data(request_data=request.data, response_data=response_data)
             for i in responses:
-                print({**data, **i, "http_method": request.method})
                 serializer = LogSerializer(data={**data, **i, "http_method": request.method})
-                print(
-                    "------------", serializer.is_valid(), serializer.errors, "------------"
-                )
                 if serializer.is_valid():
                     serializer.save()
             return response
