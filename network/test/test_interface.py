@@ -253,7 +253,6 @@ class TestInterface(TestORCA):
 
         # changing the interface auto-negotiate and advertised-speed value
         response = self.put_req("device_interface_list", request_body)
-        print('=========',response.json())
         self.assertTrue(response.status_code == status.HTTP_200_OK)
 
         # verifying the auto-negotiate and advertised-speed value after changing the auto-negotiate value
