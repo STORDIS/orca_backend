@@ -265,19 +265,19 @@ class TestVlan(TestORCA):
         print(response.json())
         self.assertEqual(
             response.json()["mem_ifs"][ether_1],
-            IFMode.get_enum_from_str(request_body["mem_ifs"][self.ether_names[0]]),
+            str(IFMode.get_enum_from_str(request_body["mem_ifs"][self.ether_names[0]])),
         )
         self.assertEqual(
             response.json()["mem_ifs"][ether_2],
-            IFMode.get_enum_from_str(request_body["mem_ifs"][self.ether_names[1]]),
+            str(IFMode.get_enum_from_str(request_body["mem_ifs"][self.ether_names[1]])),
         )
         self.assertEqual(
             response.json()["mem_ifs"][self.portchnl_1],
-            IFMode.get_enum_from_str(request_body["mem_ifs"][self.portchnl_1]),
+            str(IFMode.get_enum_from_str(request_body["mem_ifs"][self.portchnl_1])),
         )
         self.assertEqual(
             response.json()["mem_ifs"][self.portchnl_2],
-            IFMode.get_enum_from_str(request_body["mem_ifs"][self.portchnl_2]),
+            str(IFMode.get_enum_from_str(request_body["mem_ifs"][self.portchnl_2])),
         )
 
     def get_req_body(self):
