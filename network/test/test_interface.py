@@ -13,7 +13,6 @@ class TestInterface(TestORCA):
     """
 
     def test_interface_enable_config(self):
-
         device_ip = self.device_ips[0]
         ether_name = self.ether_names[1]
         response = self.get_req(
@@ -233,7 +232,6 @@ class TestInterface(TestORCA):
 
         # storing the auto-negotiate and advertised-speed
         pre_autoneg = response_1.json()["autoneg"]
-        adv_speeds = response_1.json()["valid_speeds"]
 
         # setting the auto-negotiate to on or off with respective to previous auto-negotiate value
         # and creating request body
@@ -243,7 +241,6 @@ class TestInterface(TestORCA):
                 "mgt_ip": device_ip,
                 "name": ether_name,
                 "autoneg": set_autoneg,
-                "adv_speeds": adv_speeds,
             },
         )
 
@@ -267,12 +264,11 @@ class TestInterface(TestORCA):
                 "mgt_ip": device_ip,
                 "name": ether_name,
                 "autoneg": pre_autoneg,
-                "adv_speeds": adv_speeds,
             },
         )
         response = self.put_req("device_interface_list", request_body)
         self.assertTrue(response.status_code == status.HTTP_200_OK)
-        
+
         # verifying the auto-negotiate and advertised-speed value has set to default value
         self.assert_with_timeout_retry(
             lambda path, payload: self.get_req(path, payload),
@@ -282,7 +278,134 @@ class TestInterface(TestORCA):
             autoneg=pre_autoneg,
             status=status.HTTP_200_OK,
         )
+
+    def test_interface_training_link_config(self):
+        device_ip = self.device_ips[0]
+        ether_name = self.ether_names[1]
+
+        # getting details of a single interface for a particular ip
+        response_1 = self.get_req(
+            "device_interface_list", {"mgt_ip": device_ip, "name": ether_name}
+        )
+
+        # storing the lvariables and creating request body
+        pre_link_training = response_1.json()["link_training"]
+   
+
+        set_link_training = "on" if pre_link_training == "off" else "off"
+        request_body = (
+            {
+                "mgt_ip": device_ip,
+                "name": ether_name,
+                "link_training": set_link_training,
+            },
+        )
+
+        # changing the interface link training value to new value
+        response = self.put_req("device_interface_list", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        # verifying the link training value after changing the link training value
+        response_2 = self.assert_with_timeout_retry(
+            lambda path, payload: self.get_req(path, payload),
+            self.assertEqual,
+            "device_interface_list",
+            {"mgt_ip": device_ip, "name": ether_name},
+            link_training=set_link_training,
+            status=status.HTTP_200_OK,
+        )
         
+        # creating request to set the link training value to default value
+        request_body = (
+            {
+                "mgt_ip": device_ip,
+                "name": ether_name,
+                "link_training": pre_link_training,
+            },
+        )
+
+        # changing the interface link training value to default value
+        response = self.put_req("device_interface_list", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        # verifying the link training value has set to default value
+        self.assert_with_timeout_retry(
+            lambda path, payload: self.get_req(path, payload),
+            self.assertEqual,
+            "device_interface_list",
+            {"mgt_ip": device_ip, "name": ether_name},
+            link_training=pre_link_training,
+            status=status.HTTP_200_OK,
+        )
+
+    def test_interface_adv_speed_config(self):
+        device_ip = self.device_ips[0]
+        ether_name = self.ether_names[1]
+
+        # getting details of a single interface for a particular ip
+        response_1 = self.get_req(
+            "device_interface_list", {"mgt_ip": device_ip, "name": ether_name}
+        )
+
+        # crating variables to set the values
+        adv_speeds = response_1.json()["adv_speeds"]
+        valid_speeds = response_1.json()["valid_speeds"]
+
+        
+        if adv_speeds == 'all': 
+            set_adv_speed = valid_speeds
+        else: 
+            set_adv_speed = ''
+        
+        request_body = (
+            {
+                "mgt_ip": device_ip,
+                "name": ether_name,
+                "adv_speeds": set_adv_speed,
+            },
+        )
+
+        # setting the and advertised-speed value with changed values
+        response = self.put_req("device_interface_list", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        # verifying the advertised-speed value after changing the advertised-speed with changed values
+        self.assert_with_timeout_retry(
+            lambda path, payload: self.get_req(path, payload),
+            self.assertEqual,
+            "device_interface_list",
+            {"mgt_ip": device_ip, "name": ether_name},
+            adv_speeds=set_adv_speed,
+            status=status.HTTP_200_OK,
+        )
+        
+        # variable to set back the advertised-speed to previous value
+        if adv_speeds == 'all':
+            set_adv_speed = ''
+        else: 
+            set_adv_speed = valid_speeds
+        
+        request_body = (
+            {
+                "mgt_ip": device_ip,
+                "name": ether_name,
+                "adv_speeds": set_adv_speed,
+            },
+        )
+
+        # setting the and advertised-speed value with default values
+        response = self.put_req("device_interface_list", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        
+        # checking the advertised-speed value after changing the advertised-speed with default values
+        self.assert_with_timeout_retry(
+            lambda path, payload: self.get_req(path, payload),
+            self.assertEqual,
+            "device_interface_list",
+            {"mgt_ip": device_ip, "name": ether_name},
+            adv_speeds=set_adv_speed,
+            status=status.HTTP_200_OK,
+        )
 
     @unittest.skip("Randomly fails, to be debugged")
     def test_multiple_interfaces_config(self):
