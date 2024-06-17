@@ -19,8 +19,9 @@ ORCA Backend is a REST API server written using Django framework to access orca_
     - [Install Neo4j](#install-neo4j)
     - [Install ORCA Backend dependencies](#install-orca-backend-dependencies)
   - [Configuration](#configuration)
+  - [Make Migrations](#make-migrations)
   - [Run ORCA Backend:](#run-orca-backend)
-  - [Run ORCA Backend in docker container](#run-orca-backend-in-docker-container)
+  - [(Optional) Run ORCA Backend in docker container](#optional-run-orca-backend-in-docker-container)
     - [Create docker image](#create-docker-image)
   - [APIs and ORCA UI](#apis-and-orca-ui)
     - [Steps to Use APIs](#steps-to-use-apis)
@@ -70,13 +71,18 @@ The major configuration required here is for orca_nw_lib. orca_nw_lib is defined
 In the above directory, following files have update options.
 - orca_nw_lib.yml - Device and Neo4j access information. Also the device or network information which needs to be discovered.
 - orca_nw_lib_logging.yml - A standard python logging configuration for orca_nw_lib.
+## Make Migrations
+Needed for log_manager do following :
+
+        python manage.py makemigrations log_manager
+        python manage.py migrate
 
 ## Run ORCA Backend:
 orca_backend runs like normal django server as follows:
 
         python manage.py runserver
 
-## Run ORCA Backend in docker container
+## (Optional) Run ORCA Backend in docker container
 Docker image of orca_backend can be created and container cane started as follows:
 ### Create docker image
 First create the docker image as follows:
