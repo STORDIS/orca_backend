@@ -232,10 +232,6 @@ class TestInterface(TestORCA):
 
         # storing the auto-negotiate and advertised-speed
         pre_autoneg = response_1.json()["autoneg"]
-        adv_speeds = response_1.json()["valid_speeds"]
-        speed = response_1.json()["speed"]
-        fec = response_1.json()["fec"]
-
 
         # setting the auto-negotiate to on or off with respective to previous auto-negotiate value
         # and creating request body
@@ -245,15 +241,11 @@ class TestInterface(TestORCA):
                 "mgt_ip": device_ip,
                 "name": ether_name,
                 "autoneg": set_autoneg,
-                "adv_speeds": adv_speeds,
-                "speed": speed,
-                "fec": fec
             },
         )
 
         # changing the interface auto-negotiate and advertised-speed value
         response = self.put_req("device_interface_list", request_body)
-        print('=========',response.json())
         self.assertTrue(response.status_code == status.HTTP_200_OK)
 
         # verifying the auto-negotiate and advertised-speed value after changing the auto-negotiate value
@@ -272,9 +264,6 @@ class TestInterface(TestORCA):
                 "mgt_ip": device_ip,
                 "name": ether_name,
                 "autoneg": pre_autoneg,
-                "adv_speeds": adv_speeds,
-                "speed": speed,
-                "fec": fec
             },
         )
         response = self.put_req("device_interface_list", request_body)
@@ -301,9 +290,7 @@ class TestInterface(TestORCA):
 
         # storing the lvariables and creating request body
         pre_link_training = response_1.json()["link_training"]
-        adv_speeds = response_1.json()["valid_speeds"]
-        speed = response_1.json()["speed"]
-        fec = response_1.json()["fec"]
+   
 
         set_link_training = "on" if pre_link_training == "off" else "off"
         request_body = (
@@ -311,9 +298,6 @@ class TestInterface(TestORCA):
                 "mgt_ip": device_ip,
                 "name": ether_name,
                 "link_training": set_link_training,
-                "adv_speeds": adv_speeds,
-                "speed": speed,
-                "fec": fec,
             },
         )
 
@@ -337,9 +321,6 @@ class TestInterface(TestORCA):
                 "mgt_ip": device_ip,
                 "name": ether_name,
                 "link_training": pre_link_training,
-                "adv_speeds": adv_speeds,
-                "speed": speed,
-                "fec": fec,
             },
         )
 
@@ -367,11 +348,9 @@ class TestInterface(TestORCA):
         )
 
         # crating variables to set the values
-        link_training = response_1.json()["link_training"]
         adv_speeds = response_1.json()["adv_speeds"]
         valid_speeds = response_1.json()["valid_speeds"]
-        speed = response_1.json()["speed"]
-        fec = response_1.json()["fec"]
+
         
         if adv_speeds == 'all': 
             set_adv_speed = valid_speeds
@@ -382,10 +361,7 @@ class TestInterface(TestORCA):
             {
                 "mgt_ip": device_ip,
                 "name": ether_name,
-                "link_training": link_training,
                 "adv_speeds": set_adv_speed,
-                "speed": speed,
-                "fec": fec,
             },
         )
 
@@ -413,10 +389,7 @@ class TestInterface(TestORCA):
             {
                 "mgt_ip": device_ip,
                 "name": ether_name,
-                "link_training": link_training,
                 "adv_speeds": set_adv_speed,
-                "speed": speed,
-                "fec": fec,
             },
         )
 
