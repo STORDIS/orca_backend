@@ -199,3 +199,140 @@ class TestPortChnl(TestORCA):
         self.perform_add_port_chnl(request_body)
         self.perform_del_port_chnl(request_body)
         self.perform_del_port_chnl(request_body_2)
+
+    def test_port_chnl_addtional_attributes(self):
+        device_ip = self.device_ips[0]
+        self.remove_mclag(device_ip)
+        request_body = {
+            "mgt_ip": device_ip,
+            "lag_name": "PortChannel103",
+            "mtu": 9100,
+            "admin_status": "up",
+            "static": False,
+            "min_links": 4,
+            "fast_rate": False,
+            "description": "test description channel 103",
+            "fallback": False,
+            "graceful_shutdown_mode": "Enable"
+        }
+        self.perform_del_port_chnl({"mgt_ip": device_ip})
+        self.perform_add_port_chnl([request_body])
+        self.assert_with_timeout_retry(
+            lambda path, payload: self.get_req(path, payload),
+            self.assertEqual,
+            "device_port_chnl",
+            request_body,
+            status=status.HTTP_200_OK,
+            static=False,
+            min_links=4,
+            fast_rate=False,
+            description="test description channel 103",
+            fallback=False,
+            graceful_shutdown_mode="Enable".upper()
+        )
+        self.perform_del_port_chnl({"mgt_ip": device_ip})
+
+    def test_port_channel_ip(self):
+        device_ip = self.device_ips[0]
+        self.remove_mclag(device_ip)
+        ip_address = "192.10.10.9/24"
+        request_body = {
+            "mgt_ip": device_ip,
+            "lag_name": "PortChannel103",
+            "mtu": 9100,
+            "admin_status": "up",
+            "ip_address": ip_address
+        }
+        self.perform_del_port_chnl({"mgt_ip": device_ip})
+        self.perform_add_port_chnl([request_body])
+        self.assert_with_timeout_retry(
+            lambda path, payload: self.get_req(path, payload),
+            self.assertEqual,
+            "device_port_chnl",
+            request_body,
+            status=status.HTTP_200_OK,
+            ip_address=ip_address
+        )
+        del_resp = self.del_req("port_channel_ip_remove", {
+            "mgt_ip": device_ip, "lag_name": "PortChannel103", "ip_address": ip_address
+        })
+        self.assertEqual(del_resp.status_code, status.HTTP_200_OK)
+        self.assert_with_timeout_retry(
+            lambda path, payload: self.get_req(path, payload),
+            self.assertEqual,
+            "device_port_chnl",
+            {"mgt_ip": device_ip, "lag_name": "PortChannel103"},
+            status=status.HTTP_200_OK,
+            ip_address=None
+        )
+        self.perform_del_port_chnl({"mgt_ip": device_ip})
+
+    def test_port_channel_vlan_members(self):
+        # Creating vlan for testing
+        device_ip = self.device_ips[0]
+        vlan_1_name = "Vlan4"
+        vlan_1_id = 4
+        vlan_2_name = "Vlan5"
+        vlan_2_id = 5
+        req_payload = [
+            {
+                "mgt_ip": device_ip,
+                "name": vlan_1_name,
+                "vlanid": vlan_1_id,
+                "mtu": 9000,
+                "enabled": False,
+                "description": "Test_Vlan1",
+            },
+            {
+                "mgt_ip": device_ip,
+                "name": vlan_2_name,
+                "vlanid": vlan_2_id,
+                "mtu": 9000,
+                "enabled": False,
+                "description": "Test_Vlan1",
+            },
+        ]
+
+        response = self.put_req(
+            "vlan_config",
+            req_payload,
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        request_body = {
+            "mgt_ip": device_ip,
+            "lag_name": "PortChannel103",
+            "mtu": 9100,
+            "admin_status": "up",
+            "vlan_members": {
+                "trunk_vlans": [vlan_1_id],
+                "access_valn": vlan_2_id
+            }
+        }
+        self.perform_del_port_chnl({"mgt_ip": device_ip})
+        self.perform_add_port_chnl([request_body])
+
+        get_response = self.get_req("device_port_chnl", request_body, )
+        self.assertEqual(get_response.status_code, status.HTTP_200_OK)
+        members = get_response.json().get("vlan_members")
+        self.assertEqual(members.get("trunk_vlans"), [vlan_1_id])
+        self.assertEqual(members.get("access_vlan"), vlan_2_id)
+
+        #deleting portchannel vlan members
+        member_delete_response = self.del_req("port_chnl_vlan_member_remove", req_json=request_body)
+        print(member_delete_response.content)
+        self.assertEqual(member_delete_response.status_code, status.HTTP_200_OK)
+
+        get_response = self.get_req("device_port_chnl", request_body, )
+        self.assertEqual(get_response.status_code, status.HTTP_200_OK)
+        members = get_response.json().get("vlan_members")
+        self.assertEqual(members, {})
+
+        self.perform_del_port_chnl({"mgt_ip": device_ip})
+        response = self.del_req(
+            "vlan_config", {"mgt_ip": device_ip, "name": vlan_2_name}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.del_req(
+            "vlan_config", {"mgt_ip": device_ip, "name": vlan_1_name}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
