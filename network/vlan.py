@@ -47,6 +47,9 @@ def vlan_config(request):
         data = get_vlan(device_ip, vlan_name)
         for vlan_data in data if isinstance(data, list) else [data] if data else []:
             vlan_data["mem_ifs"] = get_vlan_members(device_ip, vlan_data["name"])
+            for mem_if in vlan_data["mem_ifs"]:
+                vlan_data["mem_ifs"][mem_if] = str(vlan_data["mem_ifs"][mem_if])
+            
         return (
             Response(data, status=status.HTTP_200_OK)
             if data
