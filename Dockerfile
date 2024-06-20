@@ -1,13 +1,17 @@
 FROM ubuntu:22.04
 RUN apt-get update
-WORKDIR /orca_backend
-COPY . .
 RUN apt install python3 -y
 RUN apt install python3-pip -y
 RUN pip install --upgrade pip
 RUN pip install poetry
+WORKDIR /orca_backend
+
+COPY ./pyproject.toml .
 RUN poetry config virtualenvs.create false \
     && poetry install --no-interaction
+
+COPY . .
+
 ## Check if ORCASK app is present, if yes install its dependencies.
 RUN test -d ORCASK \
     && cd ORCASK \
