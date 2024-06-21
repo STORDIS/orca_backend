@@ -100,6 +100,14 @@ def device_port_chnl_list(request):
                         req_data.get("lag_name"),
                         members,
                     )
+                add_msg_to_list(result, get_success_msg(request))
+            except Exception as err:
+                add_msg_to_list(result, get_failure_msg(err, request))
+                http_status = http_status and False
+
+            # some time add port channel vlan members might fail due to L3 configuration etc.
+            # hence try catch block and send additional failure message if it fails.
+            try:
                 if vlan_member := req_data.get("vlan_members"):
                     add_port_chnl_vlan_members(
                         device_ip=device_ip,
@@ -107,7 +115,6 @@ def device_port_chnl_list(request):
                         access_vlan=vlan_member.get("access_valn"),
                         trunk_vlans=vlan_member.get("trunk_vlans"),
                     )
-                add_msg_to_list(result, get_success_msg(request))
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
