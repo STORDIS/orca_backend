@@ -8,12 +8,12 @@ from orca_nw_lib.port_chnl import (
     del_port_chnl,
     get_port_chnl_members,
     add_port_chnl_mem,
-    del_port_chnl_mem, remove_port_chnl_ip, remove_port_channel_vlan_member,
+    del_port_chnl_mem,
+    remove_port_chnl_ip,
+    remove_port_channel_vlan_member,
 )
-
 from log_manager.decorators import log_request
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg
-
 from orca_nw_lib.port_chnl import add_port_chnl_vlan_members
 
 

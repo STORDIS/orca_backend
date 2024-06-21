@@ -1,10 +1,6 @@
-import json
-
 from rest_framework import permissions
 from rest_framework.decorators import permission_classes, api_view
 from rest_framework.response import Response
-from rest_framework.test import APITestCase, APIRequestFactory
-
 from log_manager.decorators import log_request
 from log_manager.test.test_common import TestCommon
 
