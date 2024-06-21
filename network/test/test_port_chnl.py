@@ -200,7 +200,7 @@ class TestPortChnl(TestORCA):
         self.perform_del_port_chnl(request_body)
         self.perform_del_port_chnl(request_body_2)
 
-    def test_port_chnl_addtional_attributes(self):
+    def test_port_chnl_static_attribute(self):
         device_ip = self.device_ips[0]
         self.remove_mclag(device_ip)
         port_channel = "PortChannel103"
@@ -215,9 +215,7 @@ class TestPortChnl(TestORCA):
         }
         self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": port_channel})
         self.perform_add_port_chnl([request_body])
-
         response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
-
         self.assertEqual(response.json()["static"], True)
 
         # since static attribute cannot be updated delete port channel and then create it again
@@ -230,14 +228,18 @@ class TestPortChnl(TestORCA):
             "admin_status": "up",
             "static": False,
         }
+        self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": port_channel})
         self.perform_add_port_chnl([request_body])
         response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
-
         self.assertEqual(response.json()["static"], False)
+        self.perform_del_port_chnl(request_body)
 
-        self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": port_channel})
+    def test_port_chnl_fallback_attribute(self):
+        device_ip = self.device_ips[0]
+        self.remove_mclag(device_ip)
+        port_channel = "PortChannel103"
 
-        # testing fallback attribute on port channel creation
+        # testing fallback attribute on port channel with True
         request_body = {
             "mgt_ip": device_ip,
             "lag_name": port_channel,
@@ -261,8 +263,12 @@ class TestPortChnl(TestORCA):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
         self.assertEqual(response.json()["fallback"], False)
+        self.perform_del_port_chnl(request_body)
 
-        self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": port_channel})
+    def test_port_chnl_fast_rate_attribute(self):
+        device_ip = self.device_ips[0]
+        self.remove_mclag(device_ip)
+        port_channel = "PortChannel103"
 
         # testing fast_rate attribute on port channel creation with True
         request_body = {
@@ -276,7 +282,7 @@ class TestPortChnl(TestORCA):
         response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
         self.assertEqual(response.json()["fast_rate"], True)
 
-        # updating fast_rate attribute with False
+        # updating fast_rate attribute to False
         request_body = {
             "mgt_ip": device_ip,
             "lag_name": port_channel,
@@ -288,9 +294,14 @@ class TestPortChnl(TestORCA):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
         self.assertEqual(response.json()["fast_rate"], False)
-        self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": port_channel})
+        self.perform_del_port_chnl(request_body)
 
-        # Testing min_links attribute on port channel creation
+    def test_port_chnl_min_links_attribute(self):
+        device_ip = self.device_ips[0]
+        self.remove_mclag(device_ip)
+        port_channel = "PortChannel103"
+
+        # testing min_links attribute on port channel creation
         request_body = {
             "mgt_ip": device_ip,
             "lag_name": port_channel,
@@ -314,9 +325,14 @@ class TestPortChnl(TestORCA):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
         self.assertEqual(response.json()["min_links"], 4)
-        self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": port_channel})
+        self.perform_del_port_chnl(request_body)
 
-        # Test description attribute on port channel creation
+    def test_port_chnl_description_attribute(self):
+        device_ip = self.device_ips[0]
+        self.remove_mclag(device_ip)
+        port_channel = "PortChannel103"
+
+        # testing description attribute on port channel creation
         request_body = {
             "mgt_ip": device_ip,
             "lag_name": port_channel,
@@ -340,7 +356,12 @@ class TestPortChnl(TestORCA):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
         self.assertEqual(response.json()["description"], "test2")
-        self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": port_channel})
+        self.perform_del_port_chnl(request_body)
+
+    def test_port_chnl_grace_full_shutdown_attributes(self):
+        device_ip = self.device_ips[0]
+        self.remove_mclag(device_ip)
+        port_channel = "PortChannel103"
 
         # Test graceful_shutdown_mode attribute on port channel creation
         request_body = {
