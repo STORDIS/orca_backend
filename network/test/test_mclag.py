@@ -248,3 +248,106 @@ class TestMclag(TestORCA):
         )
         self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
         self.assertFalse(response.data)
+
+    def test_mclag_domain_fast_convergence(self):
+        device_ip_1 = self.device_ips[0]
+        device_ip_2 = self.device_ips[1]
+        response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
+
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                if res != "\n"
+            )
+        )
+        response = self.get_req("device_mclag_list", {"mgt_ip": device_ip_1})
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
+
+        # Create peerlink port channel first
+        req = {
+            "mgt_ip": device_ip_1,
+            "lag_name": self.peer_link,
+        }
+        self.perform_del_port_chnl(req)
+        self.perform_add_port_chnl(req)
+
+        # body for testing fast convergence
+        request_body = {
+            "mgt_ip": device_ip_1,
+            "domain_id": self.domain_id,
+            "source_address": device_ip_1,
+            "peer_addr": device_ip_2,
+            "peer_link": self.peer_link,
+            "mclag_sys_mac": self.mclag_sys_mac,
+            "fast_convergence": "enable"
+        }
+
+        response = self.put_req("device_mclag_list", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req(
+            "device_mclag_list", {"mgt_ip": device_ip_1, "domain_id": self.domain_id}
+        )
+
+        self.assertEqual(response.json().get("domain_id"), self.domain_id)
+        self.assertEqual(response.json().get("source_address"), device_ip_1)
+        self.assertEqual(response.json().get("peer_addr"), device_ip_2)
+        self.assertEqual(response.json().get("peer_link"), self.peer_link)
+        self.assertEqual(response.json().get("mclag_sys_mac"), self.mclag_sys_mac)
+        self.assertEqual(response.json().get("fast_convergence"), "enable")
+
+        # update does not effect fast convergence since enum for fast_convergence only accepts single value enable.
+        # testing update
+
+        request_body = {
+            "mgt_ip": device_ip_1,
+            "domain_id": self.domain_id,
+            "source_address": device_ip_1,
+            "peer_addr": device_ip_2,
+            "peer_link": self.peer_link,
+            "mclag_sys_mac": self.mclag_sys_mac,
+            "fast_convergence": "disable"
+        }
+
+        response = self.put_req("device_mclag_list", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req(
+            "device_mclag_list", {"mgt_ip": device_ip_1, "domain_id": self.domain_id}
+        )
+
+        self.assertEqual(response.json().get("domain_id"), self.domain_id)
+        self.assertEqual(response.json().get("source_address"), device_ip_1)
+        self.assertEqual(response.json().get("peer_addr"), device_ip_2)
+        self.assertEqual(response.json().get("peer_link"), self.peer_link)
+        self.assertEqual(response.json().get("mclag_sys_mac"), self.mclag_sys_mac)
+        self.assertEqual(response.json().get("fast_convergence"), "enable")
+
+        # removing fast convergence
+
+        response = self.del_req(
+            url_name="remove_mclag_fast_convergence",
+            req_json={
+                "mgt_ip": device_ip_1,
+                "domain_id": self.domain_id,
+            }
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req(
+            "device_mclag_list", {"mgt_ip": device_ip_1, "domain_id": self.domain_id}
+        )
+
+        self.assertEqual(response.json().get("domain_id"), self.domain_id)
+        self.assertEqual(response.json().get("source_address"), device_ip_1)
+        self.assertEqual(response.json().get("peer_addr"), device_ip_2)
+        self.assertEqual(response.json().get("peer_link"), self.peer_link)
+        self.assertEqual(response.json().get("mclag_sys_mac"), self.mclag_sys_mac)
+        self.assertIsNone(response.json().get("fast_convergence"))
+
+        # Finally remove mclag
+        self.remove_mclag(device_ip_1)
+
