@@ -9,10 +9,12 @@ from orca_nw_lib.port_chnl import (
     get_port_chnl_members,
     add_port_chnl_mem,
     del_port_chnl_mem,
+    remove_port_chnl_ip,
+    remove_port_channel_vlan_member,
 )
-
 from log_manager.decorators import log_request
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg
+from orca_nw_lib.port_chnl import add_port_chnl_vlan_members
 
 
 @api_view(["GET", "PUT", "DELETE"])
@@ -82,6 +84,15 @@ def device_port_chnl_list(request):
                     req_data.get("lag_name"),
                     admin_status=req_data.get("admin_sts"),
                     mtu=int(req_data.get("mtu")) if "mtu" in req_data else None,
+                    static=req_data.get("static", None),
+                    min_links=int(req_data.get("min_links")) if "min_links" in req_data else None,
+                    fast_rate=req_data.get("fast_rate", None),
+                    description=req_data.get("description", None),
+                    fallback=req_data.get("fallback", None),
+                    graceful_shutdown_mode=req_data.get(
+                        "graceful_shutdown_mode", None
+                    ),
+                    ip_addr_with_prefix=req_data.get("ip_address", None)
                 )
                 if members := req_data.get("members"):
                     add_port_chnl_mem(
@@ -90,6 +101,20 @@ def device_port_chnl_list(request):
                         members,
                     )
                 add_msg_to_list(result, get_success_msg(request))
+            except Exception as err:
+                add_msg_to_list(result, get_failure_msg(err, request))
+                http_status = http_status and False
+
+            # some time add port channel vlan members might fail due to L3 configuration etc.
+            # hence try catch block and send additional failure message if it fails.
+            try:
+                if vlan_member := req_data.get("vlan_members"):
+                    add_port_chnl_vlan_members(
+                        device_ip=device_ip,
+                        chnl_name=req_data.get("lag_name"),
+                        access_vlan=vlan_member.get("access_valn"),
+                        trunk_vlans=vlan_member.get("trunk_vlans"),
+                    )
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
@@ -129,4 +154,71 @@ def device_port_chnl_list(request):
         status=status.HTTP_200_OK
         if http_status
         else status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
+
+
+@api_view(["DELETE"])
+@log_request
+def remove_port_channel_ip_address(request):
+    result = []
+    http_status = True
+    if request.method == "DELETE":
+        req_data = request.data
+        device_ip = req_data.get("mgt_ip", "")
+        if not device_ip:
+            return Response(
+                {"status": "Required field device mgt_ip not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        chnl_name = req_data.get("lag_name", "")
+        if not chnl_name:
+            return Response(
+                {"status": "Required field device chnl_name not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        ip_addr = req_data.get("ip_address", None)
+        try:
+            remove_port_chnl_ip(device_ip, chnl_name, ip_addr)
+            add_msg_to_list(result, get_success_msg(request))
+        except Exception as err:
+            add_msg_to_list(result, get_failure_msg(err, request))
+            http_status = http_status and False
+    return Response(
+        {"result": result},
+        status=(
+            status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR
+        ),
+    )
+
+
+@api_view(["DELETE"])
+@log_request
+def remove_port_channel_member_vlan(request):
+    result = []
+    http_status = True
+    if request.method == "DELETE":
+        req_data = request.data
+        device_ip = req_data.get("mgt_ip", "")
+        if not device_ip:
+            return Response(
+                {"status": "Required field device mgt_ip not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        chnl_name = req_data.get("lag_name", "")
+        if not chnl_name:
+            return Response(
+                {"status": "Required field device chnl_name not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            remove_port_channel_vlan_member(device_ip, chnl_name)
+            add_msg_to_list(result, get_success_msg(request))
+        except Exception as err:
+            add_msg_to_list(result, get_failure_msg(err, request))
+            http_status = http_status and False
+    return Response(
+        {"result": result},
+        status=(
+            status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR
+        ),
     )

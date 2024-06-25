@@ -15,6 +15,8 @@ urlpatterns = [
         "interfaces", interface.device_interfaces_list, name="device_interface_list"
     ),
     re_path("port_chnls", port_chnl.device_port_chnl_list, name="device_port_chnl"),
+    path("port_chnl_ip_remove", port_chnl.remove_port_channel_ip_address, name="port_channel_ip_remove"),
+    path("port_chnl_vlan_member_remove", port_chnl.remove_port_channel_member_vlan, name="port_chnl_vlan_member_remove"),
     re_path("mclags", mclag.device_mclag_list, name="device_mclag_list"),
     re_path("config_mclag_fast_convergence", mclag.config_mclag_fast_convergence, name="config_mclag_fast_convergence"),
     re_path("bgp", bgp.device_bgp_global, name="bgp_global"),
