@@ -14,7 +14,8 @@ from orca_nw_lib.mclag import (
     get_mclag_mem_portchnls,
     config_mclag_mem_portchnl,
     del_mclag_member,
-    remove_mclag_domain_fast_convergence, add_mclag_domain_fast_convergence
+    remove_mclag_domain_fast_convergence,
+    add_mclag_domain_fast_convergence
 )
 
 from log_manager.decorators import log_request
