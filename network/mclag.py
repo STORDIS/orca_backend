@@ -2,6 +2,8 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
+
+from orca_nw_lib.common import MclagFastConvergence
 from orca_nw_lib.mclag import (
     get_mclags,
     del_mclag,
@@ -12,7 +14,7 @@ from orca_nw_lib.mclag import (
     get_mclag_mem_portchnls,
     config_mclag_mem_portchnl,
     del_mclag_member,
-    remove_mclag_domain_fast_convergence
+    remove_mclag_domain_fast_convergence, add_mclag_domain_fast_convergence
 )
 
 from log_manager.decorators import log_request
@@ -105,7 +107,7 @@ def device_mclag_list(request):
             peer_link = req_data.get("peer_link", "")
             mclag_sys_mac = req_data.get("mclag_sys_mac", "")
             mclag_members = req_data.get("mclag_members", [])
-            fast_convergence = req_data.get("fast_convergence", None)
+            fast_convergence =  req_data.get("fast_convergence", None)
 
             if not device_ip or not domain_id:
                 return Response(
@@ -124,7 +126,7 @@ def device_mclag_list(request):
                         peer_addr=peer_addr,
                         peer_link=peer_link,
                         mclag_sys_mac=mclag_sys_mac,
-                        fast_convergence=fast_convergence
+                        fast_convergence=MclagFastConvergence.get_enum_from_str(fast_convergence),
                     )
                     add_msg_to_list(result, get_success_msg(request))
                 except Exception as err:
@@ -220,12 +222,12 @@ def mclag_gateway_mac(request):
             )
 
 
-@api_view(["DELETE"])
+@api_view(["POST"])
 @log_request
-def del_mclag_fast_convergence(request):
+def config_mclag_fast_convergence(request):
     result = []
     http_status = True
-    if request.method == "DELETE":
+    if request.method == "POST":
         for req_data in (
             request.data
             if isinstance(request.data, list)
@@ -235,6 +237,7 @@ def del_mclag_fast_convergence(request):
         ):
             device_ip = req_data.get("mgt_ip", None)
             domain_id = req_data.get("domain_id", None)
+            fast_convergence = MclagFastConvergence.get_enum_from_str(req_data.get("fast_convergence", None))
             if not device_ip or not domain_id:
                 return Response(
                     {
@@ -244,8 +247,12 @@ def del_mclag_fast_convergence(request):
                 )
 
             try:
-                remove_mclag_domain_fast_convergence(device_ip, domain_id)
-                add_msg_to_list(result, get_success_msg(request))
+                if fast_convergence.lower() == MclagFastConvergence.disable:
+                    remove_mclag_domain_fast_convergence(device_ip, domain_id)
+                    add_msg_to_list(result, get_success_msg(request))
+                else:
+                    add_mclag_domain_fast_convergence(device_ip, domain_id)
+                    add_msg_to_list(result, get_success_msg(request))
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
