@@ -1,9 +1,6 @@
 from rest_framework.generics import get_object_or_404
-
 from log_manager.models import Logs
 from log_manager.serializers import LogSerializer
-from rest_framework.test import APITestCase
-
 from log_manager.test.test_common import TestCommon
 
 

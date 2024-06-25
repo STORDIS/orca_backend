@@ -1,4 +1,3 @@
-from log_manager.models import Logs
 from log_manager.serializers import LogSerializer
 from log_manager.test.test_common import TestCommon
 
