@@ -226,6 +226,17 @@ def mclag_gateway_mac(request):
 @api_view(["POST"])
 @log_request
 def config_mclag_fast_convergence(request):
+    """
+    Configures MCLAG fast convergence.
+
+    Args:
+        request: The HTTP request object.
+
+    Returns:
+        A Response object containing the MCLAG fast convergence configuration.
+        If successful, the response will have a status code of 200 (OK).
+        If there is a bad request, the response will have a status code of 400 (Bad Request).
+    """
     result = []
     http_status = True
     if request.method == "POST":
