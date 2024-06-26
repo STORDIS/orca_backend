@@ -108,7 +108,8 @@ def device_mclag_list(request):
             peer_link = req_data.get("peer_link", "")
             mclag_sys_mac = req_data.get("mclag_sys_mac", "")
             mclag_members = req_data.get("mclag_members", [])
-            fast_convergence =  req_data.get("fast_convergence", None)
+            fast_convergence = req_data.get("fast_convergence", None)
+            session_vrf = req_data.get("session_vrf", None)
 
             if not device_ip or not domain_id:
                 return Response(
@@ -128,6 +129,7 @@ def device_mclag_list(request):
                         peer_link=peer_link,
                         mclag_sys_mac=mclag_sys_mac,
                         fast_convergence=MclagFastConvergence.get_enum_from_str(fast_convergence),
+                        session_vrf=session_vrf
                     )
                     add_msg_to_list(result, get_success_msg(request))
                 except Exception as err:
