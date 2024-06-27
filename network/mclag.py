@@ -2,6 +2,8 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
+
+from orca_nw_lib.common import MclagFastConvergence
 from orca_nw_lib.mclag import (
     get_mclags,
     del_mclag,
@@ -12,6 +14,8 @@ from orca_nw_lib.mclag import (
     get_mclag_mem_portchnls,
     config_mclag_mem_portchnl,
     del_mclag_member,
+    remove_mclag_domain_fast_convergence,
+    add_mclag_domain_fast_convergence
 )
 
 from log_manager.decorators import log_request
@@ -104,6 +108,8 @@ def device_mclag_list(request):
             peer_link = req_data.get("peer_link", "")
             mclag_sys_mac = req_data.get("mclag_sys_mac", "")
             mclag_members = req_data.get("mclag_members", [])
+            fast_convergence = req_data.get("fast_convergence", None)
+            session_vrf = req_data.get("session_vrf", None)
 
             if not device_ip or not domain_id:
                 return Response(
@@ -116,12 +122,14 @@ def device_mclag_list(request):
             if src_addr and peer_addr and peer_link and mclag_sys_mac:
                 try:
                     config_mclag(
-                        device_ip,
-                        domain_id,
-                        src_addr,
-                        peer_addr,
-                        peer_link,
-                        mclag_sys_mac,
+                        device_ip=device_ip,
+                        domain_id=domain_id,
+                        source_addr=src_addr,
+                        peer_addr=peer_addr,
+                        peer_link=peer_link,
+                        mclag_sys_mac=mclag_sys_mac,
+                        fast_convergence=MclagFastConvergence.get_enum_from_str(fast_convergence),
+                        session_vrf=session_vrf
                     )
                     add_msg_to_list(result, get_success_msg(request))
                 except Exception as err:
@@ -215,3 +223,56 @@ def mclag_gateway_mac(request):
                 {"result": get_failure_msg(err, request)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+@api_view(["POST"])
+@log_request
+def config_mclag_fast_convergence(request):
+    """
+    Configures MCLAG fast convergence.
+
+    Args:
+        request: The HTTP request object.
+
+    Returns:
+        A Response object containing the MCLAG fast convergence configuration.
+        If successful, the response will have a status code of 200 (OK).
+        If there is a bad request, the response will have a status code of 400 (Bad Request).
+    """
+    result = []
+    http_status = True
+    if request.method == "POST":
+        for req_data in (
+            request.data
+            if isinstance(request.data, list)
+            else [request.data]
+            if request.data
+            else []
+        ):
+            device_ip = req_data.get("mgt_ip", None)
+            domain_id = req_data.get("domain_id", None)
+            fast_convergence = MclagFastConvergence.get_enum_from_str(req_data.get("fast_convergence", None))
+            if not device_ip or not domain_id:
+                return Response(
+                    {
+                        "result": "All of the required fields mgt_ip, domain_id not found."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            try:
+                if fast_convergence.lower() == MclagFastConvergence.disable:
+                    remove_mclag_domain_fast_convergence(device_ip, domain_id)
+                    add_msg_to_list(result, get_success_msg(request))
+                else:
+                    add_mclag_domain_fast_convergence(device_ip, domain_id)
+                    add_msg_to_list(result, get_success_msg(request))
+            except Exception as err:
+                add_msg_to_list(result, get_failure_msg(err, request))
+                http_status = http_status and False
+    return Response(
+        {"result": result},
+        status=status.HTTP_200_OK
+        if http_status
+        else status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
