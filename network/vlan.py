@@ -239,9 +239,7 @@ def vlan_mem_config(request):
                 ## Update members dicxtionary with tagging mode Enum
                 for mem_if, if_mode in members.items():
                     try:
-                        del_vlan_mem(
-                            device_ip, vlanid, mem_if, IFMode.get_enum_from_str(if_mode)
-                        )
+                        del_vlan_mem(device_ip, vlan_name, mem_if)
                         add_msg_to_list(result, get_success_msg(request))
                     except Exception as err:
                         add_msg_to_list(result, get_failure_msg(err, request))
