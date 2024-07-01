@@ -262,7 +262,6 @@ class TestVlan(TestORCA):
                 for m in response.json()["mem_ifs"]
             )
         )
-        print(response.json())
         self.assertEqual(
             response.json()["mem_ifs"][ether_1],
             str(IFMode.get_enum_from_str(request_body["mem_ifs"][self.ether_names[0]])),
@@ -292,3 +291,77 @@ class TestVlan(TestORCA):
                 self.portchnl_2: "ACCESS",
             },
         }
+
+    def test_vlan_member_if_mode_update(self):
+        device_ip = self.device_ips[0]
+        request_body = self.get_req_body()
+        self.create_sample_vlan_and_member_config(request_body)
+
+        #Testing Valn member if mode update
+
+        request_body["mem_ifs"][self.ether_names[0]] = "ACCESS"
+        request_body["mem_ifs"][self.ether_names[1]] = "TRUNK"
+        request_body["mem_ifs"][self.portchnl_1] = "ACCESS"
+        request_body["mem_ifs"][self.portchnl_2] = "TRUNK"
+
+        response = self.put_req(
+            "vlan_config",
+            request_body,
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req(
+            "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
+        )
+        self.assertEqual(
+            response.json()["mem_ifs"][self.ether_names[0]],
+            str(IFMode.get_enum_from_str(request_body["mem_ifs"][self.ether_names[0]])),
+        )
+        self.assertEqual(
+            response.json()["mem_ifs"][self.ether_names[1]],
+            str(IFMode.get_enum_from_str(request_body["mem_ifs"][self.ether_names[1]])),
+        )
+        self.assertEqual(
+            response.json()["mem_ifs"][self.portchnl_1],
+            str(IFMode.get_enum_from_str(request_body["mem_ifs"][self.portchnl_1])),
+        )
+        self.assertEqual(
+            response.json()["mem_ifs"][self.portchnl_2],
+            str(IFMode.get_enum_from_str(request_body["mem_ifs"][self.portchnl_2])),
+        )
+
+        # Testing update again
+
+        request_body["mem_ifs"][self.ether_names[0]] = "TRUNK"
+        request_body["mem_ifs"][self.ether_names[1]] = "ACCESS"
+        request_body["mem_ifs"][self.portchnl_1] = "TRUNK"
+        request_body["mem_ifs"][self.portchnl_2] = "ACCESS"
+
+        response = self.put_req(
+            "vlan_config",
+            request_body,
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req(
+            "vlan_config", {"mgt_ip": device_ip, "name": self.vlan_name}
+        )
+        self.assertEqual(
+            response.json()["mem_ifs"][self.ether_names[0]],
+            str(IFMode.get_enum_from_str(request_body["mem_ifs"][self.ether_names[0]])),
+        )
+        self.assertEqual(
+            response.json()["mem_ifs"][self.ether_names[1]],
+            str(IFMode.get_enum_from_str(request_body["mem_ifs"][self.ether_names[1]])),
+        )
+        self.assertEqual(
+            response.json()["mem_ifs"][self.portchnl_1],
+            str(IFMode.get_enum_from_str(request_body["mem_ifs"][self.portchnl_1])),
+        )
+        self.assertEqual(
+            response.json()["mem_ifs"][self.portchnl_2],
+            str(IFMode.get_enum_from_str(request_body["mem_ifs"][self.portchnl_2])),
+        )
+
+        #Cleanup
+        self.cleanup_vlan_mem_and_config(request_body)

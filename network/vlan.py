@@ -74,12 +74,6 @@ def vlan_config(request):
                     {"status": "Required field device vlan_name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            vlanid = req_data.get("vlanid", "")
-            if not vlanid:
-                return Response(
-                    {"status": "Required field device vlanid not found."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
 
             members = {}
             if mem := req_data.get("mem_ifs"):
@@ -91,7 +85,6 @@ def vlan_config(request):
                 config_vlan(
                     device_ip,
                     vlan_name,
-                    vlanid,
                     enabled=req_data.get("enabled", None),
                     descr=req_data.get("description", ""),
                     mtu=req_data.get("mtu", ""),
@@ -130,7 +123,6 @@ def vlan_config(request):
                                 device_ip,
                                 vlan_name,
                                 mem_if,
-                                IFMode.get_enum_from_str(tagging_mode),
                             )
                             add_msg_to_list(result, get_success_msg(request))
                         except Exception as err:
@@ -228,20 +220,12 @@ def vlan_mem_config(request):
                     {"status": "Required field device vlan_name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            vlanid = req_data.get("vlanid", "")
-            if not vlanid:
-                return Response(
-                    {"status": "Required field device vlanid not found."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
 
             if members := req_data.get("mem_ifs"):
                 ## Update members dicxtionary with tagging mode Enum
                 for mem_if, if_mode in members.items():
                     try:
-                        del_vlan_mem(
-                            device_ip, vlanid, mem_if, IFMode.get_enum_from_str(if_mode)
-                        )
+                        del_vlan_mem(device_ip, vlan_name, mem_if)
                         add_msg_to_list(result, get_success_msg(request))
                     except Exception as err:
                         add_msg_to_list(result, get_failure_msg(err, request))
