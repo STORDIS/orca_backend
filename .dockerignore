@@ -11,3 +11,10 @@ poetry.lock
 .idea
 orca.log
 models
+*tar.gz
+LICENSE
+DOCKERFILE
+.gitignore
+.git
+.dockerignore
+Dockerfile
