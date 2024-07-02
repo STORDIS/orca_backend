@@ -11,7 +11,8 @@
 </p>
 
 # ORCA Backend
-ORCA Backend is a REST API server written using Django framework to access orca_nw_lib functionalities. It is a backend service that can be used by applications to interact with SONiC Netowrk and devices.
+ORCA Backend is a REST API server written using Django framework to access orca_nw_lib functionalities. It is a backend service that can be used by applications to interact with SONiC Network and devices.
+
 
 
 - [ORCA Backend](#orca-backend)
@@ -20,7 +21,9 @@ ORCA Backend is a REST API server written using Django framework to access orca_
     - [Install ORCA Backend dependencies](#install-orca-backend-dependencies)
     - [Configuration](#configuration)
     - [Make Migrations](#make-migrations)
+    - [Create Django User](#create-django-user)
     - [Finally, Run ORCA Backend:](#finally-run-orca-backend)
+  - [Next...](#next)
   - [(Optional) Run ORCA Backend in docker container](#optional-run-orca-backend-in-docker-container)
     - [Create docker image](#create-docker-image)
   - [APIs and ORCA UI](#apis-and-orca-ui)
@@ -30,11 +33,12 @@ ORCA Backend is a REST API server written using Django framework to access orca_
 
 ## ORCA Quick Start
 ORCA Backend can be started easily by using a few steps, as follows :
+
 ### Install Neo4j
 One of the dependencies for ORCA backend orca_nw_lib uses neo4j to store the network topology. To install neo4j easiest is to run Neo4j Docker image in container with the following command :
         
     docker run \
-        --name testneo4j \
+        --name orca_neo4j \
         -p7474:7474 -p7687:7687 \
         -d \
         -v $HOME/neo4j/data:/data \
@@ -43,7 +47,8 @@ One of the dependencies for ORCA backend orca_nw_lib uses neo4j to store the net
         -v $HOME/neo4j/plugins:/plugins \
         --env NEO4J_AUTH=neo4j/password \
         neo4j:latest
-To check thet neo4j has successfully started, open https://localhost:7474 with credentials neo4j/password to browse the database.       
+To check that neo4j has successfully started, open https://localhost:7474 with credentials neo4j/password to browse the database.  
+
 ### Install ORCA Backend dependencies
 ORCA backend uses poetry for installing all required dependencies. Poetry can be installed using the following command :
         
@@ -55,7 +60,7 @@ To install all dependencies of ORCA backend use the following command :
         cd orca_backend
         poetry install
 
-> **_Troubleshoot:_**   if _"poetry install"_ stucks for long, perform cleanup as follows:
+> **_Troubleshoot:_**   if _"poetry install"_ stuck for long, perform cleanup as follows:
       `poetry env remove --all` \
       `poetry cache clear --all .`      
       `rm -rf $(poetry config cache-dir)/artifacts`     
@@ -75,10 +80,24 @@ Needed for log_manager do following :
         python manage.py makemigrations log_manager
         python manage.py migrate
 
+### Create Django User
+Create Django user as follows :
+
+        cd orca_backend
+        python manage.py createsuperuser
+
+The user created here can be used to login to server via orca_ui, or making rest calls using postman etc.
+
 ### Finally, Run ORCA Backend:
 orca_backend runs like normal django server as follows:
 
         python manage.py runserver
+
+To verify that django server has successfully started, try accessing (replace localhost with your server address) - <http://localhost:8000/> , Here all the Rest endpoint should be listed. Or to perform admin tasks access- <http://localhost:8000/admin/>. 
+
+## Next...
+[Install ORCA UI](https://github.com/STORDIS/orca_ui)
+ 
 
 ## (Optional) Run ORCA Backend in docker container
 Docker image of orca_backend can be created and container cane started as follows:
