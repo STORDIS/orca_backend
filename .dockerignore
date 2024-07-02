@@ -12,8 +12,6 @@ poetry.lock
 orca.log
 models
 *tar.gz
-LICENSE
-DOCKERFILE
 .gitignore
 .git
 .dockerignore
