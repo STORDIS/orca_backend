@@ -70,7 +70,7 @@ In the output if install process is stuck at _"[keyring.backend] Loading macOS"_
        `export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring`
 
 ### Configuration
-For a quick start with ORCA, defining "discover_networks" environment variable like: `export discover_networks="<device or network IP>"` is enough. 
+For a quick start with ORCA, defining "discover_networks" environment variable like: `export discover_networks="<comma separated device or network IPs>"` is enough. 
 
 Optionally, there are more params which can be configured (can be set as environment variables). Details of additional params can be found in config section of (ORCA Network Library)[https://github.com/STORDIS/orca_nw_lib]
 

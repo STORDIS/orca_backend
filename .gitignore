@@ -7,7 +7,6 @@ dist
 *code-workspace
 orca_nw_lib.log
 poetry.lock
-.vscode
 .idea
 orca.log
 models
