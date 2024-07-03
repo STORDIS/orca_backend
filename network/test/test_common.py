@@ -80,6 +80,7 @@ class TestORCA(APITestCase):
                             If the response status code is not 204 NO CONTENT.
         """
         response = self.del_req("device_port_chnl", request_body)
+        print(response.content)
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
