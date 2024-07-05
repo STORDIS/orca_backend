@@ -12,7 +12,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '0 0 * * *'  # Run at midnight UTC
+    - cron: "0 0 * * *" # Run at midnight UTC
 
 jobs:
   build-and-push:
@@ -38,13 +38,13 @@ jobs:
             nightly_build_number=$(( $(date +%j) % 10 ))
             image_tag="nightly-${nightly_build_number}"
           fi
-          echo "Image Tag: $image_tag"
-          echo "::set-output name=image_tag::$image_tag" 
+          echo "::set-env name=IMAGE_TAG::$image_tag" 
+          echo "Image Tag: $IMAGE_TAG"
 
       - name: Build Docker Image
         run: |
-          docker build -t ${{ secrets.STORDIS_DOCKER_HUB_USER }}/orca_backend:${{ steps.Generate_Image_Tag.outputs.image_tag }} .
+          docker build -t ${{ secrets.STORDIS_DOCKER_HUB_USER }}/orca_backend:$IMAGE_TAG .
 
       - name: Push Docker Image
         run: |
-          docker push ${{ secrets.STORDIS_DOCKER_HUB_USER }}/orca_backend:${{ steps.Generate_Image_Tag.outputs.image_tag }}
+          docker push ${{ secrets.STORDIS_DOCKER_HUB_USER }}/orca_backend:$IMAGE_TAG
