@@ -151,7 +151,6 @@ def device_mclag_list(request):
                 except Exception as err:
                     add_msg_to_list(result, get_failure_msg(err, request))
                     http_status = http_status and False
-                    print(traceback.format_exc())
 
     return Response(
         {"result": result},
