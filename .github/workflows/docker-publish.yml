@@ -42,8 +42,8 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t ${{ secrets.STORDIS_DOCKER_HUB_USER }}/orca_backend:$image_tag .
+          docker build -t ${{ secrets.STORDIS_DOCKER_HUB_USER }}/orca_backend:latest .
 
       - name: Push Docker Image
         run: |
-          docker push ${{ secrets.STORDIS_DOCKER_HUB_USER }}/orca_backend:$image_tag
+          docker push ${{ secrets.STORDIS_DOCKER_HUB_USER }}/orca_backend:latest
