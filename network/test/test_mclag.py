@@ -42,6 +42,24 @@ class TestMclag(TestORCA):
         response = self.get_req("device_mclag_list", {"mgt_ip": device_ip_1})
         self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
         self.assertFalse(response.data)
+        
+        # create mclag with only domain id and session_timeout
+        
+        request_body = {
+            "mgt_ip": device_ip_1,
+            "domain_id": self.domain_id,
+            "session_timeout": 30,
+        }
+        
+        response = self.put_req("device_mclag_list", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req(
+            "device_mclag_list", {"mgt_ip": device_ip_1, "domain_id": self.domain_id}
+        )
+
+        self.assertEqual(response.json().get("domain_id"), self.domain_id)
+        self.remove_mclag(device_ip_1)
 
         # Create peerlink port channel first
         req = {

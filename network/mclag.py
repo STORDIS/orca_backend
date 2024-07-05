@@ -2,6 +2,7 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
+import traceback
 
 from orca_nw_lib.common import MclagFastConvergence
 from orca_nw_lib.mclag import (
@@ -110,6 +111,9 @@ def device_mclag_list(request):
             mclag_members = req_data.get("mclag_members", [])
             fast_convergence = req_data.get("fast_convergence", None)
             session_vrf = req_data.get("session_vrf", None)
+            keepalive_interval = req_data.get("keepalive_interval", 1)
+            session_timeout = req_data.get("session_timeout", 30)
+            delay_restore = req_data.get("delay_restore", 300)
 
             if not device_ip or not domain_id:
                 return Response(
@@ -119,7 +123,7 @@ def device_mclag_list(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            if src_addr and peer_addr and peer_link and mclag_sys_mac:
+            if domain_id:
                 try:
                     config_mclag(
                         device_ip=device_ip,
@@ -129,11 +133,15 @@ def device_mclag_list(request):
                         peer_link=peer_link,
                         mclag_sys_mac=mclag_sys_mac,
                         fast_convergence=MclagFastConvergence.get_enum_from_str(fast_convergence),
-                        session_vrf=session_vrf
+                        session_vrf=session_vrf,
+                        keepalive_int = keepalive_interval,
+                        session_timeout = session_timeout,
+                        delay_restore = delay_restore,
                     )
                     add_msg_to_list(result, get_success_msg(request))
                 except Exception as err:
                     add_msg_to_list(result, get_failure_msg(err, request))
+                    print(traceback.format_exc())
                     http_status = http_status and False
 
             for mem in mclag_members:
@@ -143,6 +151,7 @@ def device_mclag_list(request):
                 except Exception as err:
                     add_msg_to_list(result, get_failure_msg(err, request))
                     http_status = http_status and False
+                    print(traceback.format_exc())
 
     return Response(
         {"result": result},
