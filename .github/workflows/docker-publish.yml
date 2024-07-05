@@ -39,11 +39,12 @@ jobs:
             image_tag="nightly-${nightly_build_number}"
           fi
           echo "Image Tag: $image_tag"
+          echo "::set-output name=image_tag::$image_tag" 
 
       - name: Build Docker Image
         run: |
-          docker build -t ${{ secrets.STORDIS_DOCKER_HUB_USER }}/orca_backend:latest .
+          docker build -t ${{ secrets.STORDIS_DOCKER_HUB_USER }}/orca_backend:${{ steps.Generate_Image_Tag.outputs.image_tag }} .
 
       - name: Push Docker Image
         run: |
-          docker push ${{ secrets.STORDIS_DOCKER_HUB_USER }}/orca_backend:latest
+          docker push ${{ secrets.STORDIS_DOCKER_HUB_USER }}/orca_backend:${{ steps.Generate_Image_Tag.outputs.image_tag }}
