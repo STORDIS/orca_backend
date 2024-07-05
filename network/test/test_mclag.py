@@ -171,7 +171,7 @@ class TestMclag(TestORCA):
         self.assertEqual(len(response.json().get("mclag_members")), 2)
         for mem in response.json().get("mclag_members"):
             self.assertTrue(
-                mem.get("lag_name") in [self.mem_port_chnl, self.mem_port_chnl_2]
+                mem in [self.mem_port_chnl, self.mem_port_chnl_2]
             )
 
         # cleanup members
@@ -409,6 +409,103 @@ class TestMclag(TestORCA):
             "device_mclag_list", {"mgt_ip": device_ip_1, "domain_id": self.domain_id}
         )
         self.assertIsNone(response.json().get("fast_convergence"))
+
+        # Finally remove mclag
+        self.remove_mclag(device_ip_1)
+
+    def test_mclag_gateway_mac_from_mclag_config(self):
+        """
+        Test the MCLAG gateway MAC configuration.
+
+        This function tests the MCLAG gateway MAC configuration using the MCLAG config api.
+
+        :return: None
+        """
+
+        # delete mclag config
+        device_ip_1 = self.device_ips[0]
+        device_ip_2 = self.device_ips[1]
+        response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
+
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                if res != "\n"
+            )
+        )
+        response = self.get_req("device_mclag_list", {"mgt_ip": device_ip_1})
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
+
+        # delete the gateway mac
+        gw_mac = "aa:bb:aa:bb:aa:bb"
+        response = self.del_req("mclag_gateway_mac", {"mgt_ip": device_ip_1})
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                if res != "\n"
+            )
+        )
+        response = self.get_req(
+            "mclag_gateway_mac", {"mgt_ip": device_ip_1, "gateway_mac": gw_mac}
+        )
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
+
+        # Create peerlink port channel first
+        req = {
+            "mgt_ip": device_ip_1,
+            "lag_name": self.peer_link,
+        }
+        self.perform_del_port_chnl(req)
+        self.perform_add_port_chnl(req)
+
+        request_body = {
+            "mgt_ip": device_ip_1,
+            "domain_id": self.domain_id,
+            "source_address": device_ip_1,
+            "peer_addr": device_ip_2,
+            "peer_link": self.peer_link,
+            "mclag_sys_mac": self.mclag_sys_mac,
+            "gateway_mac": gw_mac
+        }
+
+        response = self.put_req("device_mclag_list", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req(
+            "device_mclag_list", {"mgt_ip": device_ip_1, "domain_id": self.domain_id}
+        )
+
+        self.assertEqual(response.json().get("domain_id"), self.domain_id)
+        self.assertEqual(response.json().get("source_address"), device_ip_1)
+        self.assertEqual(response.json().get("peer_addr"), device_ip_2)
+        self.assertEqual(response.json().get("peer_link"), self.peer_link)
+        self.assertEqual(response.json().get("mclag_sys_mac"), self.mclag_sys_mac)
+
+        # Checking mclag gateway mac
+        response = self.get_req(
+            "mclag_gateway_mac", {"mgt_ip": device_ip_1, "gateway_mac": gw_mac}
+        )
+        self.assertEqual(response.json().get("gateway_mac"), gw_mac)
+
+        # removeing mclag gateway mac
+        response = self.del_req("mclag_gateway_mac", {"mgt_ip": device_ip_1})
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                if res != "\n"
+            )
+        )
+
+        response = self.get_req(
+            "mclag_gateway_mac", {"mgt_ip": device_ip_1, "gateway_mac": gw_mac}
+        )
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
 
         # Finally remove mclag
         self.remove_mclag(device_ip_1)
