@@ -35,8 +35,7 @@ jobs:
             # Use branch name, short hash, and commit message
             short_sha=$(git rev-parse --short HEAD)
             image_tag="main-$short_sha-${{ github.event.head_commit.message }}"
-            image_tag=$(echo "$image_tag" | cut -d' ' -f1 | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g')
-
+            # image_tag=$(echo "$image_tag" | cut -d' ' -f1 | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g')
           else
             nightly_build_number=$(( $(date +%j) % 10 ))
             image_tag="nightly-${nightly_build_number}"
