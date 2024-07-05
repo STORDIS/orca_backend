@@ -5,7 +5,7 @@ on:
     types: [created]
   push:
     branches:
-      - kamalkrbh/issue45
+      - Github-workflow-to-publish-Docker-image.-#45
 
 jobs:
   build-and-push:
