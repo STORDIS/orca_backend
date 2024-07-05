@@ -6,7 +6,7 @@ from orca_nw_lib.common import Speed
 from orca_nw_lib.portgroup import (
     get_port_groups,
     get_port_group_members,
-    set_port_group_speed,
+    set_port_group_speed, get_port_group_of_interface,
 )
 
 from log_manager.decorators import log_request
@@ -114,4 +114,34 @@ def port_group_members(request):
             else Response(
                 {"status": "No port group members found."}, status.HTTP_404_NOT_FOUND
             )
+        )
+
+
+@api_view(
+    [
+        "GET",
+    ]
+)
+def port_group_from_intfc_name(request):
+    """
+    This function handles the API view for listing port group members.
+    """
+    if request.method == "GET":
+        device_ip = request.GET.get("mgt_ip", "")
+        if not device_ip:
+            return Response(
+                {"status": "Required field device mgt_ip not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        intf_name = request.GET.get("intf_name", "")
+        if not intf_name:
+            return Response(
+                {"status": "Required field intf_name not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        data = get_port_group_of_interface(device_ip, intf_name)
+        return (
+            Response(data, status.HTTP_200_OK)
+            if data
+            else Response({"status": "No port group found for the interface."}, status.HTTP_204_NO_CONTENT)
         )

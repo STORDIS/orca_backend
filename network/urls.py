@@ -21,6 +21,7 @@ urlpatterns = [
     re_path("config_mclag_fast_convergence", mclag.config_mclag_fast_convergence, name="config_mclag_fast_convergence"),
     re_path("bgp", bgp.device_bgp_global, name="bgp_global"),
     re_path("nbrs", bgp.bgp_nbr_config, name="bgp_nbr"),
+    re_path("group_from_intfc", port_group.port_group_from_intfc_name, name="group_from_intfc"),
     re_path("group_mem", port_group.port_group_members, name="port_group_members"),
     re_path("groups", port_group.port_groups, name="port_groups"),
     re_path("gateway_mac", mclag.mclag_gateway_mac, name="mclag_gateway_mac"),
