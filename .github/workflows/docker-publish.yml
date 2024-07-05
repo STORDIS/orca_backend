@@ -32,7 +32,8 @@ jobs:
           if [[ ${{ github.event_name }} == 'release' ]]; then
             image_tag="${{ github.event.release.tag_name }}"
           elif [[ ${{ github.event_name }} == 'push' && ${{ github.ref }} == 'refs/heads/main' ]]; then
-            image_tag="${{ github.sha }}-${{ github.event.head_commit.message | cut -d' ' -f1 | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g' }}"
+            image_tag="${{ github.sha }}-${{ github.event.head_commit.message }}"
+            image_tag=$(echo "$image_tag" | cut -d' ' -f1 | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g')
           else
             nightly_build_number=$(( $(date +%j) % 10 ))
             image_tag="nightly-${nightly_build_number}"
