@@ -183,3 +183,109 @@ class TestPortGroup(TestORCA):
                     status=status.HTTP_200_OK,
                     speed=pg_1["speed"],
                 )
+
+    def test_port_group_interfaces_valid_speed_update(self):
+        """
+        Test port group interfaces valid speed update.
+        - This testcase tests that valid speeds are updated on all interfaces when port group speed is changed/updated.
+        """
+        device_ip = self.device_ips[0]
+        request_body = {"mgt_ip": device_ip, "port_group_id": "1"}
+
+        ## Simply delete all port channels as if an interface which is member of a port channel as well,
+        # speed config will fail.
+        self.perform_del_port_chnl({"mgt_ip": device_ip})
+
+        # Get current speed
+        response = self.get_req("port_groups", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        # Test Port Group Speed with 25G
+        request_body["speed"] = "SPEED_25GB"
+
+        self.assert_with_timeout_retry(
+            lambda path, data: self.put_req(path, data),
+            self.assertTrue,
+            "port_groups",
+            request_body,
+            status=status.HTTP_200_OK,
+        )
+        # Confirm port group change
+        self.assert_with_timeout_retry(
+            lambda path, data: self.get_req(path, data),
+            self.assertTrue,
+            "port_groups",
+            request_body,
+            status=status.HTTP_200_OK,
+            speed=request_body["speed"],
+        )
+        # Confirm speed changes on all member interfaces
+        for mem_if in response.json().get("mem_intfs"):
+            self.assert_with_timeout_retry(
+                lambda path, data: self.get_req(path, data),
+                self.assertEqual,
+                "device_interface_list",
+                {"mgt_ip": device_ip, "name": mem_if},
+                status=status.HTTP_200_OK,
+                speed=request_body["speed"],
+                valid_speeds="25000",
+            )
+
+        # change speed to 10GB
+        request_body["speed"] = "SPEED_10GB"
+        self.assert_with_timeout_retry(
+            lambda path, data: self.put_req(path, data),
+            self.assertTrue,
+            "port_groups",
+            request_body,
+            status=status.HTTP_200_OK,
+        )
+        # Confirm port group change
+        self.assert_with_timeout_retry(
+            lambda path, data: self.get_req(path, data),
+            self.assertTrue,
+            "port_groups",
+            request_body,
+            status=status.HTTP_200_OK,
+            speed=request_body["speed"],
+        )
+        # Confirm speed changes on all member interfaces
+        for mem_if in response.json().get("mem_intfs"):
+            self.assert_with_timeout_retry(
+                lambda path, data: self.get_req(path, data),
+                self.assertEqual,
+                "device_interface_list",
+                {"mgt_ip": device_ip, "name": mem_if},
+                status=status.HTTP_200_OK,
+                speed=request_body["speed"],
+                valid_speeds="10000,1000",
+            )
+
+    def test_get_port_group_details_from_intfc_name(self):
+        """
+        Test get port group details from interface name.
+        """
+        port_group_id = 1
+        device_ip = self.device_ips[0]
+        request_body = {"mgt_ip": device_ip, "port_group_id": port_group_id}
+
+        ## Simply delete all port channels as if an interface which is member of a port channel as well,
+        # speed config will fail.
+        self.perform_del_port_chnl({"mgt_ip": device_ip})
+
+        # port group details by id
+        response = self.get_req("port_groups", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        # get port group details by intfc name
+        interfaces = response.json().get("mem_intfs")
+        for interface in interfaces:
+            request_body = {"mgt_ip": device_ip, "intf_name": interface}
+            response = self.get_req(
+                "group_from_intfc", req_json=request_body
+            )
+            print(response.json())
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            # Confirm port group details
+            self.assertEqual(port_group_id, int(response.json().get("port_group_id")))
+
