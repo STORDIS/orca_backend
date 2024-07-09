@@ -24,7 +24,7 @@ ORCA Backend is a REST API server written using Django framework to access orca_
 
 
 - [ORCA Backend](#orca-backend)
-  - [ORCA Quick Start in 2 simple steps](#orca-quick-start-in-2-simple-steps)
+  - [orca\_backend Quick Start in 2 simple steps](#orca_backend-quick-start-in-2-simple-steps)
     - [Run Neo4j docker container](#run-neo4j-docker-container)
     - [Run orca\_backend docker container](#run-orca_backend-docker-container)
   - [Running orca\_backend from source](#running-orca_backend-from-source)
@@ -41,7 +41,7 @@ ORCA Backend is a REST API server written using Django framework to access orca_
   - [To execute tests](#to-execute-tests)
 
 
-## ORCA Quick Start in 2 simple steps
+## orca_backend Quick Start in 2 simple steps
 ORCA Backend can be started easily by just running 2 docker containers, as follows :
 
 ### Run Neo4j docker container
