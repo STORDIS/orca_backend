@@ -64,10 +64,11 @@ Use following command to run orca_backend
 
         docker run --net="host" -d stordis/orca_backend:latest
 
-To verify that container has successfully started, try to access http://<server_ip>:8000/admin/ and log in with default user/password- admin/admin which is by default created. 
+Container runs on 0.0.0.0:8000 by default. To verify that container has successfully started, try to access http://<server_ip>:8000/admin/ and log in with default user/password- admin/admin which is by default created. 
 
 Thats it, If thats enough, rest of the steps below can be skipped and directly proceed with quick start of [orca_ui](https://github.com/STORDIS/orca_ui), which again is as simple as running a docker container and there discover your topology. Else, refer below for more details about build and installation of ORCA backend.
 
+>__**NOTE:**__Several settings have default values if not overriden by environment variables. For more details refer [Configuration](#configuration) section below.
 
 ## Running orca_backend from source 
 ### Install ORCA Backend dependencies
@@ -91,9 +92,23 @@ In the output if install process is stuck at _"[keyring.backend] Loading macOS"_
        `export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring`
 
 ### Configuration
-For a quick start with ORCA, defining "discover_networks" environment variable like: `export discover_networks="<comma separated device or network IPs>"` is enough. 
+Device and DB access configurations of orca_backend is configured in [ORCA Network Library Config File](https://github.com/STORDIS/orca_nw_lib/blob/main/orca_nw_lib/orca_nw_lib.yml). All the config parameters defined in this file can simply be overridden by environment variables with the same name as defined in the config file.
+Example -
 
-Optionally, there are more params which can be configured (can be set as environment variables). Details of additional params can be found in config section of (ORCA Network Library)[https://github.com/STORDIS/orca_nw_lib]
+        export discover_networks="10.10.229.50"
+        export device_username=admin
+        export device_password=YourPaSsWoRd
+
+Similarly, when starting orca_backend container, use it like:
+
+        docker run --net="host" -d \
+                -e discover_networks="10.10.229.50" \
+                -e device_username="admin" \
+                -e device_password="YourPaSsWoRd" \
+                stordis/orca_backend:latest
+
+[ORCA Network Library Config File](https://github.com/STORDIS/orca_nw_lib/blob/main/orca_nw_lib/orca_nw_lib.yml) is actually the part of one of the dependencies of orca_backend, and the file is installed under site_packages/orca_nw_lib/ directory of python environment being used.
+
 
 ### Make Migrations
 Needed for log_manager do following :
