@@ -2,7 +2,6 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
-import traceback
 
 from orca_nw_lib.common import MclagFastConvergence
 from orca_nw_lib.mclag import (
@@ -141,7 +140,6 @@ def device_mclag_list(request):
                     add_msg_to_list(result, get_success_msg(request))
                 except Exception as err:
                     add_msg_to_list(result, get_failure_msg(err, request))
-                    print(traceback.format_exc())
                     http_status = http_status and False
 
             for mem in mclag_members:
