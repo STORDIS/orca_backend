@@ -52,8 +52,9 @@ def device_mclag_list(request):
             )
         domain_id = request.GET.get("domain_id", None)
         data = get_mclags(device_ip, domain_id)
-        if data and domain_id:
-            data["mclag_members"] = get_mclag_mem_portchnls(device_ip, domain_id)
+        if data:
+            for i in data if isinstance(data, list) else [data]:
+                i["mclag_members"] = [mem["lag_name"] for mem in get_mclag_mem_portchnls(device_ip, i["domain_id"])]
         return (
             Response(data, status=status.HTTP_200_OK)
             if data
@@ -139,6 +140,14 @@ def device_mclag_list(request):
             for mem in mclag_members:
                 try:
                     config_mclag_mem_portchnl(device_ip, domain_id, mem)
+                    add_msg_to_list(result, get_success_msg(request))
+                except Exception as err:
+                    add_msg_to_list(result, get_failure_msg(err, request))
+                    http_status = http_status and False
+            gateway_mac = req_data.get("gateway_mac", "")
+            if gateway_mac:
+                try:
+                    config_mclag_gw_mac(device_ip, gateway_mac)
                     add_msg_to_list(result, get_success_msg(request))
                 except Exception as err:
                     add_msg_to_list(result, get_failure_msg(err, request))
