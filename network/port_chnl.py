@@ -1,4 +1,6 @@
 """ Network Port Channel API. """
+import traceback
+
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
@@ -112,7 +114,7 @@ def device_port_chnl_list(request):
                     add_port_chnl_vlan_members(
                         device_ip=device_ip,
                         chnl_name=req_data.get("lag_name"),
-                        access_vlan=vlan_member.get("access_valn"),
+                        access_vlan=vlan_member.get("access_vlan"),
                         trunk_vlans=vlan_member.get("trunk_vlans"),
                     )
             except Exception as err:
