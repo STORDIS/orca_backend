@@ -80,9 +80,13 @@ def device_mclag_list(request):
             # If member are given in the request body
             # Delete the members only, otherwise request is considered
             # to be for deleting the MCLAG
-            if mclag_members:
+            if "mclag_members" in req_data:
                 try:
-                    del_mclag_member(device_ip)
+                    if len(mclag_members):
+                        for mem in mclag_members:
+                            del_mclag_member(device_ip, mem)
+                    else:
+                        del_mclag_member(device_ip)
                     add_msg_to_list(result, get_success_msg(request))
                 except Exception as err:
                     add_msg_to_list(result, get_failure_msg(err, request))
