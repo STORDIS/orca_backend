@@ -212,8 +212,13 @@ def remove_port_channel_member_vlan(request):
                 {"status": "Required field device chnl_name not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        vlan_members = req_data.get("vlan_members", {})
+        access_vlan = vlan_members.get("access_vlan", None)
+        trunk_vlans = vlan_members.get("trunk_vlans", None)
         try:
-            remove_port_channel_vlan_member(device_ip, chnl_name)
+            remove_port_channel_vlan_member(
+                device_ip=device_ip, chnl_name=chnl_name, access_vlan=access_vlan, trunk_vlans=trunk_vlans
+            )
             add_msg_to_list(result, get_success_msg(request))
         except Exception as err:
             add_msg_to_list(result, get_failure_msg(err, request))
