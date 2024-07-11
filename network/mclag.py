@@ -1,4 +1,5 @@
 """ MCLAG API """
+
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
@@ -15,7 +16,7 @@ from orca_nw_lib.mclag import (
     config_mclag_mem_portchnl,
     del_mclag_member,
     remove_mclag_domain_fast_convergence,
-    add_mclag_domain_fast_convergence
+    add_mclag_domain_fast_convergence,
 )
 
 from log_manager.decorators import log_request
@@ -64,9 +65,7 @@ def device_mclag_list(request):
         for req_data in (
             request.data
             if isinstance(request.data, list)
-            else [request.data]
-            if request.data
-            else []
+            else [request.data] if request.data else []
         ):
             device_ip = req_data.get("mgt_ip", "")
             mclag_members = req_data.get("mclag_members", None)
@@ -98,9 +97,7 @@ def device_mclag_list(request):
         for req_data in (
             request.data
             if isinstance(request.data, list)
-            else [request.data]
-            if request.data
-            else []
+            else [request.data] if request.data else []
         ):
             device_ip = req_data.get("mgt_ip", "")
             domain_id = req_data.get("domain_id", "")
@@ -111,6 +108,9 @@ def device_mclag_list(request):
             mclag_members = req_data.get("mclag_members", [])
             fast_convergence = req_data.get("fast_convergence", None)
             session_vrf = req_data.get("session_vrf", None)
+            keepalive_interval = req_data.get("keepalive_interval", 1)
+            session_timeout = req_data.get("session_timeout", 30)
+            delay_restore = req_data.get("delay_restore", 300)
 
             if not device_ip or not domain_id:
                 return Response(
@@ -120,7 +120,7 @@ def device_mclag_list(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            if src_addr and peer_addr and peer_link and mclag_sys_mac:
+            if domain_id:
                 try:
                     config_mclag(
                         device_ip=device_ip,
@@ -129,8 +129,13 @@ def device_mclag_list(request):
                         peer_addr=peer_addr,
                         peer_link=peer_link,
                         mclag_sys_mac=mclag_sys_mac,
-                        fast_convergence=MclagFastConvergence.get_enum_from_str(fast_convergence),
-                        session_vrf=session_vrf
+                        fast_convergence=MclagFastConvergence.get_enum_from_str(
+                            fast_convergence
+                        ),
+                        session_vrf=session_vrf,
+                        keepalive_int=keepalive_interval,
+                        session_timeout=session_timeout,
+                        delay_restore=delay_restore,
                     )
                     add_msg_to_list(result, get_success_msg(request))
                 except Exception as err:
@@ -155,9 +160,9 @@ def device_mclag_list(request):
 
     return Response(
         {"result": result},
-        status=status.HTTP_200_OK
-        if http_status
-        else status.HTTP_500_INTERNAL_SERVER_ERROR,
+        status=(
+            status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR
+        ),
     )
 
 
@@ -254,13 +259,13 @@ def config_mclag_fast_convergence(request):
         for req_data in (
             request.data
             if isinstance(request.data, list)
-            else [request.data]
-            if request.data
-            else []
+            else [request.data] if request.data else []
         ):
             device_ip = req_data.get("mgt_ip", None)
             domain_id = req_data.get("domain_id", None)
-            fast_convergence = MclagFastConvergence.get_enum_from_str(req_data.get("fast_convergence", None))
+            fast_convergence = MclagFastConvergence.get_enum_from_str(
+                req_data.get("fast_convergence", None)
+            )
             if not device_ip or not domain_id:
                 return Response(
                     {
@@ -281,7 +286,7 @@ def config_mclag_fast_convergence(request):
                 http_status = http_status and False
     return Response(
         {"result": result},
-        status=status.HTTP_200_OK
-        if http_status
-        else status.HTTP_500_INTERNAL_SERVER_ERROR,
+        status=(
+            status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR
+        ),
     )
