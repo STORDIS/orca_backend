@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
 from orca_nw_lib.device import get_device_details
-from orca_nw_lib.discovery import discover_device
+from orca_nw_lib.discovery import trigger_discovery
 
 from log_manager.decorators import log_request
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg
@@ -77,7 +77,7 @@ def discover(request):
                     add_msg_to_list(result, get_success_msg(request))
             addresses= req_data.get("address") if isinstance(req_data.get("address"), list) else [req_data.get("address")]
             for addr in addresses or []:
-                if addr and discover_device(ip_or_nw=addr):
+                if addr and trigger_discovery(addr):
                     add_msg_to_list(result, get_success_msg(request))
 
         if not result:
