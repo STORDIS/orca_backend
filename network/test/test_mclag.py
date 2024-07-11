@@ -35,7 +35,8 @@ class TestMclag(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
                 if res != "\n"
             )
         )
@@ -203,7 +204,6 @@ class TestMclag(TestORCA):
 
         self.remove_mclag(device_ip_1)
 
-
     def test_mclag_member_config(self):
         """
         Test the MCLAG member configuration.
@@ -223,7 +223,8 @@ class TestMclag(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
                 if res != "\n"
             )
         )
@@ -289,7 +290,8 @@ class TestMclag(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
                 if res != "\n"
             )
         )
@@ -305,11 +307,12 @@ class TestMclag(TestORCA):
 
         # cleanup members
         response = self.del_req("device_mclag_list", request_body_members)
-        print('---', response)
+        print("---", response)
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
                 if res != "\n"
             )
         )
@@ -318,7 +321,8 @@ class TestMclag(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
                 if res != "\n"
             )
         )
@@ -341,7 +345,8 @@ class TestMclag(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
                 if res != "\n"
             )
         )
@@ -368,7 +373,8 @@ class TestMclag(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
                 if res != "\n"
             )
         )
@@ -387,7 +393,8 @@ class TestMclag(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
                 if res != "\n"
             )
         )
@@ -411,7 +418,7 @@ class TestMclag(TestORCA):
             "peer_addr": device_ip_2,
             "peer_link": self.peer_link,
             "mclag_sys_mac": self.mclag_sys_mac,
-            "fast_convergence": "enable"
+            "fast_convergence": "enable",
         }
 
         response = self.put_req("device_mclag_list", request_body)
@@ -437,7 +444,7 @@ class TestMclag(TestORCA):
             "peer_addr": device_ip_2,
             "peer_link": self.peer_link,
             "mclag_sys_mac": self.mclag_sys_mac,
-            "fast_convergence": "disable"
+            "fast_convergence": "disable",
         }
 
         response = self.put_req("device_mclag_list", request_body)
@@ -465,7 +472,8 @@ class TestMclag(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
                 if res != "\n"
             )
         )
@@ -488,7 +496,7 @@ class TestMclag(TestORCA):
             "source_address": device_ip_1,
             "peer_addr": device_ip_2,
             "peer_link": self.peer_link,
-            "mclag_sys_mac": self.mclag_sys_mac
+            "mclag_sys_mac": self.mclag_sys_mac,
         }
 
         response = self.put_req("device_mclag_list", request_body)
@@ -511,8 +519,8 @@ class TestMclag(TestORCA):
             req_json={
                 "mgt_ip": device_ip_1,
                 "domain_id": self.domain_id,
-                "fast_convergence": "enable"
-            }
+                "fast_convergence": "enable",
+            },
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -529,8 +537,8 @@ class TestMclag(TestORCA):
             req_json={
                 "mgt_ip": device_ip_1,
                 "domain_id": self.domain_id,
-                "fast_convergence": "disable"
-            }
+                "fast_convergence": "disable",
+            },
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
