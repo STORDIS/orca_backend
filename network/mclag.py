@@ -54,10 +54,13 @@ def device_mclag_list(request):
         domain_id = request.GET.get("domain_id", None)
         data = get_mclags(device_ip, domain_id)
         
+        mclag_gateway_mac_details = get_mclag_gw_mac(device_ip)
+        
         if data:
             for i in data if isinstance(data, list) else [data]:
                 i["mclag_members"] = [mem["lag_name"] for mem in get_mclag_mem_portchnls(device_ip, i["domain_id"])]
-                i['gateway_mac'] = get_mclag_gw_mac(device_ip)[0].get('gateway_mac')
+                if len(mclag_gateway_mac_details):
+                    i['gateway_mac'] = mclag_gateway_mac_details[0].get('gateway_mac')
         return (
             Response(data, status=status.HTTP_200_OK)
             if data
