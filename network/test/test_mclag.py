@@ -37,8 +37,6 @@ class TestMclag(TestORCA):
             or any(
                 "resource not found" in res.get("message", "").lower()
                 for res in response.json()["result"]
-                "resource not found" in res.get("message", "").lower()
-                for res in response.json()["result"]
                 if res != "\n"
             )
         )
@@ -370,8 +368,6 @@ class TestMclag(TestORCA):
             or any(
                 "resource not found" in res.get("message", "").lower()
                 for res in response.json()["result"]
-                "resource not found" in res.get("message", "").lower()
-                for res in response.json()["result"]
                 if res != "\n"
             )
         )
@@ -391,8 +387,6 @@ class TestMclag(TestORCA):
             or any(
                 "resource not found" in res.get("message", "").lower()
                 for res in response.json()["result"]
-                "resource not found" in res.get("message", "").lower()
-                for res in response.json()["result"]
                 if res != "\n"
             )
         )
@@ -401,8 +395,6 @@ class TestMclag(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.get("message", "").lower()
-                for res in response.json()["result"]
                 "resource not found" in res.get("message", "").lower()
                 for res in response.json()["result"]
                 if res != "\n"
@@ -427,8 +419,6 @@ class TestMclag(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.get("message", "").lower()
-                for res in response.json()["result"]
                 "resource not found" in res.get("message", "").lower()
                 for res in response.json()["result"]
                 if res != "\n"
@@ -459,8 +449,6 @@ class TestMclag(TestORCA):
             or any(
                 "resource not found" in res.get("message", "").lower()
                 for res in response.json()["result"]
-                "resource not found" in res.get("message", "").lower()
-                for res in response.json()["result"]
                 if res != "\n"
             )
         )
@@ -479,8 +467,6 @@ class TestMclag(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.get("message", "").lower()
-                for res in response.json()["result"]
                 "resource not found" in res.get("message", "").lower()
                 for res in response.json()["result"]
                 if res != "\n"
@@ -564,8 +550,6 @@ class TestMclag(TestORCA):
             or any(
                 "resource not found" in res.get("message", "").lower()
                 for res in response.json()["result"]
-                "resource not found" in res.get("message", "").lower()
-                for res in response.json()["result"]
                 if res != "\n"
             )
         )
@@ -614,8 +598,6 @@ class TestMclag(TestORCA):
                 "domain_id": self.domain_id,
                 "fast_convergence": "enable",
             },
-                "fast_convergence": "enable",
-            },
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -632,8 +614,6 @@ class TestMclag(TestORCA):
             req_json={
                 "mgt_ip": device_ip_1,
                 "domain_id": self.domain_id,
-                "fast_convergence": "disable",
-            },
                 "fast_convergence": "disable",
             },
         )
