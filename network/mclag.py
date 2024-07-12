@@ -53,14 +53,17 @@ def device_mclag_list(request):
             )
         domain_id = request.GET.get("domain_id", None)
         data = get_mclags(device_ip, domain_id)
-        
+
         mclag_gateway_mac_details = get_mclag_gw_mac(device_ip)
-        
+
         if data:
             for i in data if isinstance(data, list) else [data]:
-                i["mclag_members"] = [mem["lag_name"] for mem in get_mclag_mem_portchnls(device_ip, i["domain_id"])]
+                i["mclag_members"] = [
+                    mem["lag_name"]
+                    for mem in get_mclag_mem_portchnls(device_ip, i["domain_id"])
+                ]
                 if len(mclag_gateway_mac_details):
-                    i['gateway_mac'] = mclag_gateway_mac_details[0].get('gateway_mac')
+                    i["gateway_mac"] = mclag_gateway_mac_details[0].get("gateway_mac")
         return (
             Response(data, status=status.HTTP_200_OK)
             if data
@@ -80,24 +83,13 @@ def device_mclag_list(request):
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            # If member are given in the request body
-            # Delete the members only, otherwise request is considered
-            # to be for deleting the MCLAG
-            if mclag_members:
-                try:
-                    for mem in mclag_members or []:
-                        del_mclag_member(device_ip, mem)
-                    add_msg_to_list(result, get_success_msg(request))
-                except Exception as err:
-                    add_msg_to_list(result, get_failure_msg(err, request))
-                    http_status = http_status and False
-            else:
-                try:
-                    del_mclag(device_ip)
-                    add_msg_to_list(result, get_success_msg(request))
-                except Exception as err:
-                    add_msg_to_list(result, get_failure_msg(err, request))
-                    http_status = http_status and False
+            # delete the MCLAG
+            try:
+                del_mclag(device_ip)
+                add_msg_to_list(result, get_success_msg(request))
+            except Exception as err:
+                add_msg_to_list(result, get_failure_msg(err, request))
+                http_status = http_status and False
 
     elif request.method == "PUT":
         for req_data in (
@@ -243,6 +235,37 @@ def mclag_gateway_mac(request):
                 {"result": get_failure_msg(err, request)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+@api_view(["DELETE"])
+@log_request
+def delete_mclag_members(request):
+    result = []
+    http_status = True
+    if request.method == "DELETE":
+
+        for req_data in (
+            request.data
+            if isinstance(request.data, list)
+            else [request.data] if request.data else []
+        ):
+            device_ip = req_data.get("mgt_ip", "")
+            mclag_members = req_data.get("mclag_members", None)
+
+            try:
+                for mem in mclag_members or []:
+                    del_mclag_member(device_ip, mem)
+                add_msg_to_list(result, get_success_msg(request))
+            except Exception as err:
+                add_msg_to_list(result, get_failure_msg(err, request))
+                http_status = http_status and False
+                
+    return Response(
+        {"result": result},
+        status=(
+            status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR
+        ),
+    )
 
 
 @api_view(["POST"])

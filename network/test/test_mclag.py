@@ -60,6 +60,8 @@ class TestMclag(TestORCA):
         )
 
         self.assertEqual(response.json().get("domain_id"), self.domain_id)
+        self.assertEqual(response.json().get("session_timeout"), request_body['session_timeout'])
+        
         self.remove_mclag(device_ip_1)
 
         # Create peerlink port channel first
@@ -236,16 +238,8 @@ class TestMclag(TestORCA):
         device_ip_1 = self.device_ips[0]
         device_ip_2 = self.device_ips[1]
 
-        response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
-
-        self.assertTrue(
-            response.status_code == status.HTTP_200_OK
-            or any(
-                "resource not found" in res.get("message", "").lower()
-                for res in response.json()["result"]
-                if res != "\n"
-            )
-        )
+        self.remove_mclag(device_ip_1)
+        
 
         response = self.get_req("device_mclag_list", {"mgt_ip": device_ip_1})
         self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
@@ -298,14 +292,7 @@ class TestMclag(TestORCA):
         self.perform_del_port_chnl(request_body)
         self.perform_add_port_chnl(request_body)
 
-        # create mclag and add member
-        request_body_members = {
-            "mgt_ip": device_ip_1,
-            "domain_id": self.domain_id,
-            "mclag_members": [self.mem_port_chnl, self.mem_port_chnl_2],
-        }
-
-        response = self.del_req("device_mclag_list", request_body_members)
+        self.remove_mclag(device_ip_1)
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
@@ -314,7 +301,22 @@ class TestMclag(TestORCA):
                 if res != "\n"
             )
         )
+        
+        # create mclag and add member
+        request_body_members = {
+            "mgt_ip": device_ip_1,
+            "domain_id": self.domain_id,
+            "mclag_members": [self.mem_port_chnl, self.mem_port_chnl_2],
+        }
+        
         response = self.put_req("device_mclag_list", request_body_members)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        response = self.get_req("device_mclag_list", request_body_members)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        self.assertEqual(response.json().get("domain_id"), request_body_members['domain_id'])
+        self.assertEqual(len(response.json().get("mclag_members")), 2)
+        for mem in response.json().get("mclag_members"):
+            self.assertTrue(mem in [self.mem_port_chnl, self.mem_port_chnl_2])
 
         # check deletion of single member
         request_body_member = {
@@ -323,46 +325,40 @@ class TestMclag(TestORCA):
             "mclag_members": [self.mem_port_chnl],
         }
 
-        response = self.del_req("device_mclag_list", request_body_member)
+        response = self.del_req("delete_mclag_members", request_body_member)
         self.assertTrue(response.status_code == status.HTTP_200_OK)
-
-        response = self.get_req("device_mclag_list", request_body_members)
+        
+        response = self.get_req("device_mclag_list", request_body_member)
+        self.assertEqual(response.json().get("domain_id"), request_body_member['domain_id'])
         self.assertEqual(response.json().get("mclag_members")[0], self.mem_port_chnl_2)
 
-        # check deletion of all members with empty member array
-        request_body_member = {
+        # check for updating members
+        request_body_update_member = {
             "mgt_ip": device_ip_1,
             "domain_id": self.domain_id,
-            "mclag_members": [],
+            "mclag_members": [self.mem_port_chnl],
         }
-        response = self.del_req("device_mclag_list", request_body_member)
-        self.assertTrue(
-            response.status_code == status.HTTP_200_OK
-            or any(
-                "resource not found" in res.get("message", "").lower()
-                for res in response.json()["result"]
-                if res != "\n"
-            )
-        )
-
-        # cleanup mclag
-        response = self.del_req("device_mclag_list", request_body)
-        self.assertTrue(
-            response.status_code == status.HTTP_200_OK
-            or any(
-                "resource not found" in res.get("message", "").lower()
-                for res in response.json()["result"]
-                if res != "\n"
-            )
-        )
-
-        request_body_members = {
+        
+        response = self.put_req("device_mclag_list", request_body_update_member)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        response = self.get_req("device_mclag_list", request_body_update_member)
+        self.assertEqual(response.json().get("domain_id"), request_body_update_member['domain_id'])
+        self.assertEqual(len(response.json().get("mclag_members")), 2)
+        for mem in response.json().get("mclag_members"):
+            self.assertTrue(mem in [self.mem_port_chnl_2, self.mem_port_chnl])
+            
+        # check to delete all members and clean up mclag members
+        request_body_delete_members = {
             "mgt_ip": device_ip_1,
             "domain_id": self.domain_id,
             "mclag_members": [self.mem_port_chnl, self.mem_port_chnl_2],
         }
+        
+        response = self.del_req("delete_mclag_members", request_body_delete_members)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
 
-        response = self.del_req("device_mclag_list", request_body_members)
+        response = self.get_req("device_mclag_list", request_body_delete_members)
+        self.assertEqual(response.json().get("domain_id"), request_body_delete_members['domain_id'])
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
@@ -371,35 +367,10 @@ class TestMclag(TestORCA):
                 if res != "\n"
             )
         )
-        response = self.put_req("device_mclag_list", request_body_members)
-        self.assertTrue(response.status_code == status.HTTP_200_OK)
-        response = self.get_req("device_mclag_list", request_body_members)
-        self.assertTrue(response.status_code == status.HTTP_200_OK)
-        self.assertEqual(len(response.json().get("mclag_members")), 2)
-        for mem in response.json().get("mclag_members"):
-            self.assertTrue(mem in [self.mem_port_chnl, self.mem_port_chnl_2])
 
-        # cleanup members
-        response = self.del_req("device_mclag_list", request_body_members)
-        print("---", response)
-        self.assertTrue(
-            response.status_code == status.HTTP_200_OK
-            or any(
-                "resource not found" in res.get("message", "").lower()
-                for res in response.json()["result"]
-                if res != "\n"
-            )
-        )
         # cleanup mclag
-        response = self.del_req("device_mclag_list", request_body)
-        self.assertTrue(
-            response.status_code == status.HTTP_200_OK
-            or any(
-                "resource not found" in res.get("message", "").lower()
-                for res in response.json()["result"]
-                if res != "\n"
-            )
-        )
+        self.remove_mclag(device_ip_1)
+
 
     def test_mclag_gateway_mac(self):
         """
