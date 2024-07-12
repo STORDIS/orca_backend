@@ -37,6 +37,8 @@ class TestMclag(TestORCA):
             or any(
                 "resource not found" in res.get("message", "").lower()
                 for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
                 if res != "\n"
             )
         )
@@ -92,6 +94,134 @@ class TestMclag(TestORCA):
         self.assertEqual(response.json().get("peer_link"), self.peer_link)
         self.assertEqual(response.json().get("mclag_sys_mac"), self.mclag_sys_mac)
         # Finally remove mclag
+        self.remove_mclag(device_ip_1)
+
+    def test_mclag_delay_restore(self):
+        device_ip_1 = self.device_ips[0]
+
+        # create mclag with only domain id and delay_restore
+        request_body = {
+            "mgt_ip": device_ip_1,
+            "domain_id": self.domain_id,
+            "delay_restore": 300,
+        }
+
+        response = self.put_req("device_mclag_list", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req(
+            "device_mclag_list", {"mgt_ip": device_ip_1, "domain_id": self.domain_id}
+        )
+
+        self.assertEqual(response.json().get("domain_id"), self.domain_id)
+        self.assertEqual(
+            response.json().get("delay_restore"), request_body["delay_restore"]
+        )
+
+        # update delay_restore
+        request_body = {
+            "mgt_ip": device_ip_1,
+            "domain_id": self.domain_id,
+            "delay_restore": 400,
+        }
+
+        response = self.put_req("device_mclag_list", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req(
+            "device_mclag_list", {"mgt_ip": device_ip_1, "domain_id": self.domain_id}
+        )
+
+        self.assertEqual(response.json().get("domain_id"), self.domain_id)
+        self.assertEqual(
+            response.json().get("delay_restore"), request_body["delay_restore"]
+        )
+
+        self.remove_mclag(device_ip_1)
+
+    def test_mclag_session_timeout(self):
+        device_ip_1 = self.device_ips[0]
+        # create mclag with only domain id and session_timeout
+        request_body = {
+            "mgt_ip": device_ip_1,
+            "domain_id": self.domain_id,
+            "session_timeout": 30,
+        }
+
+        response = self.put_req("device_mclag_list", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req(
+            "device_mclag_list", {"mgt_ip": device_ip_1, "domain_id": self.domain_id}
+        )
+
+        self.assertEqual(response.json().get("domain_id"), self.domain_id)
+        self.assertEqual(
+            response.json().get("session_timeout"), request_body["session_timeout"]
+        )
+
+        # update session timeout
+        request_body = {
+            "mgt_ip": device_ip_1,
+            "domain_id": self.domain_id,
+            "session_timeout": 60,
+        }
+
+        response = self.put_req("device_mclag_list", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req(
+            "device_mclag_list", {"mgt_ip": device_ip_1, "domain_id": self.domain_id}
+        )
+
+        self.assertEqual(response.json().get("domain_id"), self.domain_id)
+        self.assertEqual(
+            response.json().get("session_timeout"), request_body["session_timeout"]
+        )
+        self.remove_mclag(device_ip_1)
+
+    def test_mclag_keepalive_interval(self):
+        device_ip_1 = self.device_ips[0]
+        # create mclag with only domain id and keepalive_interval
+        request_body = {
+            "mgt_ip": device_ip_1,
+            "domain_id": self.domain_id,
+            "keepalive_interval": 1,
+        }
+
+        response = self.put_req("device_mclag_list", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req(
+            "device_mclag_list", {"mgt_ip": device_ip_1, "domain_id": self.domain_id}
+        )
+
+        self.assertEqual(response.json().get("domain_id"), self.domain_id)
+        self.assertEqual(
+            response.json().get("keepalive_interval"),
+            request_body["keepalive_interval"],
+        )
+
+        # update keepalive_interval
+        request_body = {
+            "mgt_ip": device_ip_1,
+            "domain_id": self.domain_id,
+            "keepalive_interval": 1,
+        }
+
+        response = self.put_req("device_mclag_list", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req(
+            "device_mclag_list", {"mgt_ip": device_ip_1, "domain_id": self.domain_id}
+        )
+
+        self.assertEqual(response.json().get("domain_id"), self.domain_id)
+        self.assertEqual(
+            response.json().get("keepalive_interval"),
+            request_body["keepalive_interval"],
+        )
+
         self.remove_mclag(device_ip_1)
 
     def test_mclag_member_config(self):
@@ -240,6 +370,8 @@ class TestMclag(TestORCA):
             or any(
                 "resource not found" in res.get("message", "").lower()
                 for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
                 if res != "\n"
             )
         )
@@ -253,9 +385,12 @@ class TestMclag(TestORCA):
 
         # cleanup members
         response = self.del_req("device_mclag_list", request_body_members)
+        print("---", response)
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
                 "resource not found" in res.get("message", "").lower()
                 for res in response.json()["result"]
                 if res != "\n"
@@ -266,6 +401,8 @@ class TestMclag(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
                 "resource not found" in res.get("message", "").lower()
                 for res in response.json()["result"]
                 if res != "\n"
@@ -290,6 +427,8 @@ class TestMclag(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
                 "resource not found" in res.get("message", "").lower()
                 for res in response.json()["result"]
                 if res != "\n"
@@ -320,6 +459,8 @@ class TestMclag(TestORCA):
             or any(
                 "resource not found" in res.get("message", "").lower()
                 for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
                 if res != "\n"
             )
         )
@@ -338,6 +479,8 @@ class TestMclag(TestORCA):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
                 "resource not found" in res.get("message", "").lower()
                 for res in response.json()["result"]
                 if res != "\n"
@@ -364,6 +507,7 @@ class TestMclag(TestORCA):
             "peer_link": self.peer_link,
             "mclag_sys_mac": self.mclag_sys_mac,
             "fast_convergence": "enable",
+            "fast_convergence": "enable",
         }
 
         response = self.put_req("device_mclag_list", request_body)
@@ -389,6 +533,7 @@ class TestMclag(TestORCA):
             "peer_addr": device_ip_2,
             "peer_link": self.peer_link,
             "mclag_sys_mac": self.mclag_sys_mac,
+            "fast_convergence": "disable",
             "fast_convergence": "disable",
         }
 
@@ -419,6 +564,8 @@ class TestMclag(TestORCA):
             or any(
                 "resource not found" in res.get("message", "").lower()
                 for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
                 if res != "\n"
             )
         )
@@ -441,6 +588,7 @@ class TestMclag(TestORCA):
             "source_address": device_ip_1,
             "peer_addr": device_ip_2,
             "peer_link": self.peer_link,
+            "mclag_sys_mac": self.mclag_sys_mac,
             "mclag_sys_mac": self.mclag_sys_mac,
         }
 
@@ -466,6 +614,8 @@ class TestMclag(TestORCA):
                 "domain_id": self.domain_id,
                 "fast_convergence": "enable",
             },
+                "fast_convergence": "enable",
+            },
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -482,6 +632,8 @@ class TestMclag(TestORCA):
             req_json={
                 "mgt_ip": device_ip_1,
                 "domain_id": self.domain_id,
+                "fast_convergence": "disable",
+            },
                 "fast_convergence": "disable",
             },
         )
