@@ -195,4 +195,6 @@ For a quick start, APIs can be directly used from browser with django rest frame
     ```
 
 ## To execute tests
+
+        export discover_networks="<Device(s) or Network(s) IP.>"
         python manage.py test network.test.interface_test
