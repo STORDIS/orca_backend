@@ -359,6 +359,8 @@ class TestMclag(TestORCA):
 
         response = self.get_req("device_mclag_list", request_body_delete_members)
         self.assertEqual(response.json().get("domain_id"), request_body_delete_members['domain_id'])
+        self.assertEqual(len(response.json().get("mclag_members")), 0)
+
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
@@ -464,7 +466,6 @@ class TestMclag(TestORCA):
             "peer_link": self.peer_link,
             "mclag_sys_mac": self.mclag_sys_mac,
             "fast_convergence": "enable",
-            "fast_convergence": "enable",
         }
 
         response = self.put_req("device_mclag_list", request_body)
@@ -490,7 +491,6 @@ class TestMclag(TestORCA):
             "peer_addr": device_ip_2,
             "peer_link": self.peer_link,
             "mclag_sys_mac": self.mclag_sys_mac,
-            "fast_convergence": "disable",
             "fast_convergence": "disable",
         }
 
@@ -543,7 +543,6 @@ class TestMclag(TestORCA):
             "source_address": device_ip_1,
             "peer_addr": device_ip_2,
             "peer_link": self.peer_link,
-            "mclag_sys_mac": self.mclag_sys_mac,
             "mclag_sys_mac": self.mclag_sys_mac,
         }
 
