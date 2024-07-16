@@ -552,7 +552,7 @@ class TestPortChnl(TestORCA):
         self.assertEqual(members.get("access_vlan"), vlan_2_id)
 
         #deleting portchannel vlan members
-        member_delete_response = self.del_req("port_chnl_vlan_member_remove", req_json=request_body)
+        member_delete_response = self.del_req("port_chnl_vlan_member_remove_all", req_json=request_body)
         self.assertEqual(member_delete_response.status_code, status.HTTP_200_OK)
 
         get_response = self.get_req("device_port_chnl", request_body)
@@ -668,7 +668,7 @@ class TestPortChnl(TestORCA):
         self.assertEqual(members.get("access_vlan"), vlan_2_id)
 
         # deleting portchannel vlan members
-        member_delete_response = self.del_req("port_chnl_vlan_member_remove", req_json=request_body)
+        member_delete_response = self.del_req("port_chnl_vlan_member_remove_all", req_json=request_body)
         self.assertEqual(member_delete_response.status_code, status.HTTP_200_OK)
 
         get_response = self.get_req("device_port_chnl", request_body)
@@ -784,7 +784,7 @@ class TestPortChnl(TestORCA):
         self.assertEqual(members.get("access_vlan"), vlan_2_id)
 
         # deleting portchannel vlan members
-        member_delete_response = self.del_req("port_chnl_vlan_member_remove", req_json=request_body)
+        member_delete_response = self.del_req("port_chnl_vlan_member_remove_all", req_json=request_body)
         self.assertEqual(member_delete_response.status_code, status.HTTP_200_OK)
 
         get_response = self.get_req("device_port_chnl", request_body)
