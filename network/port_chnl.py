@@ -223,10 +223,16 @@ def remove_port_channel_member_vlan(request):
         access_vlan = vlan_members.get("access_vlan", None)
         trunk_vlans = vlan_members.get("trunk_vlans", None)
         try:
-            remove_port_channel_vlan_member(
-                device_ip=device_ip, chnl_name=chnl_name, access_vlan=access_vlan, trunk_vlans=trunk_vlans
-            )
-            add_msg_to_list(result, get_success_msg(request))
+            if access_vlan or trunk_vlans:
+                remove_port_channel_vlan_member(
+                    device_ip=device_ip, chnl_name=chnl_name, access_vlan=access_vlan, trunk_vlans=trunk_vlans
+                )
+                add_msg_to_list(result, get_success_msg(request))
+            else:
+                return Response(
+                    {"status": "Required field vlan member not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         except Exception as err:
             add_msg_to_list(result, get_failure_msg(err, request))
             http_status = http_status and False
