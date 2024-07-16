@@ -552,7 +552,7 @@ class TestPortChnl(TestORCA):
         self.assertEqual(members.get("access_vlan"), vlan_2_id)
 
         #deleting portchannel vlan members
-        member_delete_response = self.del_req("port_chnl_vlan_member_remove", req_json=request_body)
+        member_delete_response = self.del_req("port_chnl_vlan_member_remove_all", req_json=request_body)
         self.assertEqual(member_delete_response.status_code, status.HTTP_200_OK)
 
         get_response = self.get_req("device_port_chnl", request_body)
@@ -668,7 +668,7 @@ class TestPortChnl(TestORCA):
         self.assertEqual(members.get("access_vlan"), vlan_2_id)
 
         # deleting portchannel vlan members
-        member_delete_response = self.del_req("port_chnl_vlan_member_remove", req_json=request_body)
+        member_delete_response = self.del_req("port_chnl_vlan_member_remove_all", req_json=request_body)
         self.assertEqual(member_delete_response.status_code, status.HTTP_200_OK)
 
         get_response = self.get_req("device_port_chnl", request_body)
@@ -784,7 +784,7 @@ class TestPortChnl(TestORCA):
         self.assertEqual(members.get("access_vlan"), vlan_2_id)
 
         # deleting portchannel vlan members
-        member_delete_response = self.del_req("port_chnl_vlan_member_remove", req_json=request_body)
+        member_delete_response = self.del_req("port_chnl_vlan_member_remove_all", req_json=request_body)
         self.assertEqual(member_delete_response.status_code, status.HTTP_200_OK)
 
         get_response = self.get_req("device_port_chnl", request_body)
@@ -811,3 +811,189 @@ class TestPortChnl(TestORCA):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = self.get_req("vlan_config", {"mgt_ip": device_ip, "name": vlan_3_name})
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_delete_port_channel_given_vlan_members(self):
+        device_ip = self.device_ips[0]
+        self.remove_mclag(device_ip)
+        port_channel = "PortChannel103"
+        vlan_1_name = "Vlan3"
+        vlan_1_id = 3
+        vlan_2_name = "Vlan4"
+        vlan_2_id = 4
+        vlan_3_name = "Vlan5"
+        vlan_3_id = 5
+
+        req_payload = [
+            {
+                "mgt_ip": device_ip,
+                "name": vlan_1_name,
+                "vlanid": vlan_1_id,
+                "mtu": 9000,
+                "enabled": False,
+                "description": "Test_Vlan1",
+            },
+            {
+                "mgt_ip": device_ip,
+                "name": vlan_2_name,
+                "vlanid": vlan_2_id,
+                "mtu": 9000,
+                "enabled": False,
+                "description": "Test_Vlan2",
+            },
+            {
+                "mgt_ip": device_ip,
+                "name": vlan_3_name,
+                "vlanid": vlan_3_id,
+                "mtu": 9000,
+                "enabled": False,
+                "description": "Test_Vlan3",
+            },
+        ]
+
+        response = self.put_req(
+            "vlan_config",
+            req_payload,
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Testing whether vlans are added or not
+        response = self.get_req("vlan_config", {"mgt_ip": device_ip, "name": vlan_1_name})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["vlanid"], vlan_1_id)
+        self.assertEqual(response.json()["name"], vlan_1_name)
+        response = self.get_req("vlan_config", {"mgt_ip": device_ip, "name": vlan_2_name})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["vlanid"], vlan_2_id)
+        self.assertEqual(response.json()["name"], vlan_2_name)
+        response = self.get_req("vlan_config", {"mgt_ip": device_ip, "name": vlan_3_name})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["vlanid"], vlan_3_id)
+        self.assertEqual(response.json()["name"], vlan_3_name)
+
+        request_body = {
+            "mgt_ip": device_ip,
+            "lag_name": port_channel,
+            "mtu": 9100,
+            "admin_status": "up",
+            "vlan_members": {
+                "trunk_vlans": [f"{vlan_1_id}-{vlan_3_id}"],
+                "access_vlan": vlan_2_id
+            }
+        }
+
+        # cleaning up port channel if it exists
+        self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": port_channel})
+
+        # adding port channel
+        self.perform_add_port_chnl(request_body)
+        response = self.get_req("device_port_chnl", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json().get("lag_name"), port_channel)
+        self.assertEqual(response.json().get("mtu"), 9100)
+        self.assertEqual(response.json().get("admin_sts"), "up")
+        members = response.json().get("vlan_members")
+        self.assertEqual(members.get("trunk_vlans"), [vlan_1_id, vlan_2_id, vlan_3_id])
+        self.assertEqual(members.get("access_vlan"), vlan_2_id)
+
+        # deleting access-vlan from port channel
+        member_delete_response = self.del_req(
+            "port_chnl_vlan_member_remove", req_json={
+                "mgt_ip": device_ip,
+                "lag_name": port_channel,
+                "vlan_members": {
+                    "access_vlan": vlan_2_id
+                }
+            }
+        )
+        self.assertEqual(member_delete_response.status_code, status.HTTP_200_OK)
+        response = self.get_req("device_port_chnl", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        members = response.json().get("vlan_members")
+        self.assertEqual(members.get("trunk_vlans"), [vlan_1_id, vlan_2_id, vlan_3_id])
+        self.assertIsNone(members.get("access_vlan"))
+
+        # deleting trunk_vlans from port channel
+        member_delete_response = self.del_req(
+            "port_chnl_vlan_member_remove", req_json={
+                "mgt_ip": device_ip,
+                "lag_name": port_channel,
+                "vlan_members": {
+                    "trunk_vlans": [vlan_1_id, vlan_2_id]
+                }
+            }
+        )
+        self.assertEqual(member_delete_response.status_code, status.HTTP_200_OK)
+        response = self.get_req("device_port_chnl", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        members = response.json().get("vlan_members")
+        self.assertNotIn(vlan_1_id, members.get("trunk_vlans"))
+        self.assertNotIn(vlan_2_id, members.get("trunk_vlans"))
+        self.assertIn(vlan_3_id, members.get("trunk_vlans"))
+        self.assertIsNone(members.get("access_vlan"))
+
+        # deleting portchannel
+        self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": port_channel})
+
+        request_body = {
+            "mgt_ip": device_ip,
+            "lag_name": port_channel,
+            "mtu": 9100,
+            "admin_status": "up",
+            "vlan_members": {
+                "trunk_vlans": [f"{vlan_1_id}-{vlan_3_id}"],
+                "access_vlan": vlan_2_id
+            }
+        }
+
+        # adding port channel
+        self.perform_add_port_chnl(request_body)
+        response = self.get_req("device_port_chnl", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json().get("lag_name"), port_channel)
+        self.assertEqual(response.json().get("mtu"), 9100)
+        self.assertEqual(response.json().get("admin_sts"), "up")
+        members = response.json().get("vlan_members")
+        self.assertEqual(members.get("trunk_vlans"), [vlan_1_id, vlan_2_id, vlan_3_id])
+        self.assertEqual(members.get("access_vlan"), vlan_2_id)
+
+        # deleting both access_vlan and trunk_vlans from port channel
+        member_delete_response = self.del_req(
+            "port_chnl_vlan_member_remove", req_json={
+                "mgt_ip": device_ip,
+                "lag_name": port_channel,
+                "vlan_members": {
+                    "trunk_vlans": [vlan_1_id, vlan_3_id],
+                    "access_vlan": vlan_2_id
+                }
+            }
+        )
+        self.assertEqual(member_delete_response.status_code, status.HTTP_200_OK)
+        response = self.get_req("device_port_chnl", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        members = response.json().get("vlan_members")
+        self.assertNotIn(vlan_1_id, members.get("trunk_vlans"))
+        self.assertNotIn(vlan_3_id, members.get("trunk_vlans"))
+        self.assertIn(vlan_2_id, members.get("trunk_vlans"))
+        self.assertIsNone(members.get("access_vlan"))
+
+        # cleaning up
+        self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": port_channel})
+        response = self.del_req(
+            "vlan_config", {"mgt_ip": device_ip, "name": vlan_2_name}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.get_req("vlan_config", {"mgt_ip": device_ip, "name": vlan_2_name})
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        response = self.del_req(
+            "vlan_config", {"mgt_ip": device_ip, "name": vlan_1_name}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.get_req("vlan_config", {"mgt_ip": device_ip, "name": vlan_1_name})
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        response = self.del_req(
+            "vlan_config", {"mgt_ip": device_ip, "name": vlan_3_name}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.get_req("vlan_config", {"mgt_ip": device_ip, "name": vlan_3_name})
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
