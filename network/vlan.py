@@ -86,9 +86,9 @@ def vlan_config(request):
                     device_ip,
                     vlan_name,
                     enabled=req_data.get("enabled", None),
-                    descr=req_data.get("description", ""),
-                    mtu=req_data.get("mtu", ""),
-                    ip_addr_with_prefix=req_data.get("ip_address", ""),
+                    descr=req_data.get("description", None),
+                    mtu=req_data.get("mtu", None),
+                    ip_addr_with_prefix=req_data.get("ip_address", None),
                     autostate=(
                         auto_st
                         if (
@@ -98,8 +98,8 @@ def vlan_config(request):
                         )
                         else None
                     ),
-                    anycast_addr=req_data.get("sag_ip_address", ""),
-                    mem_ifs=members,
+                    anycast_addr=req_data.get("sag_ip_address", None),
+                    mem_ifs=members if members else None,
                 )
                 add_msg_to_list(result, get_success_msg(request))
             except Exception as err:
