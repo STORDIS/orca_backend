@@ -15,7 +15,7 @@
       <img alt="GitHub pull requests" src="https://img.shields.io/github/issues-pr/stordis/orca_backend?color=0088ff&style=for-the-badge&logo=github&link=https%3A%2F%2Fgithub.com%2FSTORDIS%orca_backend%2Fpulls" />
 </a>
 <a href="https://github.com/STORDIS/orca_backend?tab=Apache-2.0-1-ov-file#readme">
-      <img alt="License" src="https://img.shields.io/github/license/stordis/orca_ui?style=for-the-badge"/>
+      <img alt="License" src="https://img.shields.io/github/license/stordis/orca_backend?style=for-the-badge"/>
 </a>
 
 </p>
