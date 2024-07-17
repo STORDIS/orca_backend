@@ -86,7 +86,7 @@ def vlan_config(request):
                     device_ip,
                     vlan_name,
                     enabled=req_data.get("enabled", None),
-                    descr=req_data.get("description", None),
+                    descr=req_data.get("description", ""),
                     mtu=req_data.get("mtu", ""),
                     ip_addr_with_prefix=req_data.get("ip_address", ""),
                     autostate=(
@@ -164,7 +164,6 @@ def remove_vlan_ip_address(request):
                 {"status": "Required field device vlan_name not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        vlan_ip_addr = req_data.get("vlan_ip_addr", None)
         try:
             remove_ip_from_vlan(device_ip, vlan_name,  )
             add_msg_to_list(result, get_success_msg(request))
