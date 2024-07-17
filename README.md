@@ -1,14 +1,12 @@
 <p align="center">
 <a href="https://hub.docker.com/r/stordis/orca_backend/">
-      <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/stordis/orca_backend?style=for-the-badge&logo=docker&logoColor=white&link=https%3A%2F%2Fhub.docker.com%2Fr%2Fstordis%2Forca_backend" />
-    </a>
+      <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/stordis/orca_backend?style=for-the-badge&logo=docker&logoColor=white&link=https%3A%2F%2Fhub.docker.com%2Fr%2Fstordis%2Forca_backend"/>
+</a>
 <a href="https://github.com/stordis/orca_backend/actions">
-      <img alt="Tests Passing" src="https://img.shields.io/github/actions/workflow/status/stordis/orca_backend/docker-publish.yml?style=for-the-badge&logo=github&link=https%3A%2F%2Fgithub.com%2FSTORDIS%2Forca_backend%2Factions
-      " />
+      <img alt="Tests Passing" src="https://img.shields.io/github/actions/workflow/status/stordis/orca_backend/docker-publish.yml?style=for-the-badge&logo=github&link=https%3A%2F%2Fgithub.com%2FSTORDIS%2Forca_backend%2Factions"/>
 </a>
 <a href="https://github.com/stordis/orca_backend/issues">
-      <img alt="Issues" src="https://img.shields.io/github/issues/stordis/orca_backend?style=for-the-badge&logo=github&link=https%3A%2F%2Fgithub.com%2FSTORDIS%orca_backend%2Fissues
-      " />
+      <img alt="Issues" src="https://img.shields.io/github/issues/stordis/orca_backend?style=for-the-badge&logo=github&link=https%3A%2F%2Fgithub.com%2FSTORDIS%orca_backend%2Fissues"/>
 </a>
 <a href="https://github.com/stordis/orca_backend/graphs/contributors">
       <img alt="GitHub Contributors" src="https://img.shields.io/github/contributors/stordis/orca_backend?style=for-the-badge&logo=github&link=https%3A%2F%2Fgithub.com%2FSTORDIS%orca_backend%2Fgraphs%2Fcontributors" />
@@ -17,7 +15,7 @@
       <img alt="GitHub pull requests" src="https://img.shields.io/github/issues-pr/stordis/orca_backend?color=0088ff&style=for-the-badge&logo=github&link=https%3A%2F%2Fgithub.com%2FSTORDIS%orca_backend%2Fpulls" />
 </a>
 <a href="https://github.com/STORDIS/orca_backend?tab=Apache-2.0-1-ov-file#readme">
-      <img alt="GitHub License" src="https://img.shields.io/github/license/stordis/orca_ui?style=for-the-badge">
+      <img alt="License" src="https://img.shields.io/github/license/stordis/orca_ui?style=for-the-badge"/>
 </a>
 
 </p>
