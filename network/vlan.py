@@ -49,7 +49,7 @@ def vlan_config(request):
             vlan_data["mem_ifs"] = get_vlan_members(device_ip, vlan_data["name"])
             for mem_if in vlan_data["mem_ifs"]:
                 vlan_data["mem_ifs"][mem_if] = str(vlan_data["mem_ifs"][mem_if])
-            
+
         return (
             Response(data, status=status.HTTP_200_OK)
             if data
@@ -126,9 +126,7 @@ def vlan_config(request):
                             )
                             add_msg_to_list(result, get_success_msg(request))
                         except Exception as err:
-                            add_msg_to_list(
-                                result, get_failure_msg(err, request)
-                            )
+                            add_msg_to_list(result, get_failure_msg(err, request))
                             http_status = http_status and False
             try:
                 del_vlan(device_ip, vlan_name)
@@ -165,7 +163,10 @@ def remove_vlan_ip_address(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
-            remove_ip_from_vlan(device_ip, vlan_name,  )
+            remove_ip_from_vlan(
+                device_ip,
+                vlan_name,
+            )
             add_msg_to_list(result, get_success_msg(request))
         except Exception as err:
             add_msg_to_list(result, get_failure_msg(err, request))
