@@ -17,13 +17,16 @@ class TestORCA(APITestCase):
 
     device_ips = []
     ether_names = []
-
+    
+    sync_done = False
+    
     def setUp(self):
         ## Autheticate the user
         user = User.objects.create_user(username="testuser", password="testpassword")
         self.client.force_authenticate(user)
 
         response = self.get_req("device")
+        ## If not devices discovered yet, discover them first.
         if not response.data:
             response = self.put_req("discover", {"discover_from_config": True})
             if not response or response.get("result") == "Fail":
@@ -46,19 +49,21 @@ class TestORCA(APITestCase):
                 if (ifc := intfs.pop()) and ifc["name"].startswith("Ethernet"):
                     self.ether_names.append(ifc["name"])
 
-        # Resync the interfaces, because may be their state has been modified when ORCA was not up,
-        # or state wasn't updated in DB due to cancelling the test case prematurly because of debugging.
-        # Which may cause the test case to fail if , for example while changing the enable state of an interface,
-        # Test case might read DB first, to see the current value of enable state and apply opposite value.
-        # But if the enable state wasn't correct in DB it might lead to setting the same enable state again.
-        # In this case subscription response will not be generated .
-        # Hence resulting in test failure.
-        for ip in self.device_ips:
-            for if_name in self.ether_names:
-                response1 = self.post_req(
-                    "interface_resync", {"mgt_ip": ip, "name": if_name}
-                )
-                self.assertEqual(response1.status_code, status.HTTP_200_OK)
+        if not TestORCA.sync_done:
+            # Resync the interfaces, because may be their state has been modified when ORCA was not up,
+            # or state wasn't updated in DB due to cancelling the test case prematurely because of debugging.
+            # Which may cause the test case to fail if , for example while changing the enable state of an interface,
+            # Test case might read DB first, to see the current value of enable state and apply opposite value.
+            # But if the enable state wasn't correct in DB it might lead to setting the same enable state again.
+            # In this case subscription response will not be generated .
+            # Hence resulting in test failure.
+            for ip in self.device_ips:
+                for if_name in self.ether_names:
+                    response1 = self.post_req(
+                        "interface_resync", {"mgt_ip": ip, "name": if_name}
+                    )
+                    self.assertEqual(response1.status_code, status.HTTP_200_OK)
+                TestORCA.sync_done=True
 
     @classmethod
     def tearDownClass(cls) -> None:
