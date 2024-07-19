@@ -13,6 +13,7 @@ from orca_nw_lib.port_chnl import (
     del_port_chnl_mem,
     remove_port_chnl_ip,
     remove_port_channel_vlan_member,
+    remove_all_port_channel_vlan_member
 )
 from log_manager.decorators import log_request
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg
@@ -162,6 +163,9 @@ def device_port_chnl_list(request):
 @api_view(["DELETE"])
 @log_request
 def remove_port_channel_ip_address(request):
+    """
+    Removes IP address from the port channel
+    """
     result = []
     http_status = True
     if request.method == "DELETE":
@@ -196,6 +200,56 @@ def remove_port_channel_ip_address(request):
 @api_view(["DELETE"])
 @log_request
 def remove_port_channel_member_vlan(request):
+    """
+    Removes vlan member from the port channel
+    """
+    result = []
+    http_status = True
+    if request.method == "DELETE":
+        req_data = request.data
+        device_ip = req_data.get("mgt_ip", "")
+        if not device_ip:
+            return Response(
+                {"status": "Required field device mgt_ip not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        chnl_name = req_data.get("lag_name", "")
+        if not chnl_name:
+            return Response(
+                {"status": "Required field device chnl_name not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        vlan_members = req_data.get("vlan_members", {})
+        access_vlan = vlan_members.get("access_vlan", None)
+        trunk_vlans = vlan_members.get("trunk_vlans", None)
+        try:
+            if access_vlan or trunk_vlans:
+                remove_port_channel_vlan_member(
+                    device_ip=device_ip, chnl_name=chnl_name, access_vlan=access_vlan, trunk_vlans=trunk_vlans
+                )
+                add_msg_to_list(result, get_success_msg(request))
+            else:
+                return Response(
+                    {"status": "Required field vlan member not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        except Exception as err:
+            add_msg_to_list(result, get_failure_msg(err, request))
+            http_status = http_status and False
+    return Response(
+        {"result": result},
+        status=(
+            status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR
+        ),
+    )
+
+
+@api_view(["DELETE"])
+@log_request
+def remove_all_port_channel_member_vlan(request):
+    """
+    Removes all members from the port channel
+    """
     result = []
     http_status = True
     if request.method == "DELETE":
@@ -213,7 +267,9 @@ def remove_port_channel_member_vlan(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
-            remove_port_channel_vlan_member(device_ip, chnl_name)
+            remove_all_port_channel_vlan_member(
+                device_ip=device_ip, chnl_name=chnl_name
+            )
             add_msg_to_list(result, get_success_msg(request))
         except Exception as err:
             add_msg_to_list(result, get_failure_msg(err, request))

@@ -84,11 +84,14 @@ class TestORCA(APITestCase):
             AssertionError: If the response status code is not 200 OK or if the response contains the message "resource not found".
                             If the response status code is not 204 NO CONTENT.
         """
+        self.remove_all_mem_vlan_of_port_chnl(request_body)
+
         response = self.del_req("device_port_chnl", request_body)
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
                 if res != "\n"
             )
         )
@@ -343,10 +346,32 @@ class TestORCA(APITestCase):
         self.assertTrue(
             response.status_code == status.HTTP_200_OK
             or any(
-                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
                 if res != "\n"
             )
         )
         response = self.get_req("device_mclag_list", {"mgt_ip": device_ip})
         self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
         self.assertFalse(response.data)
+
+    def remove_all_mem_vlan_of_port_chnl(self, req):
+        # req = {"mgt_ip": device_ip, "lag_name": lag_name}
+        ## Remove all member VLANs before deleting port channel Otherwise, it will give an erros that instance is in use.
+        if "lag_name" in req:
+            response = self.get_req("device_port_chnl", req)
+            if response.status_code == status.HTTP_200_OK:
+                ## If Port channel exists, only then try to remove member vLANs from it
+                response = self.del_req("port_chnl_vlan_member_remove_all", req_json=req)
+                self.assertTrue(
+                    response.status_code == status.HTTP_200_OK
+                    or any(
+                        "resource not found" in res.get("message", "").lower()
+                        for res in (response.json()["result"] if "result" in response.json() else [])
+                        if res != "\n"
+                    )
+                )
+                ## No assert that Member vlan has been removed from Port channel
+                response = self.get_req("device_port_chnl", req)
+                self.assertTrue(response.status_code == status.HTTP_200_OK)
+                self.assertFalse(response.json().get("vlan_members"))
