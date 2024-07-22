@@ -47,8 +47,8 @@ class TestDiscovery(TestORCA):
         self.assertTrue(device_ip and '10.10.229.88' in [device['mgt_ip'] for device in response.json()])
         
         # Clean DB
-        # response=self.del_req("del_db")
-        # self.assertTrue(response.status_code == status.HTTP_200_OK)
-        # response=self.get_req("device")
-        # self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+        response=self.del_req("del_db")
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        response=self.get_req("device")
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
            
