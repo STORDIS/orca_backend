@@ -36,7 +36,7 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_200_OK)
 
         response = self.get_req("stp_config", request_body)
-        response_body = response.json()
+        response_body = response.json()[0]
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         self.assertEqual(request_body["enabled_protocol"], response_body["enabled_protocol"])
         self.assertEqual(request_body["bpdu_filter"], response_body["bpdu_filter"])
@@ -61,7 +61,7 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_200_OK)
 
         response = self.get_req("stp_config", request_body)
-        response_body = response.json()
+        response_body = response.json()[0]
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         self.assertEqual(request_body["enabled_protocol"], response_body["enabled_protocol"])
         self.assertEqual(request_body["bpdu_filter"], response_body["bpdu_filter"])
@@ -104,7 +104,7 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_200_OK)
 
         response = self.get_req("stp_config", request_body)
-        response_body = response.json()
+        response_body = response.json()[0]
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         self.assertEqual(request_body["rootguard_timeout"], response_body["rootguard_timeout"])
         self.assertEqual(request_body["enabled_protocol"], response_body["enabled_protocol"])
@@ -132,7 +132,7 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_200_OK)
 
         response = self.get_req("stp_config", request_body)
-        response_body = response.json()
+        response_body = response.json()[0]
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         self.assertEqual(request_body["rootguard_timeout"], response_body["rootguard_timeout"])
 
@@ -170,7 +170,7 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_200_OK)
 
         response = self.get_req("stp_config", request_body)
-        response_body = response.json()
+        response_body = response.json()[0]
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         self.assertEqual(request_body["portfast"], response_body["portfast"])
         self.assertEqual(request_body["enabled_protocol"], response_body["enabled_protocol"])
@@ -198,7 +198,7 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_200_OK)
 
         response = self.get_req("stp_config", request_body)
-        response_body = response.json()
+        response_body = response.json()[0]
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         self.assertEqual(request_body["portfast"], response_body["portfast"])
 
@@ -236,7 +236,7 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_200_OK)
 
         response = self.get_req("stp_config", request_body)
-        response_body = response.json()
+        response_body = response.json()[0]
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         self.assertEqual(request_body["loop_guard"], response_body["loop_guard"])
         self.assertEqual(request_body["enabled_protocol"], response_body["enabled_protocol"])
@@ -256,7 +256,7 @@ class TestSTP(TestORCA):
             "hello_time": 10,
             "max_age": 10,
             "bridge_priority": 4096,
-            "loop_guard": False
+            "loop_guard": True
         }
 
         # update stp config
@@ -264,7 +264,7 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_200_OK)
 
         response = self.get_req("stp_config", request_body)
-        response_body = response.json()
+        response_body = response.json()[0]
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         self.assertEqual(request_body["loop_guard"], response_body["loop_guard"])
 
@@ -303,7 +303,7 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_200_OK)
 
         response = self.get_req("stp_config", request_body)
-        response_body = response.json()
+        response_body = response.json()[0]
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         self.assertEqual(request_body["disabled_vlans"], response_body["disabled_vlans"])
         self.assertEqual(request_body["enabled_protocol"], response_body["enabled_protocol"])
@@ -331,7 +331,7 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_200_OK)
 
         response = self.get_req("stp_config", request_body)
-        response_body = response.json()
+        response_body = response.json()[0]
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         self.assertTrue(300 in response_body["disabled_vlans"])
 
@@ -414,7 +414,7 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_200_OK)
 
         response = self.get_req("stp_config", request_body)
-        response_body = response.json()
+        response_body = response.json()[0]
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         self.assertEqual(request_body["disabled_vlans"], response_body["disabled_vlans"])
         self.assertEqual(request_body["enabled_protocol"], response_body["enabled_protocol"])
@@ -472,7 +472,7 @@ class TestSTP(TestORCA):
         response = self.get_req("stp_config", response_body)
         self.assertTrue(response.status_code == status.HTTP_200_OK)
 
-        response_body = response.json()
+        response_body = response.json()[0]
         self.assertTrue(vlan_3_id in response_body["disabled_vlans"])
         self.assertTrue(vlan_1_id not in response_body["disabled_vlans"])
         self.assertTrue(vlan_2_id not in response_body["disabled_vlans"])
@@ -490,6 +490,286 @@ class TestSTP(TestORCA):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = self.get_req("vlan_config", {"mgt_ip": device_ip, "name": vlan_1_name})
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # delete stp config
+        response = self.del_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        # get stp config
+        response = self.get_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+
+    def test_stp_global_bpdu_filter(self):
+        device_ip = self.device_ips[0]
+        request_body = {
+            "mgt_ip": device_ip,
+            "enabled_protocol": ["PVST"],
+            "bpdu_filter": True,
+            "forwarding_delay": 10,
+            "hello_time": 10,
+            "max_age": 10,
+            "bridge_priority": 4096
+        }
+
+        # delete stp config if it exists
+        response = self.del_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        # get stp config
+        response = self.get_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+
+        # create stp config
+        response = self.put_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        response = self.get_req("stp_config", request_body)
+        response_body = response.json()[0]
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        self.assertEqual(request_body["enabled_protocol"], response_body["enabled_protocol"])
+        self.assertEqual(request_body["bpdu_filter"], response_body["bpdu_filter"])
+        self.assertEqual(request_body["hello_time"], response_body["hello_time"])
+        self.assertEqual(request_body["max_age"], response_body["max_age"])
+        self.assertEqual(request_body["forwarding_delay"], response_body["forwarding_delay"])
+        self.assertEqual(request_body["bridge_priority"], response_body["bridge_priority"])
+
+        # update bpdu filter to false
+        request_body["bpdu_filter"] = False
+        request_body = {
+            "mgt_ip": device_ip,
+            "bpdu_filter": False,
+        }
+        response = self.put_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        response = self.get_req("stp_config", request_body)
+        response_body = response.json()[0]
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        self.assertEqual(request_body["bpdu_filter"], response_body["bpdu_filter"])
+
+        # delete stp config
+        response = self.del_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        # get stp config
+        response = self.get_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+
+    def test_stp_global_bridge_priority(self):
+        device_ip = self.device_ips[0]
+        request_body = {
+            "mgt_ip": device_ip,
+            "enabled_protocol": ["PVST"],
+            "bpdu_filter": True,
+            "forwarding_delay": 10,
+            "hello_time": 10,
+            "max_age": 10,
+            "bridge_priority": 4096
+        }
+
+        # delete stp config if it exists
+        response = self.del_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        # get stp config
+        response = self.get_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+
+        # create stp config
+        response = self.put_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        response = self.get_req("stp_config", request_body)
+        response_body = response.json()[0]
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        self.assertEqual(request_body["enabled_protocol"], response_body["enabled_protocol"])
+        self.assertEqual(request_body["bpdu_filter"], response_body["bpdu_filter"])
+        self.assertEqual(request_body["hello_time"], response_body["hello_time"])
+        self.assertEqual(request_body["max_age"], response_body["max_age"])
+        self.assertEqual(request_body["forwarding_delay"], response_body["forwarding_delay"])
+        self.assertEqual(request_body["bridge_priority"], response_body["bridge_priority"])
+
+        # update bridge priority to 4096*2
+        request_body = {
+            "mgt_ip": device_ip,
+            "bridge_priority": 4096 * 2,
+        }
+        response = self.put_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        response = self.get_req("stp_config", request_body)
+        response_body = response.json()[0]
+
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        self.assertEqual(request_body["bridge_priority"], response_body["bridge_priority"])
+
+        # delete stp config
+        response = self.del_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        # get stp config
+        response = self.get_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+
+    def test_stp_global_max_age(self):
+        device_ip = self.device_ips[0]
+        request_body = {
+            "mgt_ip": device_ip,
+            "enabled_protocol": ["PVST"],
+            "bpdu_filter": True,
+            "forwarding_delay": 10,
+            "hello_time": 10,
+            "max_age": 10,
+            "bridge_priority": 4096
+        }
+
+        # delete stp config if it exists
+        response = self.del_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        # get stp config
+        response = self.get_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+
+        # create stp config
+        response = self.put_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        response = self.get_req("stp_config", request_body)
+        response_body = response.json()[0]
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        self.assertEqual(request_body["enabled_protocol"], response_body["enabled_protocol"])
+        self.assertEqual(request_body["bpdu_filter"], response_body["bpdu_filter"])
+        self.assertEqual(request_body["hello_time"], response_body["hello_time"])
+        self.assertEqual(request_body["max_age"], response_body["max_age"])
+        self.assertEqual(request_body["forwarding_delay"], response_body["forwarding_delay"])
+        self.assertEqual(request_body["bridge_priority"], response_body["bridge_priority"])
+
+        # update max age to 20
+        request_body = {
+            "mgt_ip": device_ip,
+            "max_age": 20,
+        }
+        response = self.put_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        response = self.get_req("stp_config", request_body)
+        response_body = response.json()[0]
+
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        self.assertEqual(request_body["max_age"], response_body["max_age"])
+
+        # delete stp config
+        response = self.del_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        # get stp config
+        response = self.get_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+
+    def test_stp_gloabl_hello_time(self):
+        device_ip = self.device_ips[0]
+        request_body = {
+            "mgt_ip": device_ip,
+            "enabled_protocol": ["PVST"],
+            "bpdu_filter": True,
+            "forwarding_delay": 10,
+            "hello_time": 10,
+            "max_age": 10,
+            "bridge_priority": 4096
+        }
+
+        # delete stp config if it exists
+        response = self.del_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        # get stp config
+        response = self.get_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+
+        # create stp config
+        response = self.put_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        response = self.get_req("stp_config", request_body)
+        response_body = response.json()[0]
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        self.assertEqual(request_body["enabled_protocol"], response_body["enabled_protocol"])
+        self.assertEqual(request_body["bpdu_filter"], response_body["bpdu_filter"])
+        self.assertEqual(request_body["hello_time"], response_body["hello_time"])
+        self.assertEqual(request_body["max_age"], response_body["max_age"])
+        self.assertEqual(request_body["forwarding_delay"], response_body["forwarding_delay"])
+        self.assertEqual(request_body["bridge_priority"], response_body["bridge_priority"])
+
+        # update hello time to 6
+        request_body = {
+            "mgt_ip": device_ip,
+            "hello_time": 6,
+        }
+        response = self.put_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        response = self.get_req("stp_config", request_body)
+        response_body = response.json()[0]
+
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        self.assertEqual(request_body["hello_time"], response_body["hello_time"])
+
+        # delete stp config
+        response = self.del_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        # get stp config
+        response = self.get_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+
+    def test_stp_global_forwarding_delay(self):
+        device_ip = self.device_ips[0]
+        request_body = {
+            "mgt_ip": device_ip,
+            "enabled_protocol": ["PVST"],
+            "bpdu_filter": True,
+            "forwarding_delay": 10,
+            "hello_time": 10,
+            "max_age": 10,
+            "bridge_priority": 4096
+        }
+
+        # delete stp config if it exists
+        response = self.del_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        # get stp config
+        response = self.get_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+
+        # create stp config
+        response = self.put_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        response = self.get_req("stp_config", request_body)
+        response_body = response.json()[0]
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        self.assertEqual(request_body["enabled_protocol"], response_body["enabled_protocol"])
+        self.assertEqual(request_body["bpdu_filter"], response_body["bpdu_filter"])
+        self.assertEqual(request_body["hello_time"], response_body["hello_time"])
+        self.assertEqual(request_body["max_age"], response_body["max_age"])
+        self.assertEqual(request_body["forwarding_delay"], response_body["forwarding_delay"])
+        self.assertEqual(request_body["bridge_priority"], response_body["bridge_priority"])
+
+        # update forwarding delay to 25
+        request_body = {
+            "mgt_ip": device_ip,
+            "forwarding_delay": 25,
+        }
+        response = self.put_req("stp_config", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+
+        response = self.get_req("stp_config", request_body)
+        response_body = response.json()[0]
+
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        self.assertEqual(request_body["forwarding_delay"], response_body["forwarding_delay"])
 
         # delete stp config
         response = self.del_req("stp_config", request_body)

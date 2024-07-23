@@ -26,7 +26,7 @@ def stp_global_config(request):
         Response: The response object containing the result of the function.
 
     Input put request body details:
-    device_ip (str): The IP address of the device.
+    mgt_ip (str): The IP address of the device.
     enabled_protocol (list): List of enabled STP protocols. Valid Values: PVST, MSTP, RSTP, RAPID_PVST.
     bpdu_filter (bool): Enable/Disable BPDU filter. Valid Values: True, False.
     bridge_priority (int): The bridge priority value. Valid Range: 0-61440, only multiples of 4096.
@@ -50,7 +50,7 @@ def stp_global_config(request):
 
         data = get_stp_global_config(device_ip)
         return (
-            Response(data, status=status.HTTP_200_OK)
+            Response(data if isinstance(data, list) else [data], status=status.HTTP_200_OK)
             if data
             else Response({}, status=status.HTTP_204_NO_CONTENT)
         )
@@ -63,51 +63,15 @@ def stp_global_config(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             enabled_protocol = req_data.get("enabled_protocol")
-            if enabled_protocol is None or enabled_protocol == "":
-                return Response(
-                    {"status": "Required field enabled_protocol not found."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            bpdu_filter = req_data.get("bpdu_filter")
-            if bpdu_filter is None or bpdu_filter == "":
-                return Response(
-                    {"status": "Required field bpdu_filter not found."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            forwarding_delay = req_data.get("forwarding_delay")
-            if forwarding_delay is None or forwarding_delay == "":
-                return Response(
-                    {"status": "Required field forwarding_delay not found."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            hello_time = req_data.get("hello_time")
-            if hello_time is None or hello_time == "":
-                return Response(
-                    {"status": "Required field hello_time not found."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            max_age = req_data.get("max_age")
-            if max_age is None or max_age == "":
-                return Response(
-                    {"status": "Required field max_age not found."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            bridge_priority = req_data.get("bridge_priority")
-            if bridge_priority is None or bridge_priority == "":
-                return Response(
-                    {"status": "Required field bridge_priority not found."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
             try:
                 config_stp_global(
                     device_ip=device_ip,
-                    enabled_protocol=[STPEnabledProtocol.get_enum_from_str(i) for i in enabled_protocol],
-                    bpdu_filter=bpdu_filter,
-                    forwarding_delay=forwarding_delay,
-                    hello_time=hello_time,
-                    max_age=max_age,
-                    bridge_priority=bridge_priority,
+                    enabled_protocol=[STPEnabledProtocol.get_enum_from_str(i) for i in enabled_protocol] if enabled_protocol else None,
+                    bpdu_filter=req_data.get("bpdu_filter"),
+                    forwarding_delay=req_data.get("forwarding_delay"),
+                    hello_time=req_data.get("hello_time"),
+                    max_age=req_data.get("max_age"),
+                    bridge_priority=req_data.get("bridge_priority"),
                     disabled_vlans=req_data.get("disabled_vlans"),
                     rootguard_timeout=req_data.get("rootguard_timeout"),
                     loop_guard=req_data.get("loop_guard"),

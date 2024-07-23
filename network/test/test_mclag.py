@@ -28,6 +28,9 @@ class TestMclag(TestORCA):
 
         :return: None
         """
+        # checking if there are 2 devices
+        if len(self.device_ips) < 2:
+            self.reconfigure_devices()
         device_ip_1 = self.device_ips[0]
         device_ip_2 = self.device_ips[1]
         response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
@@ -235,6 +238,9 @@ class TestMclag(TestORCA):
 
         :return: None
         """
+        # checking if there are 2 devices
+        if len(self.device_ips) < 2:
+            self.reconfigure_devices()
         device_ip_1 = self.device_ips[0]
         device_ip_2 = self.device_ips[1]
 
@@ -433,6 +439,9 @@ class TestMclag(TestORCA):
         self.assertFalse(response.data)
 
     def test_mclag_domain_fast_convergence(self):
+        # checking if there are 2 devices
+        if len(self.device_ips) < 2:
+            self.reconfigure_devices()
         device_ip_1 = self.device_ips[0]
         device_ip_2 = self.device_ips[1]
         response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
@@ -512,6 +521,9 @@ class TestMclag(TestORCA):
         self.remove_mclag(device_ip_1)
 
     def test_config_mclag_domain_fast_convergence(self):
+        # checking if there are 2 devices
+        if len(self.device_ips) < 2:
+            self.reconfigure_devices()
         device_ip_1 = self.device_ips[0]
         device_ip_2 = self.device_ips[1]
         response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
@@ -606,6 +618,9 @@ class TestMclag(TestORCA):
 
         :return: None
         """
+        # checking if there are 2 devices
+        if len(self.device_ips) < 2:
+            self.reconfigure_devices()
 
         # delete mclag config
         device_ip_1 = self.device_ips[0]
