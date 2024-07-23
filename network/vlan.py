@@ -172,14 +172,14 @@ def remove_vlan_ip_address(request):
             add_msg_to_list(result, get_failure_msg(err, request))
             http_status = http_status and False
 
-        sag_ip_address = req_data.get("sag_ip_address", None)
-        try:
-            remove_anycast_ip_from_vlan(device_ip, vlan_name, sag_ip_address)
-            add_msg_to_list(result, get_success_msg(request))
-        except Exception as err:
-            add_msg_to_list(result, get_failure_msg(err, request))
-            http_status = http_status and False
-
+        if sag_ip_address:=req_data.get("sag_ip_address", []):
+            for sag_ip in sag_ip_address:
+                try:
+                    remove_anycast_ip_from_vlan(device_ip, vlan_name, sag_ip)
+                    add_msg_to_list(result, get_success_msg(request))
+                except Exception as err:
+                    add_msg_to_list(result, get_failure_msg(err, request))
+                    http_status = http_status and False
     return Response(
         {"result": result},
         status=(
