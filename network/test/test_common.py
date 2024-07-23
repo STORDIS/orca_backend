@@ -17,13 +17,16 @@ class TestORCA(APITestCase):
 
     device_ips = []
     ether_names = []
-
+    
+    sync_done = False
+    
     def setUp(self):
         ## Autheticate the user
         user = User.objects.create_user(username="testuser", password="testpassword")
         self.client.force_authenticate(user)
 
         response = self.get_req("device")
+        ## If not devices discovered yet, discover them first.
         if not response.data:
             response = self.put_req("discover", {"discover_from_config": True})
             if not response or response.get("result") == "Fail":
@@ -34,6 +37,7 @@ class TestORCA(APITestCase):
 
         for device in response.json():
             self.device_ips.append(device["mgt_ip"])
+            break ## only one device is enough for tests
 
         if self.device_ips:
             response = self.get_req(
@@ -46,19 +50,21 @@ class TestORCA(APITestCase):
                 if (ifc := intfs.pop()) and ifc["name"].startswith("Ethernet"):
                     self.ether_names.append(ifc["name"])
 
-        # Resync the interfaces, because may be their state has been modified when ORCA was not up,
-        # or state wasn't updated in DB due to cancelling the test case prematurly because of debugging.
-        # Which may cause the test case to fail if , for example while changing the enable state of an interface,
-        # Test case might read DB first, to see the current value of enable state and apply opposite value.
-        # But if the enable state wasn't correct in DB it might lead to setting the same enable state again.
-        # In this case subscription response will not be generated .
-        # Hence resulting in test failure.
-        for ip in self.device_ips:
-            for if_name in self.ether_names:
-                response1 = self.post_req(
-                    "interface_resync", {"mgt_ip": ip, "name": if_name}
-                )
-                self.assertEqual(response1.status_code, status.HTTP_200_OK)
+        if not TestORCA.sync_done:
+            # Resync the interfaces, because may be their state has been modified when ORCA was not up,
+            # or state wasn't updated in DB due to cancelling the test case prematurely because of debugging.
+            # Which may cause the test case to fail. For example while changing the enable state of an interface,
+            # Test case might read DB first, to see the current value of enable state and apply opposite value.
+            # But if the enable state wasn't correct in DB it might lead to setting the same enable state again.
+            # In this case subscription response will not be generated .
+            # Hence resulting in test failure.
+            for ip in self.device_ips:
+                for if_name in self.ether_names:
+                    response1 = self.post_req(
+                        "interface_resync", {"mgt_ip": ip, "name": if_name}
+                    )
+                    self.assertEqual(response1.status_code, status.HTTP_200_OK)
+                TestORCA.sync_done=True
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -357,12 +363,18 @@ class TestORCA(APITestCase):
             response = self.get_req("device_port_chnl", req)
             if response.status_code == status.HTTP_200_OK:
                 ## If Port channel exists, only then try to remove member vLANs from it
-                response = self.del_req("port_chnl_vlan_member_remove_all", req_json=req)
+                response = self.del_req(
+                    "port_chnl_vlan_member_remove_all", req_json=req
+                )
                 self.assertTrue(
                     response.status_code == status.HTTP_200_OK
                     or any(
                         "resource not found" in res.get("message", "").lower()
-                        for res in (response.json()["result"] if "result" in response.json() else [])
+                        for res in (
+                            response.json()["result"]
+                            if "result" in response.json()
+                            else []
+                        )
                         if res != "\n"
                     )
                 )
@@ -370,3 +382,85 @@ class TestORCA(APITestCase):
                 response = self.get_req("device_port_chnl", req)
                 self.assertTrue(response.status_code == status.HTTP_200_OK)
                 self.assertFalse(response.json().get("vlan_members"))
+
+    def create_vlan(self, req_payload):
+        response = self.del_req(
+            "vlan_ip_remove",
+            {"mgt_ip": req_payload["mgt_ip"], "name": req_payload["name"]},
+        )
+
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
+                if res != "\n"
+            )
+        )
+        response = self.del_req(
+            "vlan_config",
+            {"mgt_ip": req_payload["mgt_ip"], "name": req_payload["name"]},
+        )
+
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
+                if res != "\n"
+            )
+        )
+
+        response = self.get_req(
+            "vlan_config",
+            {"mgt_ip": req_payload["mgt_ip"], "name": req_payload["name"]},
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
+
+        response = self.put_req(
+            "vlan_config",
+            req_payload,
+        )
+        ## Assert that vlan is created successfully
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.get_req(
+            "vlan_config",
+            {"mgt_ip": req_payload["mgt_ip"], "name": req_payload["name"]},
+        )
+        self.assertEqual(response.json()["name"], req_payload["name"])
+        if req_vlanid := req_payload.get("vlanid"):
+            self.assertEqual(response.json()["vlanid"], req_vlanid)
+        if req_mtu := req_payload.get("mtu"):
+            self.assertEqual(response.json()["mtu"], req_mtu)
+        if req_enabled := req_payload.get("enabled"):
+            self.assertEqual(response.json()["enabled"], req_enabled)
+        if req_description := req_payload.get("description"):
+            self.assertEqual(response.json()["description"], req_description)
+        if req_autostate := req_payload.get("autostate"):
+            self.assertEqual(response.json()["autostate"], req_autostate)
+        if req_ip_address := req_payload.get("ip_address"):
+            self.assertEqual(response.json()["ip_address"], req_ip_address)
+        if sag_ips := req_payload.get("sag_ip_address"):
+            self.assertEqual(response.json()["sag_ip_address"], sag_ips)
+
+    def delete_vlan(self, req_payload):
+        response = self.del_req(
+            "vlan_config",
+            {"mgt_ip": req_payload["mgt_ip"], "name": req_payload["name"]},
+        )
+
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
+                if res != "\n"
+            )
+        )
+
+        response = self.get_req(
+            "vlan_config",
+            {"mgt_ip": req_payload["mgt_ip"], "name": req_payload["name"]},
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
