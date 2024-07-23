@@ -363,12 +363,18 @@ class TestORCA(APITestCase):
             response = self.get_req("device_port_chnl", req)
             if response.status_code == status.HTTP_200_OK:
                 ## If Port channel exists, only then try to remove member vLANs from it
-                response = self.del_req("port_chnl_vlan_member_remove_all", req_json=req)
+                response = self.del_req(
+                    "port_chnl_vlan_member_remove_all", req_json=req
+                )
                 self.assertTrue(
                     response.status_code == status.HTTP_200_OK
                     or any(
                         "resource not found" in res.get("message", "").lower()
-                        for res in (response.json()["result"] if "result" in response.json() else [])
+                        for res in (
+                            response.json()["result"]
+                            if "result" in response.json()
+                            else []
+                        )
                         if res != "\n"
                     )
                 )
@@ -376,3 +382,85 @@ class TestORCA(APITestCase):
                 response = self.get_req("device_port_chnl", req)
                 self.assertTrue(response.status_code == status.HTTP_200_OK)
                 self.assertFalse(response.json().get("vlan_members"))
+
+    def create_vlan(self, req_payload):
+        response = self.del_req(
+            "vlan_ip_remove",
+            {"mgt_ip": req_payload["mgt_ip"], "name": req_payload["name"]},
+        )
+
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
+                if res != "\n"
+            )
+        )
+        response = self.del_req(
+            "vlan_config",
+            {"mgt_ip": req_payload["mgt_ip"], "name": req_payload["name"]},
+        )
+
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
+                if res != "\n"
+            )
+        )
+
+        response = self.get_req(
+            "vlan_config",
+            {"mgt_ip": req_payload["mgt_ip"], "name": req_payload["name"]},
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
+
+        response = self.put_req(
+            "vlan_config",
+            req_payload,
+        )
+        ## Assert that vlan is created successfully
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.get_req(
+            "vlan_config",
+            {"mgt_ip": req_payload["mgt_ip"], "name": req_payload["name"]},
+        )
+        self.assertEqual(response.json()["name"], req_payload["name"])
+        if req_vlanid := req_payload.get("vlanid"):
+            self.assertEqual(response.json()["vlanid"], req_vlanid)
+        if req_mtu := req_payload.get("mtu"):
+            self.assertEqual(response.json()["mtu"], req_mtu)
+        if req_enabled := req_payload.get("enabled"):
+            self.assertEqual(response.json()["enabled"], req_enabled)
+        if req_description := req_payload.get("description"):
+            self.assertEqual(response.json()["description"], req_description)
+        if req_autostate := req_payload.get("autostate"):
+            self.assertEqual(response.json()["autostate"], req_autostate)
+        if req_ip_address := req_payload.get("ip_address"):
+            self.assertEqual(response.json()["ip_address"], req_ip_address)
+        if sag_ips := req_payload.get("sag_ip_address"):
+            self.assertEqual(response.json()["sag_ip_address"], sag_ips)
+
+    def delete_vlan(self, req_payload):
+        response = self.del_req(
+            "vlan_config",
+            {"mgt_ip": req_payload["mgt_ip"], "name": req_payload["name"]},
+        )
+
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
+                if res != "\n"
+            )
+        )
+
+        response = self.get_req(
+            "vlan_config",
+            {"mgt_ip": req_payload["mgt_ip"], "name": req_payload["name"]},
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
