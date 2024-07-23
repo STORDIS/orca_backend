@@ -64,11 +64,12 @@ class TestPortChnl(TestORCA):
         Test the configuration of port channel members.
         """
         device_ip = self.device_ips[0]
+        portChannel101 = "PortChannel101"
 
         ## Better cleanup all port channels first, may be there are existing
         # port channels with the member interfaces which are of interest of this
         # test case.
-        self.perform_del_port_chnl({"mgt_ip": device_ip})
+        self.perform_del_port_chnl({"mgt_ip": device_ip,"lag_name": portChannel101})
 
         ether_1 = self.ether_names[0]
         ether_2 = self.ether_names[1]
