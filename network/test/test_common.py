@@ -262,6 +262,14 @@ class TestORCA(APITestCase):
             speed_to_set = "SPEED_25GB"
         return speed_to_set
 
+    def get_valid_speeds(self, speed):
+        if speed == "SPEED_25GB":
+            return '25000'
+        elif speed == "SPEED_10GB":
+            return '10000,1000'
+        else:
+            pass
+    
     def get_common_speed_to_set(self, speed):
         """
         Get the speed to set based on the given speed.

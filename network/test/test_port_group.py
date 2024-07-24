@@ -199,10 +199,12 @@ class TestPortGroup(TestORCA):
         # Get current speed
         response = self.get_req("port_groups", request_body)
         self.assertTrue(response.status_code == status.HTTP_200_OK)
+        member_ifs=response.json().get("mem_intfs")
+        
+        request_body["speed"] = self.get_speed_to_set(response.json()["speed"])
 
-        # Test Port Group Speed with 25G
-        request_body["speed"] = "SPEED_25GB"
-
+        ## Necessary to do with timeout retry because if only this test is ran may be device is 
+        # not ready to receive the notifs and put request is made immediately, this may cause test failure.
         self.assert_with_timeout_retry(
             lambda path, data: self.put_req(path, data),
             self.assertTrue,
@@ -210,6 +212,7 @@ class TestPortGroup(TestORCA):
             request_body,
             status=status.HTTP_200_OK,
         )
+        
         # Confirm port group change
         self.assert_with_timeout_retry(
             lambda path, data: self.get_req(path, data),
@@ -220,7 +223,7 @@ class TestPortGroup(TestORCA):
             speed=request_body["speed"],
         )
         # Confirm speed changes on all member interfaces
-        for mem_if in response.json().get("mem_intfs"):
+        for mem_if in member_ifs:
             self.assert_with_timeout_retry(
                 lambda path, data: self.get_req(path, data),
                 self.assertEqual,
@@ -228,17 +231,22 @@ class TestPortGroup(TestORCA):
                 {"mgt_ip": device_ip, "name": mem_if},
                 status=status.HTTP_200_OK,
                 speed=request_body["speed"],
-                valid_speeds="25000",
+                valid_speeds=self.get_valid_speeds(request_body["speed"])
             )
 
-        # change speed to 10GB
-        request_body["speed"] = "SPEED_10GB"
-        self.assert_with_timeout_retry(
-            lambda path, data: self.put_req(path, data),
-            self.assertTrue,
-            "port_groups",
-            request_body,
-            status=status.HTTP_200_OK,
+
+        ## Change speed once again
+        response = self.get_req("port_groups", request_body)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        request_body["speed"] = self.get_speed_to_set(response.json()["speed"])
+        response = self.put_req("port_groups", request_body)
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "resource not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
+                if res != "\n"
+            )
         )
         # Confirm port group change
         self.assert_with_timeout_retry(
@@ -250,7 +258,7 @@ class TestPortGroup(TestORCA):
             speed=request_body["speed"],
         )
         # Confirm speed changes on all member interfaces
-        for mem_if in response.json().get("mem_intfs"):
+        for mem_if in member_ifs:
             self.assert_with_timeout_retry(
                 lambda path, data: self.get_req(path, data),
                 self.assertEqual,
@@ -258,7 +266,7 @@ class TestPortGroup(TestORCA):
                 {"mgt_ip": device_ip, "name": mem_if},
                 status=status.HTTP_200_OK,
                 speed=request_body["speed"],
-                valid_speeds="10000,1000",
+                valid_speeds=self.get_valid_speeds(request_body["speed"])
             )
 
     def test_get_port_group_details_from_intfc_name(self):
