@@ -16,6 +16,7 @@ class TestMclag(TestORCA):
     peer_link = "PortChannel100"
     mem_port_chnl = "PortChannel101"
     mem_port_chnl_2 = "PortChannel102"
+    peer_address = "244.178.44.111"
 
     def test_mclag_config(self):
         """
@@ -29,7 +30,6 @@ class TestMclag(TestORCA):
         :return: None
         """
         device_ip_1 = self.device_ips[0]
-        device_ip_2 = self.device_ips[1]
         response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
 
         self.assertTrue(
@@ -76,7 +76,7 @@ class TestMclag(TestORCA):
             "mgt_ip": device_ip_1,
             "domain_id": self.domain_id,
             "source_address": device_ip_1,
-            "peer_addr": device_ip_2,
+            "peer_addr": self.peer_address,
             "peer_link": self.peer_link,
             "mclag_sys_mac": self.mclag_sys_mac,
         }
@@ -90,7 +90,7 @@ class TestMclag(TestORCA):
 
         self.assertEqual(response.json().get("domain_id"), self.domain_id)
         self.assertEqual(response.json().get("source_address"), device_ip_1)
-        self.assertEqual(response.json().get("peer_addr"), device_ip_2)
+        self.assertEqual(response.json().get("peer_addr"), self.peer_address)
         self.assertEqual(response.json().get("peer_link"), self.peer_link)
         self.assertEqual(response.json().get("mclag_sys_mac"), self.mclag_sys_mac)
         # Finally remove mclag
@@ -236,7 +236,6 @@ class TestMclag(TestORCA):
         :return: None
         """
         device_ip_1 = self.device_ips[0]
-        device_ip_2 = self.device_ips[1]
 
         self.remove_mclag(device_ip_1)
         
@@ -257,7 +256,7 @@ class TestMclag(TestORCA):
             "mgt_ip": device_ip_1,
             "domain_id": self.domain_id,
             "source_address": device_ip_1,
-            "peer_addr": device_ip_2,
+            "peer_addr": self.peer_address,
             "peer_link": self.peer_link,
             "mclag_sys_mac": self.mclag_sys_mac,
         }
@@ -271,7 +270,7 @@ class TestMclag(TestORCA):
 
         self.assertEqual(response.json().get("domain_id"), self.domain_id)
         self.assertEqual(response.json().get("source_address"), device_ip_1)
-        self.assertEqual(response.json().get("peer_addr"), device_ip_2)
+        self.assertEqual(response.json().get("peer_addr"), self.peer_address)
         self.assertEqual(response.json().get("peer_link"), self.peer_link)
         self.assertEqual(response.json().get("mclag_sys_mac"), self.mclag_sys_mac)
 
@@ -434,7 +433,6 @@ class TestMclag(TestORCA):
 
     def test_mclag_domain_fast_convergence(self):
         device_ip_1 = self.device_ips[0]
-        device_ip_2 = self.device_ips[1]
         response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
 
         self.assertTrue(
@@ -462,7 +460,7 @@ class TestMclag(TestORCA):
             "mgt_ip": device_ip_1,
             "domain_id": self.domain_id,
             "source_address": device_ip_1,
-            "peer_addr": device_ip_2,
+            "peer_addr": self.peer_address,
             "peer_link": self.peer_link,
             "mclag_sys_mac": self.mclag_sys_mac,
             "fast_convergence": "enable",
@@ -477,7 +475,7 @@ class TestMclag(TestORCA):
 
         self.assertEqual(response.json().get("domain_id"), self.domain_id)
         self.assertEqual(response.json().get("source_address"), device_ip_1)
-        self.assertEqual(response.json().get("peer_addr"), device_ip_2)
+        self.assertEqual(response.json().get("peer_addr"), self.peer_address)
         self.assertEqual(response.json().get("peer_link"), self.peer_link)
         self.assertEqual(response.json().get("mclag_sys_mac"), self.mclag_sys_mac)
         self.assertEqual(response.json().get("fast_convergence"), "enable")
@@ -488,7 +486,7 @@ class TestMclag(TestORCA):
             "mgt_ip": device_ip_1,
             "domain_id": self.domain_id,
             "source_address": device_ip_1,
-            "peer_addr": device_ip_2,
+            "peer_addr": self.peer_address,
             "peer_link": self.peer_link,
             "mclag_sys_mac": self.mclag_sys_mac,
             "fast_convergence": "disable",
@@ -503,7 +501,7 @@ class TestMclag(TestORCA):
 
         self.assertEqual(response.json().get("domain_id"), self.domain_id)
         self.assertEqual(response.json().get("source_address"), device_ip_1)
-        self.assertEqual(response.json().get("peer_addr"), device_ip_2)
+        self.assertEqual(response.json().get("peer_addr"), self.peer_address)
         self.assertEqual(response.json().get("peer_link"), self.peer_link)
         self.assertEqual(response.json().get("mclag_sys_mac"), self.mclag_sys_mac)
         self.assertIsNone(response.json().get("fast_convergence"))
@@ -513,7 +511,6 @@ class TestMclag(TestORCA):
 
     def test_config_mclag_domain_fast_convergence(self):
         device_ip_1 = self.device_ips[0]
-        device_ip_2 = self.device_ips[1]
         response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
 
         self.assertTrue(
@@ -541,7 +538,7 @@ class TestMclag(TestORCA):
             "mgt_ip": device_ip_1,
             "domain_id": self.domain_id,
             "source_address": device_ip_1,
-            "peer_addr": device_ip_2,
+            "peer_addr": self.peer_address,
             "peer_link": self.peer_link,
             "mclag_sys_mac": self.mclag_sys_mac,
         }
@@ -555,7 +552,7 @@ class TestMclag(TestORCA):
 
         self.assertEqual(response.json().get("domain_id"), self.domain_id)
         self.assertEqual(response.json().get("source_address"), device_ip_1)
-        self.assertEqual(response.json().get("peer_addr"), device_ip_2)
+        self.assertEqual(response.json().get("peer_addr"), self.peer_address)
         self.assertEqual(response.json().get("peer_link"), self.peer_link)
         self.assertEqual(response.json().get("mclag_sys_mac"), self.mclag_sys_mac)
 
@@ -609,7 +606,6 @@ class TestMclag(TestORCA):
 
         # delete mclag config
         device_ip_1 = self.device_ips[0]
-        device_ip_2 = self.device_ips[1]
         response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
 
         self.assertTrue(
@@ -653,7 +649,7 @@ class TestMclag(TestORCA):
             "mgt_ip": device_ip_1,
             "domain_id": self.domain_id,
             "source_address": device_ip_1,
-            "peer_addr": device_ip_2,
+            "peer_addr": self.peer_address,
             "peer_link": self.peer_link,
             "mclag_sys_mac": self.mclag_sys_mac,
             "gateway_mac": gw_mac,
@@ -668,7 +664,7 @@ class TestMclag(TestORCA):
 
         self.assertEqual(response.json().get("domain_id"), self.domain_id)
         self.assertEqual(response.json().get("source_address"), device_ip_1)
-        self.assertEqual(response.json().get("peer_addr"), device_ip_2)
+        self.assertEqual(response.json().get("peer_addr"), self.peer_address)
         self.assertEqual(response.json().get("peer_link"), self.peer_link)
         self.assertEqual(response.json().get("mclag_sys_mac"), self.mclag_sys_mac)
 
