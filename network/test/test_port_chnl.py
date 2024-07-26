@@ -102,7 +102,6 @@ class TestPortChnl(TestORCA):
 
         self.assert_with_timeout_retry(
             lambda path, payload: self.put_req(path, payload),
-            self.assertEqual,
             "device_interface_list",
             itf_request_body,
             status=status.HTTP_200_OK,
@@ -118,7 +117,6 @@ class TestPortChnl(TestORCA):
         for req in request_body:
             response_1 = self.assert_with_timeout_retry(
                 lambda path, payload: self.get_req(path, payload),
-                self.assertEqual,
                 "device_interface_list",
                 {"mgt_ip": device_ip, "name": req["name"]},
                 status=status.HTTP_200_OK,
@@ -129,7 +127,6 @@ class TestPortChnl(TestORCA):
 
             self.assert_with_timeout_retry(
                 lambda path, payload: self.put_req(path, payload),
-                self.assertEqual,
                 "device_interface_list",
                 req,
                 status=status.HTTP_200_OK,
@@ -137,7 +134,6 @@ class TestPortChnl(TestORCA):
 
             self.assert_with_timeout_retry(
                 lambda path, payload: self.get_req(path, payload),
-                self.assertEqual,
                 "device_interface_list",
                 req,
                 status=status.HTTP_200_OK,

@@ -28,7 +28,6 @@ class TestInterface(TestORCA):
         for data in request_body:
             self.assert_with_timeout_retry(
                 lambda path, payload: self.put_req(path, payload),
-                self.assertEqual,
                 "device_interface_list",
                 data,
                 status=status.HTTP_200_OK,
@@ -36,7 +35,6 @@ class TestInterface(TestORCA):
             # Call with timeout because subscription response isn't recevied in time.
             self.assert_with_timeout_retry(
                 lambda path, payload: self.get_req(path, payload),
-                self.assertEqual,
                 "device_interface_list",
                 data,
                 enabled=data["enabled"],
@@ -58,14 +56,12 @@ class TestInterface(TestORCA):
 
             self.assert_with_timeout_retry(
                 lambda path, payload: self.put_req(path, payload),
-                self.assertEqual,
                 "device_interface_list",
                 data,
                 status=status.HTTP_200_OK,
             )
             self.assert_with_timeout_retry(
                 lambda path, payload: self.get_req(path, payload),
-                self.assertEqual,
                 "device_interface_list",
                 data,
                 mtu=data["mtu"],
@@ -82,14 +78,12 @@ class TestInterface(TestORCA):
         for data in request_body:
             self.assert_with_timeout_retry(
                 lambda path, payload: self.put_req(path, payload),
-                self.assertEqual,
                 "device_interface_list",
                 data,
                 status=status.HTTP_200_OK,
             )
             self.assert_with_timeout_retry(
                 lambda path, payload: self.get_req(path, payload),
-                self.assertEqual,
                 "device_interface_list",
                 data,
                 description=data["description"],
@@ -130,7 +124,6 @@ class TestInterface(TestORCA):
         for data in request_body:
             self.assert_with_timeout_retry(
                 lambda path, payload: self.put_req(path, payload),
-                self.assertEqual,
                 "device_interface_list",
                 data,
                 status=status.HTTP_200_OK,
@@ -138,7 +131,6 @@ class TestInterface(TestORCA):
 
             self.assert_with_timeout_retry(
                 lambda path, payload: self.get_req(path, payload),
-                self.assertEqual,
                 "device_interface_list",
                 data,
                 speed=data["speed"],
@@ -148,7 +140,6 @@ class TestInterface(TestORCA):
             ## Also confirm the speed of respective port-group (if supported) has been updates as well.
             response = self.assert_with_timeout_retry(
                 lambda path, payload: self.get_req(path, payload),
-                self.assertEqual,
                 "interface_pg",
                 {"mgt_ip": device_ip, "name": data["name"]},
                 speed=data["speed"],
@@ -163,7 +154,6 @@ class TestInterface(TestORCA):
             ):
                 response = self.assert_with_timeout_retry(
                     lambda path, payload: self.get_req(path, payload),
-                    self.assertEqual,
                     "port_group_members",
                     {"mgt_ip": device_ip, "port_group_id": pg_id},
                     status=status.HTTP_200_OK,
@@ -172,7 +162,6 @@ class TestInterface(TestORCA):
                 for mem_if in response.json() or []:
                     self.assert_with_timeout_retry(
                         lambda path, payload: self.get_req(path, payload),
-                        self.assertEqual,
                         "device_interface_list",
                         {"mgt_ip": device_ip, "name": mem_if["name"]},
                         speed=data["speed"],
@@ -207,14 +196,12 @@ class TestInterface(TestORCA):
         for data in request_body:
             self.assert_with_timeout_retry(
                 lambda path, payload: self.put_req(path, payload),
-                self.assertEqual,
                 "device_interface_list",
                 data,
                 status=status.HTTP_200_OK,
             )
             self.assert_with_timeout_retry(
                 lambda path, payload: self.get_req(path, payload),
-                self.assertEqual,
                 "device_interface_list",
                 data,
                 fec=data["fec"],
@@ -251,7 +238,6 @@ class TestInterface(TestORCA):
         # verifying the auto-negotiate and advertised-speed value after changing the auto-negotiate value
         self.assert_with_timeout_retry(
             lambda path, payload: self.get_req(path, payload),
-            self.assertEqual,
             "device_interface_list",
             {"mgt_ip": device_ip, "name": ether_name},
             autoneg=set_autoneg,
@@ -272,7 +258,6 @@ class TestInterface(TestORCA):
         # verifying the auto-negotiate and advertised-speed value has set to default value
         self.assert_with_timeout_retry(
             lambda path, payload: self.get_req(path, payload),
-            self.assertEqual,
             "device_interface_list",
             {"mgt_ip": device_ip, "name": ether_name},
             autoneg=pre_autoneg,
@@ -308,7 +293,6 @@ class TestInterface(TestORCA):
         # verifying the link training value after changing the link training value
         response_2 = self.assert_with_timeout_retry(
             lambda path, payload: self.get_req(path, payload),
-            self.assertEqual,
             "device_interface_list",
             {"mgt_ip": device_ip, "name": ether_name},
             link_training=set_link_training,
@@ -331,7 +315,6 @@ class TestInterface(TestORCA):
         # verifying the link training value has set to default value
         self.assert_with_timeout_retry(
             lambda path, payload: self.get_req(path, payload),
-            self.assertEqual,
             "device_interface_list",
             {"mgt_ip": device_ip, "name": ether_name},
             link_training=pre_link_training,
@@ -372,7 +355,6 @@ class TestInterface(TestORCA):
         # verifying the advertised-speed value after changing the advertised-speed with changed values
         self.assert_with_timeout_retry(
             lambda path, payload: self.get_req(path, payload),
-            self.assertEqual,
             "device_interface_list",
             {"mgt_ip": device_ip, "name": ether_name},
             adv_speeds=set_adv_speed,
@@ -400,7 +382,6 @@ class TestInterface(TestORCA):
         # checking the advertised-speed value after changing the advertised-speed with default values
         self.assert_with_timeout_retry(
             lambda path, payload: self.get_req(path, payload),
-            self.assertEqual,
             "device_interface_list",
             {"mgt_ip": device_ip, "name": ether_name},
             adv_speeds=set_adv_speed,
@@ -458,14 +439,15 @@ class TestInterface(TestORCA):
             },
         ]
 
-        self.assertTrue(
-            self.put_req("device_interface_list", request_body).status_code
-            == status.HTTP_200_OK
+        self.assert_with_timeout_retry(
+            lambda path, data: self.put_req(path, data),
+            "device_interface_list",
+            request_body,
+            status=status.HTTP_200_OK,
         )
 
         self.assert_with_timeout_retry(
             lambda path, payload: self.get_req(path, payload),
-            self.assertEqual,
             "device_interface_list",
             {"mgt_ip": device_ip, "name": ether_name_1},
             enabled=not enb1,
@@ -477,7 +459,6 @@ class TestInterface(TestORCA):
 
         self.assert_with_timeout_retry(
             lambda path, payload: self.get_req(path, payload),
-            self.assertEqual,
             "device_interface_list",
             {"mgt_ip": device_ip, "name": ether_name_2},
             enabled=not enb2,
@@ -513,7 +494,6 @@ class TestInterface(TestORCA):
 
         self.assert_with_timeout_retry(
             lambda path, payload: self.get_req(path, payload),
-            self.assertEqual,
             "device_interface_list",
             {"mgt_ip": device_ip, "name": ether_name_1},
             enabled=enb1,
@@ -525,7 +505,6 @@ class TestInterface(TestORCA):
 
         self.assert_with_timeout_retry(
             lambda path, payload: self.get_req(path, payload),
-            self.assertEqual,
             "device_interface_list",
             {"mgt_ip": device_ip, "name": ether_name_2},
             enabled=enb2,

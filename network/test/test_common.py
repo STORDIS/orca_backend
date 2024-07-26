@@ -262,6 +262,14 @@ class TestORCA(APITestCase):
             speed_to_set = "SPEED_25GB"
         return speed_to_set
 
+    def get_valid_speeds(self, speed):
+        if speed == "SPEED_25GB":
+            return '25000'
+        elif speed == "SPEED_10GB":
+            return '10000,1000'
+        else:
+            pass
+    
     def get_common_speed_to_set(self, speed):
         """
         Get the speed to set based on the given speed.
@@ -283,7 +291,7 @@ class TestORCA(APITestCase):
             speed_to_set = "SPEED_10GB"
         return speed_to_set
 
-    def send_req_and_assert(self, req_func, assert_func, *req_args, **assert_args):
+    def send_req_and_assert(self, req_func, *req_args, **assert_args):
         response = req_func(*req_args)
         for key, value in assert_args.items():
             print(f"Asserting against key: {key}, value: {value}")
@@ -295,7 +303,7 @@ class TestORCA(APITestCase):
                         response.status_code in value,
                     )
                 else:
-                    assert_func(response.status_code, value)
+                    self.assertEqual(response.status_code, value)
                 continue
             if response.status_code not in [
                 status.HTTP_200_OK,
@@ -305,11 +313,11 @@ class TestORCA(APITestCase):
                 print(response.data)
             if response.status_code == status.HTTP_200_OK:
                 print(f"Received {key} value: {response.json()[key]}")
-                assert_func(response.json()[key], value)
+                self.assertEqual(response.json()[key], value)
         return response
 
     def assert_with_timeout_retry(
-        self, req_func, assert_func, *req_args, **assert_args
+        self, req_func, *req_args, **assert_args
     ):
         """
         Executes a given function with a timeout and retries in case of failure.
@@ -322,7 +330,6 @@ class TestORCA(APITestCase):
 
         Args:
             req_func (Callable): The function to make the request to orca.
-            assert_func (Callable): The function to assert the response returned by req_func.
             *req_args: The arguments to pass to req_func. t.e. req url and payload.
             **assert_args: The arguments to pass to assert_func. t.e. assert status code and response.
         """
@@ -331,7 +338,7 @@ class TestORCA(APITestCase):
         for _ in range(retries):
             try:
                 return self.send_req_and_assert(
-                    req_func, assert_func, *req_args, **assert_args
+                    req_func, *req_args, **assert_args
                 )
             except AssertionError:
                 print(
@@ -340,7 +347,7 @@ class TestORCA(APITestCase):
                 print(f"Retrying in {timeout} seconds")
                 time.sleep(timeout)
                 continue
-        return self.send_req_and_assert(req_func, assert_func, *req_args, **assert_args)
+        return self.send_req_and_assert(req_func, *req_args, **assert_args)
 
     def remove_mclag(self, device_ip):
         response = self.del_req("device_mclag_list", {"mgt_ip": device_ip})
