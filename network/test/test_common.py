@@ -471,13 +471,3 @@ class TestORCA(APITestCase):
             {"mgt_ip": req_payload["mgt_ip"], "name": req_payload["name"]},
         )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-
-    def reconfigure_devices(self):
-        """
-         Function to reconfigure devices
-        """
-        response = self.get_req("device")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        for device in response.json():
-            self.device_ips.append(device["mgt_ip"])
-        return self
