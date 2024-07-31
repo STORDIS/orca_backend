@@ -12,7 +12,30 @@ from orca_nw_lib.stp_port import add_stp_port_members, get_stp_port_members, del
 @api_view(["PUT", "GET", "DELETE"])
 @log_request
 def stp_port_config(request):
-    """"""
+    """
+
+    Args:
+        request (Request): The request object.
+
+    Returns:
+        Response: The response object containing the result of the function.
+
+    Input put request body details:
+    mgt_ip (str, Required): The IP address of the device.
+    if_name (str, Required): The name of the interface.
+    bpdu_guard (bool, Required): Enable/Disable BPDU guard. Valid Values: True, False.
+    uplink_fast (bool, Required): Enable/Disable uplink fast. Valid Values: True, False.
+    stp_enabled (bool, Required): Enable/Disable STP. Valid Values: True, False.
+    edge_port (str): The name of the edge port. Valid Values: EDGE_AUTO, EDGE_ENABLE, EDGE_DISABLE.
+    link_type (str): The type of the link. Valid Values: P2P, SHARED.
+    guard (str): The guard. Valid Values: NONE, ROOT, LOOP.
+    bpdu_filter (bool): Enable/Disable BPDU filter. Valid Values: True, False.
+    portfast (bool): Enable/Disable portfast. Valid Values: True, False.
+    bpdu_guard_port_shutdown (bool): Enable/Disable BPDU guard port shutdown. Valid Values: True, False.
+    cost (int): The cost. Valid Range: 1-200000000.
+    port_priority (int): The port priority. Valid Range: 0-240.
+
+    """
     result = []
     http_status = True
     if request.method == "GET":
@@ -37,23 +60,42 @@ def stp_port_config(request):
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+
             if_name = req_data.get("if_name", None)
             if not if_name:
                 return Response(
                     {"status": "Required field if_name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+
+            bpdu_guard = req_data.get("bpdu_guard", None)
+            if bpdu_guard is None:
+                return Response(
+                    {"status": "Required field bpdu_guard not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            uplink_fast = req_data.get("uplink_fast", None)
+            if uplink_fast is None:
+                return Response(
+                    {"status": "Required field uplink_fast not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            stp_enabled = req_data.get("stp_enabled", None)
+            if stp_enabled is None:
+                return Response(
+                    {"status": "Required field stp_enabled not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             edge_port = req_data.get("edge_port", None)
             link_type = req_data.get("link_type", None)
             guard = req_data.get("guard", None)
-            bpdu_guard = req_data.get("bpdu_guard", None)
             bpdu_filter = req_data.get("bpdu_filter", None)
             port_fast = req_data.get("portfast", None)
-            uplink_fast = req_data.get("uplink_fast", None)
             bpdu_guard_port_shutdown = req_data.get("bpdu_guard_port_shutdown", None)
             cost = req_data.get("cost", None)
             port_priority = req_data.get("port_priority", None)
-            stp_enabled = req_data.get("stp_enabled", None)
             try:
                 add_stp_port_members(
                     device_ip=device_ip,
@@ -99,7 +141,17 @@ def stp_port_config(request):
 @api_view(["PUT"])
 @log_request
 def stp_discovery(request):
-    """"""
+    """
+
+    Args:
+        request (Request): The request object.
+
+    Returns:
+        Response: The response object containing the result of the function.
+
+    Input put request body details:
+    mgt_ip (str, Optional): The IP address of the device.
+    """
     result = []
     http_status = True
     for req_data in (request.data if isinstance(request.data, list) else [request.data] if request.data else []):
