@@ -5,7 +5,8 @@ from rest_framework.response import Response
 from log_manager.decorators import log_request
 from network.util import add_msg_to_list, get_success_msg, get_failure_msg
 from orca_nw_lib.common import STPPortEdgePort, STPPortLinkType, STPPortGuard
-from orca_nw_lib.stp_port import add_stp_port_members, get_stp_port_members, delete_stp_port_member
+from orca_nw_lib.stp import discover_stp
+from orca_nw_lib.stp_port import add_stp_port_members, get_stp_port_members, delete_stp_port_member, discover_stp_port
 
 
 @api_view(["PUT", "GET", "DELETE"])
@@ -89,6 +90,32 @@ def stp_port_config(request):
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+    return Response(
+        {"result": result},
+        status=(status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR),
+    )
+
+
+@api_view(["PUT"])
+@log_request
+def stp_discovery(request):
+    """"""
+    result = []
+    http_status = True
+    for req_data in (request.data if isinstance(request.data, list) else [request.data] if request.data else []):
+        device_ip = req_data.get("mgt_ip", None)
+        try:
+            discover_stp(device_ip=device_ip)
+            add_msg_to_list(result, get_success_msg(request))
+        except Exception as err:
+            add_msg_to_list(result, get_failure_msg(err, request))
+            http_status = http_status and False
+        try:
+            discover_stp_port(device_ip=device_ip)
+            add_msg_to_list(result, get_success_msg(request))
+        except Exception as err:
+            add_msg_to_list(result, get_failure_msg(err, request))
+            http_status = http_status and False
     return Response(
         {"result": result},
         status=(status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR),

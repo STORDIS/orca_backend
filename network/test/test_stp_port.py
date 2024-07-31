@@ -3,6 +3,7 @@ import time
 from rest_framework import status
 
 from network.test.test_common import TestORCA
+from orca_nw_lib.stp_port_db import delete_stp_port_member_from_db
 
 
 class TestSTPPort(TestORCA):
@@ -62,9 +63,9 @@ class TestSTPPort(TestORCA):
         while True:
             del_response = self.del_req("stp_port", request_body)
             if any(
-                "device is not ready to receive gnmi updates" in res.get("message", "").lower()
-                for res in del_response.json()["result"]
-                if res != "\n"
+                    "device is not ready to receive gnmi updates" in res.get("message", "").lower()
+                    for res in del_response.json()["result"]
+                    if res != "\n"
             ):
                 time.sleep(5)
             else:
@@ -486,7 +487,7 @@ class TestSTPPort(TestORCA):
                 i,
                 status=status.HTTP_200_OK,
                 uplink_fast=i["uplink_fast"],
-                if_name=i["if_name"],)
+                if_name=i["if_name"], )
 
         # clean up
         for i in request_body:
@@ -1059,3 +1060,87 @@ class TestSTPPort(TestORCA):
             self.perform_delete_stp_port(request_body=i)
         self.perform_del_port_chnl(request_body=port_channel_request_body)
         self.perform_delete_stp_global(request_body=stp_global_request_body)
+
+    def test_stp_discovery(self):
+        device_ip = self.device_ips[0]
+
+        # adding port channel
+        port_channel_1 = "PortChannel104"
+        port_channel_request_body = {
+            "mgt_ip": device_ip,
+            "lag_name": port_channel_1,
+            "mtu": 9100,
+            "admin_status": "up"
+        }
+        self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": port_channel_1})
+
+        # adding port channel
+        self.perform_add_port_chnl([port_channel_request_body])
+
+        # adding stp config
+        device_ip = self.device_ips[0]
+        stp_global_request_body = {
+            "mgt_ip": device_ip,
+            "enabled_protocol": ["PVST"],
+            "bpdu_filter": True,
+            "forwarding_delay": 10,
+            "hello_time": 10,
+            "max_age": 10,
+            "bridge_priority": 4096
+        }
+
+        # deleting stp global config
+        self.perform_delete_stp_global(request_body=stp_global_request_body)
+
+        # adding stp global config
+        self.perform_add_stp_global(request_body=stp_global_request_body)
+
+        request_body = [
+            {
+                "mgt_ip": device_ip,
+                "if_name": port_channel_1,
+                "bpdu_guard": True,
+                "uplink_fast": True,
+                "stp_enabled": True
+            }
+        ]
+
+        # deleting stp port config
+        for i in request_body:
+            self.perform_delete_stp_port(request_body=i)
+
+        # testing adding stp port config
+        self.perform_add_stp_port(request_body=request_body)
+
+        # deleting from db for to test discovery
+        for i in request_body:
+            delete_stp_port_member_from_db(i["mgt_ip"], i["if_name"])
+
+        for i in request_body:
+            self.assert_with_timeout_retry(
+                lambda path, payload: self.get_req(path, payload),
+                "stp_port",
+                i,
+                status=status.HTTP_204_NO_CONTENT,
+            )
+
+        # test discover stp
+        self.put_req("stp_discovery", request_body)
+
+        for i in request_body:
+            self.assert_with_timeout_retry(
+                lambda path, payload: self.get_req(path, payload),
+                "stp_port",
+                i,
+                status=status.HTTP_200_OK,
+                if_name=i["if_name"],
+            )
+
+
+        # clean up
+        for i in request_body:
+            self.perform_delete_stp_port(request_body=i)
+        self.perform_del_port_chnl(request_body=port_channel_request_body)
+        self.perform_delete_stp_global(request_body=stp_global_request_body)
+
+
