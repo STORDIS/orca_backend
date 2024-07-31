@@ -275,7 +275,6 @@ class TestInterface(TestORCA):
 
         # storing the lvariables and creating request body
         pre_link_training = response_1.json()["link_training"]
-   
 
         set_link_training = "on" if pre_link_training == "off" else "off"
         request_body = (
@@ -298,7 +297,7 @@ class TestInterface(TestORCA):
             link_training=set_link_training,
             status=status.HTTP_200_OK,
         )
-        
+
         # creating request to set the link training value to default value
         request_body = (
             {
@@ -334,12 +333,11 @@ class TestInterface(TestORCA):
         adv_speeds = response_1.json()["adv_speeds"]
         valid_speeds = response_1.json()["valid_speeds"]
 
-        
-        if adv_speeds == 'all': 
+        if adv_speeds == "all":
             set_adv_speed = valid_speeds
-        else: 
-            set_adv_speed = ''
-        
+        else:
+            set_adv_speed = ""
+
         request_body = (
             {
                 "mgt_ip": device_ip,
@@ -350,7 +348,13 @@ class TestInterface(TestORCA):
 
         # setting the and advertised-speed value with changed values
         response = self.put_req("device_interface_list", request_body)
-        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        ## Assert with timeout retry because subscription response isn't recevied in time, and orca is not yet ready to receive the subscription notifications.
+        self.assert_with_timeout_retry(
+            lambda path, payload: self.put_req(path, payload),
+            "device_interface_list",
+            request_body,
+            status=status.HTTP_200_OK,
+        )
 
         # verifying the advertised-speed value after changing the advertised-speed with changed values
         self.assert_with_timeout_retry(
@@ -360,13 +364,13 @@ class TestInterface(TestORCA):
             adv_speeds=set_adv_speed,
             status=status.HTTP_200_OK,
         )
-        
+
         # variable to set back the advertised-speed to previous value
-        if adv_speeds == 'all':
-            set_adv_speed = ''
-        else: 
+        if adv_speeds == "all":
+            set_adv_speed = ""
+        else:
             set_adv_speed = valid_speeds
-        
+
         request_body = (
             {
                 "mgt_ip": device_ip,
@@ -378,7 +382,7 @@ class TestInterface(TestORCA):
         # setting the and advertised-speed value with default values
         response = self.put_req("device_interface_list", request_body)
         self.assertTrue(response.status_code == status.HTTP_200_OK)
-        
+
         # checking the advertised-speed value after changing the advertised-speed with default values
         self.assert_with_timeout_retry(
             lambda path, payload: self.get_req(path, payload),
@@ -388,7 +392,7 @@ class TestInterface(TestORCA):
             status=status.HTTP_200_OK,
         )
 
-    @unittest.skip("Randomly fails, to be debugged")
+    #@unittest.skip("Randomly fails, to be debugged")
     def test_multiple_interfaces_config(self):
         """
         Test the configuration of multiple interfaces.
