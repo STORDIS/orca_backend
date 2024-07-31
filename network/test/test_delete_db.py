@@ -24,15 +24,18 @@ class TestDelete(TestORCA):
             "mgt_ip": self.device_ips[0],
         }
         response=self.del_req("del_db", request_body)
-        self.assertTrue(response.status_code ==  status.HTTP_200_OK) 
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
         
         # get discover device after deletion
         response=self.get_req("device")
-        self.assertTrue(response.status_code == status.HTTP_200_OK)
-        
-        # storing count in variable for compaction
-        count_after_delete = len(response.json())
-        
+        if len(set(self.device_ips)) > 1:
+            self.assertTrue(response.status_code == status.HTTP_200_OK)
+            # storing count in variable for compaction
+            count_after_delete = len(response.json())
+        else:
+            self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+            count_after_delete = 0
+
         # checking if the counts are correct 
         # i. e device before deletion must be one grater than device after deletion
         self.assertEqual(count_before_delete, count_after_delete + 1)
