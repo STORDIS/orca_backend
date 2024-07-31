@@ -17,9 +17,9 @@ class TestORCA(APITestCase):
 
     device_ips = []
     ether_names = []
-    
+
     sync_done = False
-    
+
     def setUp(self):
         ## Autheticate the user
         user = User.objects.create_user(username="testuser", password="testpassword")
@@ -37,7 +37,7 @@ class TestORCA(APITestCase):
 
         for device in response.json():
             self.device_ips.append(device["mgt_ip"])
-            break ## only one device is enough for tests
+            break  ## only one device is enough for tests
 
         if self.device_ips:
             response = self.get_req(
@@ -64,12 +64,77 @@ class TestORCA(APITestCase):
                         "interface_resync", {"mgt_ip": ip, "name": if_name}
                     )
                     self.assertEqual(response1.status_code, status.HTTP_200_OK)
-                TestORCA.sync_done=True
+                TestORCA.sync_done = True
 
     @classmethod
     def tearDownClass(cls) -> None:
         super().tearDownClass()
         gnmi_unsubscribe_for_all_devices_in_db()
+
+    def del_port_chnl_ip(self, request_body):
+        for data in (
+            request_body
+            if isinstance(request_body, list)
+            else [request_body] if request_body else []
+        ):
+            if "lag_name" in data and "mgt_ip" in data:
+                device_ip = data["mgt_ip"]
+                port_channel = data["lag_name"]
+                ip_address = data.get("ip_address", None)
+
+                del_resp = self.del_req(
+                    "port_channel_ip_remove",
+                    {
+                        "mgt_ip": device_ip,
+                        "lag_name": port_channel,
+                        "ip_address": ip_address,
+                    },
+                )
+                ## 200_OK incase of IP has been successfully removed, and "resource not found" incase of IP was not there before removal
+                self.assert_response_status(
+                    del_resp, status.HTTP_200_OK, "resource not found"
+                )
+                response = self.get_req(
+                    "device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel}
+                )
+                self.assertTrue(
+                    response.status_code
+                    == status.HTTP_204_NO_CONTENT  ## PortChannel does not exist
+                    or response.json()["ip_address"]
+                    == None  ## Portchannel exists but ip_address is None
+                )
+
+    def assert_response_status(
+        self, response, expected_status_codes, expected_response_msg=None
+    ):
+        try:
+            self.assertTrue(
+                (
+                    response.status_code in expected_status_codes
+                    if isinstance(expected_status_codes, list)
+                    else [expected_status_codes] if expected_status_codes else []
+                ),
+                f"Expected status code to be one of {expected_status_codes}, but got {response.status_code}",
+            )
+        except AssertionError as e:
+            print("Assertion Error : ", e)
+            print(f"Response Code : {response.status_code}")
+            # Check for the expected string in the 'result' field if provided
+            if expected_response_msg is not None:
+                result = response.json().get("result", [])
+                try:
+                    self.assertTrue(
+                        any(
+                            expected_response_msg in res.get("message", "").lower()
+                            for res in result
+                            if res != "\n"
+                        ),
+                        f"Expected string '{expected_response_msg}' not found in response 'result' field: {result}",
+                    )
+                except AssertionError as e:
+                    print("Assertion Error : ", e)
+                    print(f"Response: {response.json()}")
+                    raise
 
     def perform_del_port_chnl(self, request_body):
         """
@@ -86,16 +151,13 @@ class TestORCA(APITestCase):
                             If the response status code is not 204 NO CONTENT.
         """
         self.remove_all_mem_vlan_of_port_chnl(request_body)
-
+        # remove ip_address from port channel first otherwise port channel deletion will fail
+        self.del_port_chnl_ip(request_body)
         response = self.del_req("device_port_chnl", request_body)
-        self.assertTrue(
-            response.status_code == status.HTTP_200_OK
-            or any(
-                "resource not found" in res.get("message", "").lower()
-                for res in response.json()["result"]
-                if res != "\n"
-            )
+        self.assert_response_status(
+            response, [status.HTTP_200_OK], "resource not found"
         )
+
         for data in (
             request_body
             if isinstance(request_body, list)
@@ -103,10 +165,10 @@ class TestORCA(APITestCase):
         ):
             response = self.get_req("device_port_chnl", data)
             if data.get("members"):
-                self.assertEqual(response.status_code, status.HTTP_200_OK)
+                self.assert_response_status(response, [status.HTTP_200_OK])
                 self.assertFalse(response.json()["members"])
             else:
-                self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
+                self.assert_response_status(response, status.HTTP_204_NO_CONTENT)
                 self.assertFalse(response.data)
 
     def perform_add_port_chnl(self, request_body):
@@ -137,13 +199,12 @@ class TestORCA(APITestCase):
             self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
             self.assertFalse(response.data)
 
-            response = self.put_req("device_port_chnl", data)
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assert_response_status(self.put_req("device_port_chnl", data), status.HTTP_200_OK)
             response = self.get_req(
                 "device_port_chnl",
                 {"mgt_ip": device_ip, "lag_name": data.get("lag_name")},
             )
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assert_response_status(response, status.HTTP_200_OK)
             self.assertTrue(
                 response.json()["mtu"] == data["mtu"] if data.get("mtu") else True
             )
@@ -264,12 +325,12 @@ class TestORCA(APITestCase):
 
     def get_valid_speeds(self, speed):
         if speed == "SPEED_25GB":
-            return '25000'
+            return "25000"
         elif speed == "SPEED_10GB":
-            return '10000,1000'
+            return "10000,1000"
         else:
             pass
-    
+
     def get_common_speed_to_set(self, speed):
         """
         Get the speed to set based on the given speed.
@@ -316,9 +377,7 @@ class TestORCA(APITestCase):
                 self.assertEqual(response.json()[key], value)
         return response
 
-    def assert_with_timeout_retry(
-        self, req_func, *req_args, **assert_args
-    ):
+    def assert_with_timeout_retry(self, req_func, *req_args, **assert_args):
         """
         Executes a given function with a timeout and retries in case of failure.
         Usefull when executing a function that spawns a multiple a threads. Following can be the scenarios:
@@ -337,9 +396,7 @@ class TestORCA(APITestCase):
         retries = 10
         for _ in range(retries):
             try:
-                return self.send_req_and_assert(
-                    req_func, *req_args, **assert_args
-                )
+                return self.send_req_and_assert(req_func, *req_args, **assert_args)
             except AssertionError:
                 print(
                     f"Assertion failed for request args: {req_args}, and assert args: {assert_args}"
@@ -363,32 +420,32 @@ class TestORCA(APITestCase):
         self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
         self.assertFalse(response.data)
 
-    def remove_all_mem_vlan_of_port_chnl(self, req):
+    def remove_all_mem_vlan_of_port_chnl(self, request_body):
         # req = {"mgt_ip": device_ip, "lag_name": lag_name}
         ## Remove all member VLANs before deleting port channel Otherwise, it will give an erros that instance is in use.
-        if "lag_name" in req:
-            response = self.get_req("device_port_chnl", req)
-            if response.status_code == status.HTTP_200_OK:
-                ## If Port channel exists, only then try to remove member vLANs from it
-                response = self.del_req(
-                    "port_chnl_vlan_member_remove_all", req_json=req
-                )
-                self.assertTrue(
-                    response.status_code == status.HTTP_200_OK
-                    or any(
-                        "resource not found" in res.get("message", "").lower()
-                        for res in (
-                            response.json()["result"]
-                            if "result" in response.json()
-                            else []
-                        )
-                        if res != "\n"
+        for data in (
+            request_body
+            if isinstance(request_body, list)
+            else [request_body] if request_body else []
+        ):
+            if "lag_name" in data and "mgt_ip" in data:
+                response = self.get_req("device_port_chnl", data)
+                if response.status_code == status.HTTP_200_OK:
+                    ## If Port channel exists, only then try to remove member vLANs from it
+                    response = self.del_req(
+                        "port_chnl_vlan_member_remove_all", req_json=data
                     )
-                )
-                ## No assert that Member vlan has been removed from Port channel
-                response = self.get_req("device_port_chnl", req)
-                self.assertTrue(response.status_code == status.HTTP_200_OK)
-                self.assertFalse(response.json().get("vlan_members"))
+                    self.assert_response_status(
+                        response, status.HTTP_200_OK, "resource not found"
+                    )
+
+                    ## Now assert that Member vlan has been removed from Port channel
+                    response = self.get_req("device_port_chnl", data)
+                    self.assert_response_status(response, status.HTTP_200_OK)
+                    self.assertFalse(
+                        response.json().get("vlan_members"),
+                        f"Was not expecting any vlan_members of port channel {data['lag_name']}, but got: {response.json().get('vlan_members')}",
+                    )
 
     def create_vlan(self, req_payload):
         response = self.del_req(
