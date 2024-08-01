@@ -1,6 +1,7 @@
 """ Network Port Channel API. """
 import traceback
 
+from orca_nw_lib.common import IFMode
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
@@ -112,13 +113,18 @@ def device_port_chnl_list(request):
             # hence try catch block and send additional failure message if it fails.
             try:
                 if vlan_member := req_data.get("vlan_members"):
+                    if_mode = IFMode.get_enum_from_str(vlan_member.get("if_mode"))
+                    vlan_ids = vlan_member.get("vlan_ids")
+                    print(if_mode, vlan_ids)
                     add_port_chnl_vlan_members(
                         device_ip=device_ip,
                         chnl_name=req_data.get("lag_name"),
-                        access_vlan=vlan_member.get("access_vlan"),
-                        trunk_vlans=vlan_member.get("trunk_vlans"),
+                        if_mode=if_mode,
+                        vlan_ids=vlan_ids
                     )
             except Exception as err:
+                import traceback
+                print(traceback.format_exc())
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
 
@@ -220,12 +226,12 @@ def remove_port_channel_member_vlan(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         vlan_members = req_data.get("vlan_members", {})
-        access_vlan = vlan_members.get("access_vlan", None)
-        trunk_vlans = vlan_members.get("trunk_vlans", None)
+        if_mode = IFMode.get_enum_from_str(vlan_members.get("if_mode"))
+        vlan_ids = vlan_members.get("vlan_ids")
         try:
-            if access_vlan or trunk_vlans:
+            if if_mode and vlan_ids:
                 remove_port_channel_vlan_member(
-                    device_ip=device_ip, chnl_name=chnl_name, access_vlan=access_vlan, trunk_vlans=trunk_vlans
+                    device_ip=device_ip, chnl_name=chnl_name, if_mode=if_mode, vlan_ids=vlan_ids
                 )
                 add_msg_to_list(result, get_success_msg(request))
             else:
