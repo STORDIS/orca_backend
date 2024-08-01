@@ -64,30 +64,43 @@ class TestPortChnl(TestORCA):
         Test the configuration of port channel members.
         """
         device_ip = self.device_ips[0]
-        portChannel101 = "PortChannel101"
-        portChannel102 = "PortChannel102"
-        portChannel103 = "PortChannel103"
-
-        ## Better cleanup all port channels first, may be there are existing
-        # port channels with the member interfaces which are of interest of this
-        # test case.
-        self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": portChannel101})
-        self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": portChannel102})
-        self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": portChannel103})
-
+        
         ether_1 = self.ether_names[0]
         ether_2 = self.ether_names[1]
         ether_3 = self.ether_names[2]
         ether_4 = self.ether_names[3]
         mtu = 9100
-        ## Members of a port channel members should have same speed.
+        
         request_body = [
+            {
+                "mgt_ip": device_ip,
+                "lag_name": "PortChannel101",
+                "mtu": mtu,
+                "admin_status": "up",
+                "members": [ether_1, ether_2],
+            },
+            {
+                "mgt_ip": device_ip,
+                "lag_name": "PortChannel102",
+                "mtu": mtu,
+                "admin_status": "up",
+                "members": [ether_3, ether_4],
+            },
+        ]
+        
+        ## Better cleanup all port channels first, may be there are existing
+        # port channels with the member interfaces which are of interest of this
+        # test case.
+        self.perform_del_port_chnl(request_body)
+        
+        ## Members of a port channel members should have same speed and mtu
+        request_body_eth = [
             {"mgt_ip": device_ip, "name": ether_1, "mtu": mtu},
             {"mgt_ip": device_ip, "name": ether_2, "mtu": mtu},
             {"mgt_ip": device_ip, "name": ether_3, "mtu": mtu},
             {"mgt_ip": device_ip, "name": ether_4, "mtu": mtu},
         ]
-        for req in request_body:
+        for req in request_body_eth:
             response_1 = self.assert_with_timeout_retry(
                 lambda path, payload: self.get_req(path, payload),
                 "device_interface_list",
@@ -114,32 +127,9 @@ class TestPortChnl(TestORCA):
                 mtu=req["mtu"],
             )
 
-        request_body = [
-            {
-                "mgt_ip": device_ip,
-                "lag_name": "PortChannel101",
-                "mtu": mtu,
-                "admin_status": "up",
-                "members": [ether_1, ether_2],
-            },
-            {
-                "mgt_ip": device_ip,
-                "lag_name": "PortChannel102",
-                "mtu": mtu,
-                "admin_status": "up",
-                "members": [ether_3, ether_4],
-            },
-        ]
-
         # delete mclag, if it exists.
         # port channel deletion will fail if port channel is found to be a member of mclag.
         self.remove_mclag(device_ip)
-
-        # Now delete port channels
-        request_body_2 = [
-            {"mgt_ip": device_ip, "lag_name": "PortChannel101"},
-            {"mgt_ip": device_ip, "lag_name": "PortChannel102"},
-        ]
 
         ## If any portchannel member interface is also a member of vlan it wont be added to portchannel
         ## So better remove all vlans from Interfaces first.
@@ -161,10 +151,10 @@ class TestPortChnl(TestORCA):
             "resource not found",
         )
         
-        self.perform_del_port_chnl(request_body_2)
         self.perform_add_port_chnl(request_body)
+        self.perform_add_port_chnl_mem_eth(request_body)
         self.perform_del_port_chnl(request_body)
-        self.perform_del_port_chnl(request_body_2)
+        
 
     def test_port_chnl_static_attribute(self):
         device_ip = self.device_ips[0]
@@ -945,7 +935,7 @@ class TestPortChnl(TestORCA):
 
         # deleting access-vlan from port channel
         member_delete_response = self.del_req(
-            "port_chnl_vlan_member_remove",
+            "port_channel_member_vlan",
             req_json={
                 "mgt_ip": device_ip,
                 "lag_name": port_channel,
@@ -961,7 +951,7 @@ class TestPortChnl(TestORCA):
 
         # deleting trunk_vlans from port channel
         member_delete_response = self.del_req(
-            "port_chnl_vlan_member_remove",
+            "port_channel_member_vlan",
             req_json={
                 "mgt_ip": device_ip,
                 "lag_name": port_channel,
@@ -1004,7 +994,7 @@ class TestPortChnl(TestORCA):
 
         # deleting both access_vlan and trunk_vlans from port channel
         member_delete_response = self.del_req(
-            "port_chnl_vlan_member_remove",
+            "port_channel_member_vlan",
             req_json={
                 "mgt_ip": device_ip,
                 "lag_name": port_channel,

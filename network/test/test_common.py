@@ -46,7 +46,7 @@ class TestORCA(APITestCase):
             intfs = response.data
             if not intfs or not isinstance(intfs, list):
                 return
-            while len(self.ether_names) < 5:
+            while len(self.ether_names) < 4:
                 if (ifc := intfs.pop()) and ifc["name"].startswith("Ethernet"):
                     self.ether_names.append(ifc["name"])
 
@@ -153,23 +153,26 @@ class TestORCA(APITestCase):
         self.remove_all_mem_vlan_of_port_chnl(request_body)
         # remove ip_address from port channel first otherwise port channel deletion will fail
         self.del_port_chnl_ip(request_body)
-        response = self.del_req("device_port_chnl", request_body)
+        # delete port channel member ethernet
         self.assert_response_status(
-            response, [status.HTTP_200_OK], "resource not found"
+            self.del_req("port_chnl_mem_ethernet", request_body),
+            status.HTTP_200_OK,
+            "resource not found",
         )
-
+        # delete port channel member vlan
+        self.assert_response_status(
+            self.del_req("device_port_chnl", request_body),
+            [status.HTTP_200_OK],
+            "resource not found",
+        )
         for data in (
             request_body
             if isinstance(request_body, list)
             else [request_body] if request_body else []
         ):
             response = self.get_req("device_port_chnl", data)
-            if data.get("members"):
-                self.assert_response_status(response, [status.HTTP_200_OK])
-                self.assertFalse(response.json()["members"])
-            else:
-                self.assert_response_status(response, status.HTTP_204_NO_CONTENT)
-                self.assertFalse(response.data)
+            self.assert_response_status(response, status.HTTP_204_NO_CONTENT)
+            self.assertFalse(response.data)
 
     def perform_add_port_chnl(self, request_body):
         """
@@ -190,23 +193,13 @@ class TestORCA(APITestCase):
             if isinstance(request_body, list)
             else [request_body] if request_body else []
         ):
-            device_ip = data.get("mgt_ip")
-
-            response = self.get_req(
-                "device_port_chnl",
-                {"mgt_ip": device_ip, "lag_name": data.get("lag_name")},
+            self.assert_response_status(
+                self.put_req("device_port_chnl", data), status.HTTP_200_OK
             )
-            self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
-            self.assertFalse(response.data)
-
-            self.assert_response_status(self.put_req("device_port_chnl", data), status.HTTP_200_OK)
-            response = self.get_req(
-                "device_port_chnl",
-                {"mgt_ip": device_ip, "lag_name": data.get("lag_name")},
-            )
+            response = self.get_req("device_port_chnl", data)
             self.assert_response_status(response, status.HTTP_200_OK)
             self.assertTrue(
-                response.json()["mtu"] == data["mtu"] if data.get("mtu") else True
+                response.json().get("mtu") == data.get("mtu") if data.get("mtu") else True
             )
             self.assertTrue(
                 response.json()["admin_sts"] == data.get("admin_status")
@@ -214,6 +207,18 @@ class TestORCA(APITestCase):
                 else True
             )
 
+    def perform_add_port_chnl_mem_eth(self, request_body):
+
+        for data in (
+            request_body
+            if isinstance(request_body, list)
+            else [request_body] if request_body else []
+        ):
+            self.assert_response_status(
+                self.put_req("port_chnl_mem_ethernet", data), status.HTTP_200_OK
+            )
+            response = self.get_req("device_port_chnl", data)
+            self.assert_response_status(response, status.HTTP_200_OK)
             if data.get("members"):
                 self.assertTrue(
                     all(
