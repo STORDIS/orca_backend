@@ -357,31 +357,6 @@ class TestORCA(APITestCase):
             speed_to_set = "SPEED_10GB"
         return speed_to_set
 
-    def send_req_and_assert(self, req_func, *req_args, **assert_args):
-        response = req_func(*req_args)
-        for key, value in assert_args.items():
-            print(f"Asserting against key: {key}, value: {value}")
-            if key == "status":
-                print(f"Received {key} code: {response.status_code}")
-                if isinstance(value, list):
-                    ## Need to check multiple status codes
-                    self.assertTrue(
-                        response.status_code in value,
-                    )
-                else:
-                    self.assertEqual(response.status_code, value)
-                continue
-            if response.status_code not in [
-                status.HTTP_200_OK,
-                status.HTTP_204_NO_CONTENT,
-                status.HTTP_201_CREATED,
-            ]:
-                print(response.data)
-            if response.status_code == status.HTTP_200_OK:
-                print(f"Received {key} value: {response.json()[key]}")
-                self.assertEqual(response.json()[key], value)
-        return response
-
     def assert_with_timeout_retry(self, req_func, *req_args, **assert_args):
         """
         Executes a given function with a timeout and retries in case of failure.
@@ -398,18 +373,38 @@ class TestORCA(APITestCase):
             **assert_args: The arguments to pass to assert_func. t.e. assert status code and response.
         """
         timeout = 2
-        retries = 10
-        for _ in range(retries):
+        retries = 5
+        response=""
+        for i in range(retries+1):
             try:
-                return self.send_req_and_assert(req_func, *req_args, **assert_args)
+                response = req_func(*req_args)
+                for key, value in assert_args.items():
+                    print(f"Asserting: {key}={value}", end=" ")
+                    if key == "status":
+                        print(f"Received: {key}={response.status_code}")
+                        if isinstance(value, list):
+                            ## Need to check multiple status codes
+                            self.assertTrue(
+                                response.status_code in value,
+                            )
+                        else:
+                            self.assertEqual(response.status_code, value)
+                        continue ## Continue with next key
+                    
+                    if response.status_code == status.HTTP_200_OK:
+                        print(f"Received: {key}={response.json()[key]}")
+                        self.assertEqual(response.json()[key], value)
+                return response
             except AssertionError:
                 print(
                     f"Assertion failed for request args: {req_args}, and assert args: {assert_args}"
                 )
+                print(f"Response: {response.json()}")
                 print(f"Retrying in {timeout} seconds")
                 time.sleep(timeout)
-                continue
-        return self.send_req_and_assert(req_func, *req_args, **assert_args)
+                if i == retries:
+                    raise ## If even after retries, assertion still fails, raise the exception
+        
 
     def remove_mclag(self, device_ip):
         response = self.del_req("device_mclag_list", {"mgt_ip": device_ip})
