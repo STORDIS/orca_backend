@@ -2,7 +2,7 @@
 
 from django.urls import re_path, path
 
-from . import views
+from . import views, stp_vlan
 from . import vlan, interface, port_chnl, mclag, bgp, port_group, stp
 
 urlpatterns = [
@@ -12,6 +12,7 @@ urlpatterns = [
         stp.delete_disabled_vlans,
         name="stp_delete_disabled_vlans",
     ),
+    path("stp_vlan", stp_vlan.stp_vlan_config, name="stp_vlan_config"),
     re_path("del_db", views.delete_db, name="del_db"),
     re_path("discover", views.discover, name="discover"),
     re_path("devices", views.device_list, name="device"),
