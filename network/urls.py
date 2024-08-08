@@ -19,15 +19,42 @@ urlpatterns = [
         "interfaces", interface.device_interfaces_list, name="device_interface_list"
     ),
     re_path("port_chnls", port_chnl.device_port_chnl_list, name="device_port_chnl"),
-    path("port_chnl_ip_remove", port_chnl.remove_port_channel_ip_address, name="port_channel_ip_remove"),
-    path("port_chnl_vlan_member_remove", port_chnl.remove_port_channel_member_vlan, name="port_chnl_vlan_member_remove"),
-    path("port_chnl_vlan_member_remove_all", port_chnl.remove_all_port_channel_member_vlan, name="port_chnl_vlan_member_remove_all"),
+    path(
+        "port_chnl_ip_remove",
+        port_chnl.remove_port_channel_ip_address,
+        name="port_channel_ip_remove",
+    ),
+    path(
+        "port_channel_member_vlan",
+        port_chnl.port_channel_member_vlan,
+        name="port_channel_member_vlan",
+    ),
+    path(
+        "port_chnl_vlan_member_remove_all",
+        port_chnl.remove_all_port_channel_member_vlan,
+        name="port_chnl_vlan_member_remove_all",
+    ),
+    path(
+        "port_chnl_mem_ethernet",
+        port_chnl.port_chnl_mem_ethernet,
+        name="port_chnl_mem_ethernet",
+    ),
     re_path("mclags", mclag.device_mclag_list, name="device_mclag_list"),
-    path("delete_mclag_members", mclag.delete_mclag_members, name="delete_mclag_members"),
-    re_path("config_mclag_fast_convergence", mclag.config_mclag_fast_convergence, name="config_mclag_fast_convergence"),
+    path(
+        "delete_mclag_members", mclag.delete_mclag_members, name="delete_mclag_members"
+    ),
+    re_path(
+        "config_mclag_fast_convergence",
+        mclag.config_mclag_fast_convergence,
+        name="config_mclag_fast_convergence",
+    ),
     re_path("bgp", bgp.device_bgp_global, name="bgp_global"),
     re_path("nbrs", bgp.bgp_nbr_config, name="bgp_nbr"),
-    re_path("group_from_intfc", port_group.port_group_from_intfc_name, name="group_from_intfc"),
+    re_path(
+        "group_from_intfc",
+        port_group.port_group_from_intfc_name,
+        name="group_from_intfc",
+    ),
     re_path("group_mem", port_group.port_group_members, name="port_group_members"),
     re_path("groups", port_group.port_groups, name="port_groups"),
     re_path("gateway_mac", mclag.mclag_gateway_mac, name="mclag_gateway_mac"),
