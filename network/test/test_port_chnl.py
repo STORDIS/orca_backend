@@ -54,7 +54,7 @@ class TestPortChnl(TestORCA):
         ## Better cleanup all port channels first may be there are existing
         # port channels with member interfaces which are of interest of this
         # test case.
-        self.perform_del_port_chnl({"mgt_ip": device_ip})
+        self.perform_del_port_chnl(request_body)
 
         # Now delete port channels
         self.perform_del_add_del_port_chnl(request_body)
@@ -64,57 +64,43 @@ class TestPortChnl(TestORCA):
         Test the configuration of port channel members.
         """
         device_ip = self.device_ips[0]
-        portChannel101 = "PortChannel101"
-
-        ## Better cleanup all port channels first, may be there are existing
-        # port channels with the member interfaces which are of interest of this
-        # test case.
-        self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": portChannel101})
-
+        
         ether_1 = self.ether_names[0]
         ether_2 = self.ether_names[1]
         ether_3 = self.ether_names[2]
         ether_4 = self.ether_names[3]
         mtu = 9100
-        # First set same mtu on member interfaces as port channel.
-        itf_request_body = [
-            {
-                "mgt_ip": device_ip,
-                "name": ether_1,
-                "mtu": mtu,
-            },
-            {
-                "mgt_ip": device_ip,
-                "name": ether_2,
-                "mtu": mtu,
-            },
-            {
-                "mgt_ip": device_ip,
-                "name": ether_3,
-                "mtu": mtu,
-            },
-            {
-                "mgt_ip": device_ip,
-                "name": ether_4,
-                "mtu": mtu,
-            },
-        ]
-
-        self.assert_with_timeout_retry(
-            lambda path, payload: self.put_req(path, payload),
-            "device_interface_list",
-            itf_request_body,
-            status=status.HTTP_200_OK,
-        )
-
-        ## Members of a port channel members should have same speed.
+        
         request_body = [
-            {"mgt_ip": device_ip, "name": ether_1, "speed": ""},
-            {"mgt_ip": device_ip, "name": ether_2, "speed": ""},
-            {"mgt_ip": device_ip, "name": ether_3, "speed": ""},
-            {"mgt_ip": device_ip, "name": ether_4, "speed": ""},
+            {
+                "mgt_ip": device_ip,
+                "lag_name": "PortChannel101",
+                "mtu": mtu,
+                "admin_status": "up",
+                "members": [ether_1, ether_2],
+            },
+            {
+                "mgt_ip": device_ip,
+                "lag_name": "PortChannel102",
+                "mtu": mtu,
+                "admin_status": "up",
+                "members": [ether_3, ether_4],
+            },
         ]
-        for req in request_body:
+        
+        ## Better cleanup all port channels first, may be there are existing
+        # port channels with the member interfaces which are of interest of this
+        # test case.
+        self.perform_del_port_chnl(request_body)
+        
+        ## Members of a port channel members should have same speed and mtu
+        request_body_eth = [
+            {"mgt_ip": device_ip, "name": ether_1, "mtu": mtu},
+            {"mgt_ip": device_ip, "name": ether_2, "mtu": mtu},
+            {"mgt_ip": device_ip, "name": ether_3, "mtu": mtu},
+            {"mgt_ip": device_ip, "name": ether_4, "mtu": mtu},
+        ]
+        for req in request_body_eth:
             response_1 = self.assert_with_timeout_retry(
                 lambda path, payload: self.get_req(path, payload),
                 "device_interface_list",
@@ -138,71 +124,44 @@ class TestPortChnl(TestORCA):
                 req,
                 status=status.HTTP_200_OK,
                 speed=req["speed"],
+                mtu=req["mtu"],
             )
-
-        request_body = [
-            {
-                "mgt_ip": device_ip,
-                "lag_name": "PortChannel101",
-                "mtu": mtu,
-                "admin_status": "up",
-                "members": [ether_1, ether_2],
-            },
-            {
-                "mgt_ip": device_ip,
-                "lag_name": "PortChannel102",
-                "mtu": mtu,
-                "admin_status": "up",
-                "members": [ether_3, ether_4],
-            },
-        ]
 
         # delete mclag, if it exists.
         # port channel deletion will fail if port channel is found to be a member of mclag.
         self.remove_mclag(device_ip)
 
-        # Now delete port channels
-        request_body_2 = [
-            {"mgt_ip": device_ip, "lag_name": "PortChannel101"},
-            {"mgt_ip": device_ip, "lag_name": "PortChannel102"},
-        ]
-
         ## If any portchannel member interface is also a member of vlan it wont be added to portchannel
         ## So better remove all vlans from Interfaces first.
         for req in request_body:
             for mem in req["members"]:
-                response = self.del_req(
-                    "device_interface_list", {"mgt_ip": device_ip, "name": mem}
+                self.assert_response_status(
+                    self.del_req(
+                        "device_interface_list", {"mgt_ip": device_ip, "name": mem}
+                    ),
+                    status.HTTP_200_OK,
+                    "resource not found",
                 )
-                self.assertTrue(
-                    response.status_code == status.HTTP_200_OK
-                    or any(
-                        "resource not found" in res.get("message", "").lower()
-                        for res in response.json()["result"]
-                        if res != "\n"
-                    )
-                )
+
         ## Delete MCLAG if exists, because if the port channel being deleted in the next steps is being used in MCLAG,
         # deletion will fail.
-        response = self.del_req("device_mclag_list", request_body)
-        self.assertTrue(
-            response.status_code == status.HTTP_200_OK
-            or any(
-                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
-                if res != "\n"
-            )
+        self.assert_response_status(
+            self.del_req("device_mclag_list", request_body),
+            status.HTTP_200_OK,
+            "resource not found",
         )
-        self.perform_del_port_chnl(request_body_2)
+        
         self.perform_add_port_chnl(request_body)
+        self.perform_add_port_chnl_mem_eth(request_body)
         self.perform_del_port_chnl(request_body)
-        self.perform_del_port_chnl(request_body_2)
+        
 
     def test_port_chnl_static_attribute(self):
         device_ip = self.device_ips[0]
         self.remove_mclag(device_ip)
         port_channel = "PortChannel103"
 
-        #request body for adding port channel static as True
+        # request body for adding port channel static as True
         request_body = {
             "mgt_ip": device_ip,
             "lag_name": port_channel,
@@ -212,7 +171,9 @@ class TestPortChnl(TestORCA):
         }
         self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": port_channel})
         self.perform_add_port_chnl([request_body])
-        response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
+        response = self.get_req(
+            "device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel}
+        )
         self.assertEqual(response.json()["static"], True)
 
         # since static attribute cannot be updated delete port channel and then create it again
@@ -227,7 +188,9 @@ class TestPortChnl(TestORCA):
         }
         self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": port_channel})
         self.perform_add_port_chnl([request_body])
-        response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
+        response = self.get_req(
+            "device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel}
+        )
         self.assertEqual(response.json()["static"], False)
         self.perform_del_port_chnl(request_body)
 
@@ -250,7 +213,9 @@ class TestPortChnl(TestORCA):
 
         # adding port channel
         self.perform_add_port_chnl([request_body])
-        response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
+        response = self.get_req(
+            "device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel}
+        )
         self.assertEqual(response.json()["fallback"], True)
 
         # updating fallback attribute to False
@@ -263,7 +228,9 @@ class TestPortChnl(TestORCA):
         }
         response = self.put_req("device_port_chnl", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
+        response = self.get_req(
+            "device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel}
+        )
         self.assertEqual(response.json()["fallback"], False)
         self.perform_del_port_chnl(request_body)
 
@@ -285,7 +252,9 @@ class TestPortChnl(TestORCA):
 
         # adding port channel
         self.perform_add_port_chnl([request_body])
-        response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
+        response = self.get_req(
+            "device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel}
+        )
         self.assertEqual(response.json()["fast_rate"], True)
 
         # updating fast_rate attribute to False
@@ -298,7 +267,9 @@ class TestPortChnl(TestORCA):
         }
         response = self.put_req("device_port_chnl", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
+        response = self.get_req(
+            "device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel}
+        )
         self.assertEqual(response.json()["fast_rate"], False)
         self.perform_del_port_chnl(request_body)
 
@@ -313,14 +284,16 @@ class TestPortChnl(TestORCA):
             "lag_name": port_channel,
             "mtu": 9100,
             "admin_status": "up",
-            "min_links": 2
+            "min_links": 2,
         }
         # cleaning up port channel if it exists
         self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": port_channel})
 
         # adding port channel
         self.perform_add_port_chnl([request_body])
-        response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
+        response = self.get_req(
+            "device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel}
+        )
         self.assertEqual(response.json()["min_links"], 2)
 
         # updating min_links attribute with 4
@@ -329,11 +302,13 @@ class TestPortChnl(TestORCA):
             "lag_name": port_channel,
             "mtu": 9100,
             "admin_status": "up",
-            "min_links": 4
+            "min_links": 4,
         }
         response = self.put_req("device_port_chnl", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
+        response = self.get_req(
+            "device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel}
+        )
         self.assertEqual(response.json()["min_links"], 4)
         self.perform_del_port_chnl(request_body)
 
@@ -348,14 +323,16 @@ class TestPortChnl(TestORCA):
             "lag_name": port_channel,
             "mtu": 9100,
             "admin_status": "up",
-            "description": "test"
+            "description": "test",
         }
         # cleaning up port channel if it exists
         self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": port_channel})
 
         # adding port channel
         self.perform_add_port_chnl([request_body])
-        response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
+        response = self.get_req(
+            "device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel}
+        )
         self.assertEqual(response.json()["description"], "test")
 
         # updating description attribute
@@ -364,11 +341,13 @@ class TestPortChnl(TestORCA):
             "lag_name": port_channel,
             "mtu": 9100,
             "admin_status": "up",
-            "description": "test2"
+            "description": "test2",
         }
         response = self.put_req("device_port_chnl", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
+        response = self.get_req(
+            "device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel}
+        )
         self.assertEqual(response.json()["description"], "test2")
         self.perform_del_port_chnl(request_body)
 
@@ -383,14 +362,16 @@ class TestPortChnl(TestORCA):
             "lag_name": port_channel,
             "mtu": 9100,
             "admin_status": "up",
-            "graceful_shutdown_mode": "Enable"
+            "graceful_shutdown_mode": "Enable",
         }
         # cleaning up port channel if it exists
         self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": port_channel})
 
         # adding port channel
         self.perform_add_port_chnl([request_body])
-        response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
+        response = self.get_req(
+            "device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel}
+        )
         self.assertEqual(response.json()["graceful_shutdown_mode"], "ENABLE")
 
         # updating graceful_shutdown_mode attribute
@@ -399,11 +380,13 @@ class TestPortChnl(TestORCA):
             "lag_name": port_channel,
             "mtu": 9100,
             "admin_status": "up",
-            "graceful_shutdown_mode": "Disable"
+            "graceful_shutdown_mode": "Disable",
         }
         response = self.put_req("device_port_chnl", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
+        response = self.get_req(
+            "device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel}
+        )
         self.assertEqual(response.json()["graceful_shutdown_mode"], "DISABLE")
         self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": port_channel})
 
@@ -419,7 +402,7 @@ class TestPortChnl(TestORCA):
             "lag_name": port_channel,
             "mtu": 9100,
             "admin_status": "up",
-            "ip_address": ip_address_1
+            "ip_address": ip_address_1,
         }
 
         # cleaning up port channel if it exists
@@ -427,7 +410,9 @@ class TestPortChnl(TestORCA):
 
         # adding port channel
         self.perform_add_port_chnl([request_body])
-        response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
+        response = self.get_req(
+            "device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel}
+        )
         self.assertEqual(response.json()["ip_address"], ip_address_1)
 
         # updating ip_address attribute
@@ -436,19 +421,24 @@ class TestPortChnl(TestORCA):
             "lag_name": port_channel,
             "mtu": 9100,
             "admin_status": "up",
-            "ip_address": ip_address_2
+            "ip_address": ip_address_2,
         }
         response = self.put_req("device_port_chnl", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
+        response = self.get_req(
+            "device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel}
+        )
         self.assertEqual(response.json()["ip_address"], ip_address_2)
 
         # Testing delete ip_address
-        del_resp = self.del_req("port_channel_ip_remove", {
-            "mgt_ip": device_ip, "lag_name": port_channel, "ip_address": ip_address_2
-        })
+        del_resp = self.del_req(
+            "port_channel_ip_remove",
+            {"mgt_ip": device_ip, "lag_name": port_channel, "ip_address": ip_address_2},
+        )
         self.assertEqual(del_resp.status_code, status.HTTP_200_OK)
-        response = self.get_req("device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel})
+        response = self.get_req(
+            "device_port_chnl", {"mgt_ip": device_ip, "lag_name": port_channel}
+        )
         self.assertEqual(response.json()["ip_address"], None)
         self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": port_channel})
 
@@ -459,6 +449,8 @@ class TestPortChnl(TestORCA):
         vlan_1_id = 4
         vlan_2_name = "Vlan5"
         vlan_2_id = 5
+        vlan_3_name = "Vlan6"
+        vlan_3_id = 6
         port_channel = "PortChannel103"
         req_payload = [
             {
@@ -476,7 +468,15 @@ class TestPortChnl(TestORCA):
                 "mtu": 9000,
                 "enabled": False,
                 "description": "Test_Vlan1",
-            }
+            },
+            {
+                "mgt_ip": device_ip,
+                "name": vlan_3_name,
+                "vlanid": vlan_3_id,
+                "mtu": 9000,
+                "enabled": False,
+                "description": "Test_Vlan1",
+            },
         ]
 
         response = self.put_req(
@@ -486,14 +486,24 @@ class TestPortChnl(TestORCA):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Testing whether vlans are added or not
-        response = self.get_req("vlan_config", {"mgt_ip": device_ip, "name": vlan_1_name})
+        response = self.get_req(
+            "vlan_config", {"mgt_ip": device_ip, "name": vlan_1_name}
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["vlanid"], vlan_1_id)
         self.assertEqual(response.json()["name"], vlan_1_name)
-        response = self.get_req("vlan_config", {"mgt_ip": device_ip, "name": vlan_2_name})
+        response = self.get_req(
+            "vlan_config", {"mgt_ip": device_ip, "name": vlan_2_name}
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["vlanid"], vlan_2_id)
         self.assertEqual(response.json()["name"], vlan_2_name)
+        response = self.get_req(
+            "vlan_config", {"mgt_ip": device_ip, "name": vlan_3_name}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["vlanid"], vlan_3_id)
+        self.assertEqual(response.json()["name"], vlan_3_name)
 
         request_body = {
             "mgt_ip": device_ip,
@@ -511,7 +521,10 @@ class TestPortChnl(TestORCA):
         # adding port channel
         self.perform_add_port_chnl([request_body])
 
-        get_response = self.get_req("device_port_chnl", request_body, )
+        get_response = self.get_req(
+            "device_port_chnl",
+            request_body,
+        )
         self.assertEqual(get_response.status_code, status.HTTP_200_OK)
         members = get_response.json().get("vlan_members")
         self.assertEqual(members.get("if_mode"), str(IFMode.ACCESS))
@@ -528,14 +541,19 @@ class TestPortChnl(TestORCA):
         }
         member_update_response = self.put_req("device_port_chnl", req_json=request_body)
         self.assertEqual(member_update_response.status_code, status.HTTP_200_OK)
-        get_response = self.get_req("device_port_chnl", request_body, )
+        get_response = self.get_req(
+            "device_port_chnl",
+            request_body,
+        )
         self.assertEqual(get_response.status_code, status.HTTP_200_OK)
         members = get_response.json().get("vlan_members")
         self.assertEqual(members.get("if_mode"), str(IFMode.ACCESS))
         self.assertEqual(members.get("vlan_ids"), [vlan_2_id])
 
-        # deleting port channel vlan members
-        member_delete_response = self.del_req("port_chnl_vlan_member_remove_all", req_json=request_body)
+        # deleting portchannel vlan members
+        member_delete_response = self.del_req(
+            "port_chnl_vlan_member_remove_all", req_json=request_body
+        )
         self.assertEqual(member_delete_response.status_code, status.HTTP_200_OK)
 
         get_response = self.get_req("device_port_chnl", request_body)
@@ -548,13 +566,25 @@ class TestPortChnl(TestORCA):
             "vlan_config", {"mgt_ip": device_ip, "name": vlan_2_name}
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response = self.get_req("vlan_config", {"mgt_ip": device_ip, "name": vlan_2_name})
+        response = self.get_req(
+            "vlan_config", {"mgt_ip": device_ip, "name": vlan_2_name}
+        )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         response = self.del_req(
             "vlan_config", {"mgt_ip": device_ip, "name": vlan_1_name}
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response = self.get_req("vlan_config", {"mgt_ip": device_ip, "name": vlan_1_name})
+        response = self.get_req(
+            "vlan_config", {"mgt_ip": device_ip, "name": vlan_1_name}
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        response = self.del_req(
+            "vlan_config", {"mgt_ip": device_ip, "name": vlan_3_name}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.get_req(
+            "vlan_config", {"mgt_ip": device_ip, "name": vlan_3_name}
+        )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_port_channel_vlan_members_trunk_members_update(self):
@@ -999,7 +1029,7 @@ class TestPortChnl(TestORCA):
 
         # deleting access-vlan from port channel
         member_delete_response = self.del_req(
-            "port_chnl_vlan_member_remove", req_json={
+            "port_channel_member_vlan", req_json={
                 "mgt_ip": device_ip,
                 "lag_name": port_channel,
                 "vlan_members": {
@@ -1042,7 +1072,7 @@ class TestPortChnl(TestORCA):
         self.assertEqual(members.get("if_mode"), str(IFMode.TRUNK))
 
         member_delete_response = self.del_req(
-            "port_chnl_vlan_member_remove", req_json={
+            "port_channel_member_vlan", req_json={
                 "mgt_ip": device_ip,
                 "lag_name": port_channel,
                 "vlan_members": {

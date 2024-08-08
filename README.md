@@ -53,10 +53,6 @@ One of the dependencies for ORCA backend orca_nw_lib uses neo4j to store the net
         --name orca_neo4j \
         -p7474:7474 -p7687:7687 \
         -d \
-        -v $HOME/neo4j/data:/data \
-        -v $HOME/neo4j/logs:/logs \
-        -v $HOME/neo4j/import:/var/lib/neo4j/import \
-        -v $HOME/neo4j/plugins:/plugins \
         --env NEO4J_AUTH=neo4j/password \
         neo4j:latest
 To check that neo4j has successfully started, open https://localhost:7474 with credentials neo4j/password to browse the database.  
@@ -64,9 +60,9 @@ To check that neo4j has successfully started, open https://localhost:7474 with c
 ### Run orca_backend docker container
 Use following command to run orca_backend
 
-        docker run --net="host" -d stordis/orca_backend:latest
+        docker run --name orca_backend --net="host" -d stordis/orca_backend:latest
 
-Container runs on 0.0.0.0:8000 by default. To verify that container has successfully started, try to access http://<server_ip>:8000/admin/ and log in with default user/password- admin/admin which is by default created. 
+Container runs on 0.0.0.0:8000 by default. To verify that container has successfully started, try to access http://<server_ip>:8000/admin/ and log in with default user/password- admin/admin which is by default created.
 
 Thats it, If thats enough, rest of the steps below can be skipped and directly proceed with quick start of [orca_ui](https://github.com/STORDIS/orca_ui), which again is as simple as running a docker container and there discover your topology. Else, refer below for more details about build and installation of ORCA backend.
 
