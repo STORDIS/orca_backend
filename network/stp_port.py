@@ -114,8 +114,6 @@ def stp_port_config(request):
                 )
                 add_msg_to_list(result, get_success_msg(request))
             except Exception as err:
-                import traceback
-                print(traceback.format_exc())
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
         if request.method == "DELETE":

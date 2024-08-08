@@ -2,8 +2,7 @@
 
 from django.urls import re_path, path
 
-from . import views, stp_port
-from . import vlan, interface, port_chnl, mclag, bgp, port_group, stp
+from . import views, stp_port, vlan, interface, port_chnl, mclag, bgp, port_group, stp
 
 urlpatterns = [
     path("stp", stp.stp_global_config, name="stp_config"),
