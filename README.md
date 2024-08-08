@@ -62,10 +62,16 @@ To check that neo4j has successfully started, open https://localhost:7474 with c
 
 ### Run orca_backend docker container
 Use following command to run orca_backend
+- If orca_backend is running on the same machine use below command:
+    ```sh
+    docker run --network=orca_container_network --name orca_backend -p 8000:8000 -e neo4j_url=orca_neo4j:7687 -d stordis/orca_backend:latest
+    ```
+- If neo4j is running on the different machine use below command:
+    ```sh
+    docker run --name orca_backend -p 8000:8000 -e neo4j_url="http://<neo4j_url:port>" -d stordis/orca_backend:latest
+    ```
 
-```sh
-docker run --network=orca_container_network --name orca_backend -p 8000:8000 -e neo4j_url=orca_neo4j:7687 -d stordis/orca_backend:latest
-```
+    If neo4j running on different machine replace `"http://<neo4j_url:port>"` with vm ip and port exposed for to neo4j. 
 
 Container runs on 0.0.0.0:8000 by default. To verify that container has successfully started, try to access http://<server_ip>:8000/admin/ and log in with default user/password- admin/admin which is by default created.
 
