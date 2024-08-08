@@ -44,10 +44,14 @@ class TestSTPPort(TestORCA):
 
     def perform_add_stp_port(self, request_body):
 
-        response = self.put_req("stp_port", request_body)
-        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        self.assert_with_timeout_retry(
+            lambda path, payload: self.put_req(path, payload),
+            "stp_port",
+            request_body,
+            status=status.HTTP_200_OK,
+        )
         for i in request_body if isinstance(request_body, list) else [request_body]:
-            # Call with timeout because subscription response isn't recevied in time.
+            # Call with timeout because subscription response isn't received in time.
             self.assert_with_timeout_retry(
                 lambda path, payload: self.get_req(path, payload),
                 "stp_port",
@@ -60,24 +64,10 @@ class TestSTPPort(TestORCA):
             )
 
     def perform_delete_stp_port(self, request_body):
-        while True:
-            del_response = self.del_req("stp_port", request_body)
-            if any(
-                    "device is not ready to receive gnmi updates" in res.get("message", "").lower()
-                    for res in del_response.json()["result"]
-                    if res != "\n"
-            ):
-                time.sleep(5)
-            else:
-                break
-
-        self.assertTrue(
-            del_response.status_code == status.HTTP_200_OK
-            or any(
-                "resource not found" in res.get("message", "").lower()
-                for res in del_response.json()["result"]
-                if res != "\n"
-            )
+        self.assert_response_status_with_retry_and_timeout(
+            self.del_req("stp_port", request_body),
+            status.HTTP_200_OK,
+            "resource not found"
         )
 
         self.assert_with_timeout_retry(
