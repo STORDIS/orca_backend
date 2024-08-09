@@ -43,35 +43,22 @@ ORCA Backend is a REST API server written using Django framework to access orca_
   - [To execute tests](#to-execute-tests)
 
 
-## Quick Start in 3 simple steps
+## Quick Start in 2 simple steps
 ORCA Backend can be started easily by just running 2 docker containers, as follows :
-
-### Create docker network
-Docker networks provide isolated environments for containers to communicate securely and avoid port conflicts.
-
-```sh
-docker network create orca_container_network
-```
 
 ### Run Neo4j docker container
 One of the dependencies for ORCA backend orca_nw_lib uses neo4j to store the network topology. To install neo4j easiest is to run Neo4j Docker image in container with the following command :
 ```sh
-docker run --network=orca_container_network --name orca_neo4j -p7474:7474 -p7687:7687 -d --env NEO4J_AUTH=neo4j/password neo4j:latest
+docker run --name orca_neo4j -p7474:7474 -p7687:7687 -d --env NEO4J_AUTH=neo4j/password neo4j:latest
 ```
-To check that neo4j has successfully started, open https://localhost:7474 with credentials neo4j/password to browse the database.  
+To check that neo4j has successfully started, open https://<server_ip>:7474 with credentials neo4j/password to browse the database.  
 
 ### Run orca_backend docker container
 Use following command to run orca_backend
-- If orca_backend is running on the same machine use below command:
-    ```sh
-    docker run --network=orca_container_network --name orca_backend -p 8000:8000 -e neo4j_url=orca_neo4j:7687 -d stordis/orca_backend:latest
-    ```
-- If neo4j is running on the different machine use below command:
-    ```sh
-    docker run --name orca_backend -p 8000:8000 -e neo4j_url="<neo4j_url>" -d stordis/orca_backend:latest
-    ```
 
-    If neo4j running on different machine replace `"<neo4j_url>"` with vm ip and port exposed for to neo4j. 
+```sh
+docker run --name orca_backend -p 8000:8000 -e neo4j_url="<server_ip>" -d stordis/orca_backend:latest
+```
 
 Container runs on 0.0.0.0:8000 by default. To verify that container has successfully started, try to access http://<server_ip>:8000/admin/ and log in with default user/password- admin/admin which is by default created.
 
@@ -111,8 +98,7 @@ Example -
 
 Similarly, when starting orca_backend container, use it like:
 ```shell
-  docker run --network=orca_container_network -d \
-    --name orca_backend \
+  docker run -d --name orca_backend \
     -p 8000:8000 \
     -e discover_networks="10.10.229.50" \
     -e device_username="admin" \
@@ -170,7 +156,7 @@ If docker image is to be transferred to other machine to run there, first save t
 
 Docker container can be started as follows:
 ```sh
-  docker run --network=orca_container_network --name orca_backend -p 8000:8000 -e neo4j_url=orca_neo4j:7687 -d orca_backend 
+  docker run--name orca_backend -p 8000:8000 -e neo4j_url="<server_ip>" -d orca_backend 
 ```
 
 >**_Note_** - Above command will also create a default django super user with username/password - admin/admin consider changing password afterwards at <http://localhost:8000/admin/> (replace localhost with orca_backend server address)
