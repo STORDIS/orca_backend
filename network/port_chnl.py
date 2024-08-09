@@ -1,5 +1,5 @@
 """ Network Port Channel API. """
-
+from orca_nw_lib.common import IFMode
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
@@ -119,11 +119,13 @@ def device_port_chnl_list(request):
             # hence try catch block and send additional failure message if it fails.
             try:
                 if vlan_member := req_data.get("vlan_members"):
+                    if_mode = IFMode.get_enum_from_str(vlan_member.get("if_mode"))
+                    vlan_ids = vlan_member.get("vlan_ids")
                     add_port_chnl_vlan_members(
                         device_ip=device_ip,
                         chnl_name=req_data.get("lag_name"),
-                        access_vlan=vlan_member.get("access_vlan"),
-                        trunk_vlans=vlan_member.get("trunk_vlans"),
+                        if_mode=if_mode,
+                        vlan_ids=vlan_ids,
                     )
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
@@ -290,38 +292,40 @@ def port_channel_member_vlan(request):
             # some time add port channel vlan members might fail due to L3 configuration etc.
             # hence try catch block and send additional failure message if it fails.
             try:
+                if_mode = IFMode.get_enum_from_str(vlan_members.get("if_mode"))
+                vlan_ids = vlan_members.get("vlan_ids")
                 add_port_chnl_vlan_members(
                     device_ip=device_ip,
                     chnl_name=req_data.get("lag_name"),
-                    access_vlan=vlan_members.get("access_vlan"),
-                    trunk_vlans=vlan_members.get("trunk_vlans"),
+                    if_mode=if_mode,
+                    vlan_ids=vlan_ids,
                 )
+                add_msg_to_list(result, get_success_msg(request))
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
 
         if request.method == "DELETE":
-            access_vlan = vlan_members.get("access_vlan", None)
-            trunk_vlans = vlan_members.get("trunk_vlans", None)
-            if not access_vlan and not trunk_vlans:
+            if_mode = IFMode.get_enum_from_str(vlan_members.get("if_mode"))
+            vlan_ids = vlan_members.get("vlan_ids")
+            if not vlan_ids:
                 return Response(
-                    {"status": "No vlan member provided to delete."},
+                    {"status": "Required field vlan ids not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if not if_mode:
+                return Response(
+                    {"status": "Required field if mode not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             try:
-                if access_vlan or trunk_vlans:
-                    remove_port_channel_vlan_member(
-                        device_ip=device_ip,
-                        chnl_name=chnl_name,
-                        access_vlan=access_vlan,
-                        trunk_vlans=trunk_vlans,
-                    )
-                    add_msg_to_list(result, get_success_msg(request))
-                else:
-                    return Response(
-                        {"status": "Required field vlan member not found."},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
+                remove_port_channel_vlan_member(
+                    device_ip=device_ip,
+                    chnl_name=req_data.get("lag_name"),
+                    if_mode=if_mode,
+                    vlan_ids=vlan_ids,
+                )
+                add_msg_to_list(result, get_success_msg(request))
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
