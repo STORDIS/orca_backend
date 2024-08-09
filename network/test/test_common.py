@@ -390,7 +390,7 @@ class TestORCA(APITestCase):
                         else:
                             self.assertEqual(response.status_code, value)
                         continue ## Continue with next key
-                    
+
                     if response.status_code == status.HTTP_200_OK:
                         print(f"Received: {key}={response.json()[key]}")
                         self.assertEqual(response.json()[key], value)
@@ -399,12 +399,25 @@ class TestORCA(APITestCase):
                 print(
                     f"Assertion failed for request args: {req_args}, and assert args: {assert_args}"
                 )
-                print(f"Response: {response.json()}")
+                print(f"Response: {response.content}")
                 print(f"Retrying in {timeout} seconds")
                 time.sleep(timeout)
                 if i == retries:
                     raise ## If even after retries, assertion still fails, raise the exception
-        
+
+    def assert_response_status_with_retry_and_timeout(self, response, expected_status_codes, expected_response_msg=None):
+        timeout = 2
+        retries = 5
+        for i in range(retries + 1):
+            try:
+                self.assert_response_status(response, expected_status_codes, expected_response_msg)
+            except AssertionError:
+                print(f"Retrying in {timeout} seconds")
+                time.sleep(timeout)
+                if i == retries:
+                    raise
+
+
 
     def remove_mclag(self, device_ip):
         response = self.del_req("device_mclag_list", {"mgt_ip": device_ip})
