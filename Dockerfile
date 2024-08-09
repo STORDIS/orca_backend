@@ -19,5 +19,5 @@ EXPOSE 8000
 CMD python3 manage.py makemigrations log_manager && \
     python3 manage.py migrate && \
     export DJANGO_SUPERUSER_PASSWORD=admin && \
-    python manage.py createsuperuser --username=admin --email=admin@example.com --noinput && \
+    python manage.py createsuperuser --username=admin --email=admin@example.com --noinput || true && \
     python3 manage.py runserver 0.0.0.0:8000
