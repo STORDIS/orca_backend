@@ -60,6 +60,8 @@ Use following command to run orca_backend
 docker run --name orca_backend -p 8000:8000 -e neo4j_url="<server_ip>" -d stordis/orca_backend:latest
 ```
 
+> **_NOTE:_**  Replace `"<server_ip>"` with neo4j serve ip.
+
 Container runs on 0.0.0.0:8000 by default. To verify that container has successfully started, try to access http://<server_ip>:8000/admin/ and log in with default user/password- admin/admin which is by default created.
 
 Thats it, If thats enough, rest of the steps below can be skipped and directly proceed with quick start of [orca_ui](https://github.com/STORDIS/orca_ui), which again is as simple as running a docker container and there discover your topology. Else, refer below for more details about build and installation of ORCA backend.
@@ -103,9 +105,10 @@ Similarly, when starting orca_backend container, use it like:
     -e discover_networks="10.10.229.50" \
     -e device_username="admin" \
     -e device_password="YourPaSsWoRd" \
-    -e neo4j_url="orca_neo4j:7687" \
+    -e neo4j_url="<server_ip>" \
     stordis/orca_backend:latest
 ```
+> **_NOTE:_**  Replace `"<server_ip>"` with neo4j serve ip.
 
 [ORCA Network Library Config File](https://github.com/STORDIS/orca_nw_lib/blob/main/orca_nw_lib/orca_nw_lib.yml) is actually the part of one of the dependencies of orca_backend, and the file is installed under site_packages/orca_nw_lib/ directory of python environment being used.
 
