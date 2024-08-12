@@ -48,19 +48,19 @@ ORCA Backend can be started easily by just running 2 docker containers, as follo
 
 ### Run Neo4j docker container
 One of the dependencies for ORCA backend orca_nw_lib uses neo4j to store the network topology. To install neo4j easiest is to run Neo4j Docker image in container with the following command :
-        
-    docker run \
-        --name orca_neo4j \
-        -p7474:7474 -p7687:7687 \
-        -d \
-        --env NEO4J_AUTH=neo4j/password \
-        neo4j:latest
-To check that neo4j has successfully started, open https://localhost:7474 with credentials neo4j/password to browse the database.  
+```sh
+docker run --name orca_neo4j -p7474:7474 -p7687:7687 -d --env NEO4J_AUTH=neo4j/password neo4j:latest
+```
+To check that neo4j has successfully started, open https://<server_ip>:7474 with credentials neo4j/password to browse the database.  
 
 ### Run orca_backend docker container
 Use following command to run orca_backend
 
-        docker run --name orca_backend --net="host" -d stordis/orca_backend:latest
+```sh
+docker run --name orca_backend -p 8000:8000 -e neo4j_url="<server_ip>" -d stordis/orca_backend:latest
+```
+
+> **_NOTE:_**  Replace `"<server_ip>"` with neo4j server ip.
 
 Container runs on 0.0.0.0:8000 by default. To verify that container has successfully started, try to access http://<server_ip>:8000/admin/ and log in with default user/password- admin/admin which is by default created.
 
@@ -92,18 +92,23 @@ In the output if install process is stuck at _"[keyring.backend] Loading macOS"_
 ### Configuration
 Device and DB access configurations of orca_backend is configured in [ORCA Network Library Config File](https://github.com/STORDIS/orca_nw_lib/blob/main/orca_nw_lib/orca_nw_lib.yml). All the config parameters defined in this file can simply be overridden by environment variables with the same name as defined in the config file.
 Example -
-
-        export discover_networks="10.10.229.50"
-        export device_username=admin
-        export device_password=YourPaSsWoRd
+ ```sh
+    export discover_networks="10.10.229.50"
+    export device_username=admin
+    export device_password=YourPaSsWoRd
+ ```
 
 Similarly, when starting orca_backend container, use it like:
-
-        docker run --net="host" -d \
-                -e discover_networks="10.10.229.50" \
-                -e device_username="admin" \
-                -e device_password="YourPaSsWoRd" \
-                stordis/orca_backend:latest
+```shell
+  docker run -d --name orca_backend \
+    -p 8000:8000 \
+    -e discover_networks="10.10.229.50" \
+    -e device_username="admin" \
+    -e device_password="YourPaSsWoRd" \
+    -e neo4j_url="<server_ip>" \
+    stordis/orca_backend:latest
+```
+> **_NOTE:_**  Replace `"<server_ip>"` with neo4j server ip.
 
 [ORCA Network Library Config File](https://github.com/STORDIS/orca_nw_lib/blob/main/orca_nw_lib/orca_nw_lib.yml) is actually the part of one of the dependencies of orca_backend, and the file is installed under site_packages/orca_nw_lib/ directory of python environment being used.
 
@@ -138,20 +143,24 @@ Docker image of orca_backend can be created and container cane started as follow
 ### Create docker image
 First create the docker image as follows:
 
-        cd orca_backend
-        docker build -t orca_backend .
+```sh
+    cd orca_backend
+    docker build -t orca_backend .
+```
 
 If docker image is to be transferred to other machine to run there, first save the image, transfer to desired machine and load there as follows:
-
-        docker save -o orca_backend.tar.gz orca_backend:latest
-        scp orca_backend.tar.gz <user_name>@host:<path to copy the image>
-        ssh <user_name>@host
-        cd <path to copy the image>
-        docker load -i orca_backend.tar.gz
+```sh
+    docker save -o orca_backend.tar.gz orca_backend:latest
+    scp orca_backend.tar.gz <user_name>@host:<path to copy the image>
+    ssh <user_name>@host
+    cd <path to copy the image>
+    docker load -i orca_backend.tar.gz
+```
 
 Docker container can be started as follows:
-
-        docker run --net="host" orca_backend
+```sh
+  docker run--name orca_backend -p 8000:8000 -e neo4j_url="<server_ip>" -d orca_backend 
+```
 
 >**_Note_** - Above command will also create a default django super user with username/password - admin/admin consider changing password afterwards at <http://localhost:8000/admin/> (replace localhost with orca_backend server address)
 
