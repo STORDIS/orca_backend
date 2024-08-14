@@ -79,6 +79,7 @@ To install all dependencies of ORCA backend use the following command :
         git clone https://github.com/STORDIS/orca_backend.git
         cd orca_backend
         poetry install
+        poetry shell
 
 > **_Troubleshoot:_**   if _"poetry install"_ stuck for long, perform cleanup as follows:
       `poetry env remove --all` \
