@@ -2,7 +2,7 @@
 
 from django.urls import re_path, path
 
-from . import views, stp_vlan, stp_port, vlan, interface, port_chnl, mclag, bgp, port_group, stp
+from . import views, stp_vlan, stp_port, vlan, interface, port_chnl, mclag, bgp, port_group, stp, breakout
 
 urlpatterns = [
     path("stp", stp.stp_global_config, name="stp_config"),
@@ -10,6 +10,7 @@ urlpatterns = [
     path("stp_port", stp_port.stp_port_config, name="stp_port"),
     path("stp_discovery", stp_port.stp_discovery, name="stp_discovery"),
     path("stp_vlan", stp_vlan.stp_vlan_config, name="stp_vlan_config"),
+    path("breakout", breakout.breakout, name="breakout"),
     re_path("del_db", views.delete_db, name="del_db"),
     re_path("discover", views.discover, name="discover"),
     re_path("devices", views.device_list, name="device"),
