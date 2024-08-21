@@ -43,7 +43,7 @@ class TestDelete(TestORCA):
         # re discovering the deleted device
         request_body = {"address": self.device_ips[0], "discover_from_config": False}
         response = self.put_req("discover", request_body)
-        self.assertTrue(response.status_code == status.HTTP_100_CONTINUE)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
 
         # get discover device after  re discovering
         response = self.get_req("device")
