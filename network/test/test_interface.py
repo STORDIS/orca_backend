@@ -5,6 +5,7 @@ This module contains tests for the Interface API.
 import unittest
 from rest_framework import status
 from network.test.test_common import TestORCA
+from orca_nw_lib.utils import get_if_alias
 
 
 class TestInterface(TestORCA):
@@ -122,6 +123,7 @@ class TestInterface(TestORCA):
             {"mgt_ip": device_ip, "name": self.ether_names[2], "speed": speed_3},
         ]
         for data in request_body:
+            print(data)
             self.assert_with_timeout_retry(
                 lambda path, payload: self.put_req(path, payload),
                 "device_interface_list",
@@ -435,3 +437,76 @@ class TestInterface(TestORCA):
                 #speed=request_body.get("speed"),
                 status=status.HTTP_200_OK,
             )
+
+    def test_interface_breakout_speed(self):
+        device_ip = self.device_ips[0]
+
+        # adding interface member
+        ether_1 = "Ethernet56"
+        itf_request_body = [
+            {
+                "mgt_ip": device_ip,
+                "name": ether_1,
+                "mtu": 9100,
+            },
+        ]
+        self.assert_with_timeout_retry(
+            lambda path, payload: self.put_req(path, payload),
+            "device_interface_list",
+            itf_request_body,
+            status=status.HTTP_200_OK,
+        )
+
+        interface = self.get_req("device_interface_list", {"mgt_ip": device_ip, "name": ether_1})
+        interface_alias = get_if_alias(interface.json()["alias"])
+
+        # adding breakout configuration
+
+        request_body = {
+            "mgt_ip": device_ip,
+            "if_name": ether_1,
+            "if_alias": interface_alias,
+            "breakout_mode": "4xSPEED_25GB",
+        }
+
+        response = self.put_req("breakout", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        interface = self.get_req("device_interface_list", {"mgt_ip": device_ip, "name": ether_1})
+
+        self.assertEqual(interface.json()["breakout_mode"], request_body["breakout_mode"])
+        self.assertTrue(interface_alias in interface.json()["alias"])
+        self.assertTrue(interface.json()["breakout_status"] in ["InProgress", "Completed"])
+        self.assertFalse(interface.json()["breakout_supported"])
+
+        # since breakout interface is Ethernet56, it should have created Ethernet57, Ethernet58 and Ethernet59
+        for i in ["Ethernet57", "Ethernet58", "Ethernet59"]:
+            interface = self.get_req("device_interface_list", {"mgt_ip": device_ip, "name": i})
+            self.assertEqual(interface.json()["breakout_mode"], request_body["breakout_mode"])
+            self.assertTrue(interface_alias in interface.json()["alias"])
+            self.assertTrue(interface.json()["breakout_status"] in ["InProgress", "Completed"])
+            self.assertFalse(interface.json()["breakout_supported"])
+
+        # updating breakout configuration
+        request_body = {
+            "mgt_ip": device_ip,
+            "if_name": ether_1,
+            "if_alias": interface_alias,
+            "breakout_mode": "2xSPEED_50GB",
+        }
+
+        response = self.put_req("breakout", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        interface = self.get_req("device_interface_list", {"mgt_ip": device_ip, "name": ether_1})
+        self.assertEqual(interface.json()["breakout_mode"], request_body["breakout_mode"])
+        self.assertTrue(interface_alias in interface.json()["alias"])
+        self.assertTrue(interface.json()["breakout_status"] in ["InProgress", "Completed"])
+
+        # deleting breakout configuration
+        response = self.del_req("breakout", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        interface = self.get_req("device_interface_list", {"mgt_ip": device_ip, "name": ether_1})
+        self.assertEqual(interface.json()["breakout_mode"], None)
+        self.assertTrue(interface_alias in interface.json()["alias"])
