@@ -1,8 +1,8 @@
 {
     "python.testing.pytestArgs": [
         "network/test",
-        "authentication/test"
-    ],
+        "authentication/test",
+        "orcask/test"    ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true
 }
