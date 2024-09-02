@@ -254,6 +254,7 @@ class TestORCA(APITestCase):
         Raises:
             AssertionError: If the URL name cannot be reversed.
         """
+        print(f"Sending GET request to URL {url_name}, with payload: {req_json}")
         return self.client.get(
             reverse(url_name),
             req_json,
@@ -274,6 +275,7 @@ class TestORCA(APITestCase):
         Raises:
             None.
         """
+        print(f"Sending DEL request to URL {url_name}, with payload: {req_json}")
         return self.client.delete(
             reverse(url_name),
             req_json,
@@ -291,6 +293,7 @@ class TestORCA(APITestCase):
         Returns:
             The response from the request in JSON format.
         """
+        print(f"Sending PUT request to URL {url_name}, with payload: {req_json}")
         return self.client.put(
             reverse(url_name),
             req_json,
@@ -398,10 +401,8 @@ class TestORCA(APITestCase):
                 return response
             except AssertionError:
                 print(
-                    f"Assertion failed for request args: {req_args}, and assert args: {assert_args}"
+                    f"!!! Assertion failed !!! Retrying in {timeout} seconds."
                 )
-                print(f"Response: {response.content}")
-                print(f"Retrying in {timeout} seconds")
                 time.sleep(timeout)
                 if i == retries:
                     raise ## If even after retries, assertion still fails, raise the exception
