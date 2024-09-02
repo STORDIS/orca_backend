@@ -123,7 +123,6 @@ class TestInterface(TestORCA):
             {"mgt_ip": device_ip, "name": self.ether_names[2], "speed": speed_3},
         ]
         for data in request_body:
-            print(data)
             self.assert_with_timeout_retry(
                 lambda path, payload: self.put_req(path, payload),
                 "device_interface_list",
