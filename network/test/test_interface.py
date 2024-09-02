@@ -2,7 +2,6 @@
 This module contains tests for the Interface API.
 """
 
-import unittest
 from rest_framework import status
 from network.test.test_common import TestORCA
 from orca_nw_lib.utils import get_if_alias
