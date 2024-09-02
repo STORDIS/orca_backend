@@ -1,3 +1,4 @@
+from orca_nw_lib.utils import get_logging
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -5,6 +6,10 @@ from rest_framework.response import Response
 from log_manager.decorators import log_request
 from network.util import add_msg_to_list, get_success_msg, get_failure_msg
 from orca_nw_lib.stp_vlan import config_stp_vlan, get_stp_vlan
+
+from orca_backend import settings
+
+_logger = get_logging(settings.LOGGING_FILE).getLogger(__name__)
 
 
 @api_view(["GET", "PUT"])
@@ -24,6 +29,7 @@ def stp_vlan_config(request):
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", "")
         if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
             return Response(
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -41,12 +47,14 @@ def stp_vlan_config(request):
         if request.method == "PUT":
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
                 return Response(
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             vlan_id = req_data.get("vlan_id", "")
             if not vlan_id:
+                _logger.error("Required field vlan_id not found.")
                 return Response(
                     {"status": "Required field vlan_id not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -61,9 +69,11 @@ def stp_vlan_config(request):
                     max_age=req_data.get("max_age", None),
                 )
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info("Successfully configured STP VLAN on device %s", device_ip)
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+                _logger.error("Failed to configure STP VLAN on device %s", device_ip)
     return Response(
         {"result": result},
         status=(status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR),

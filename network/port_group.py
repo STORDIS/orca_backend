@@ -1,4 +1,5 @@
 """ Port Group API. """
+from orca_nw_lib.utils import get_logging
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
@@ -15,6 +16,9 @@ from network.util import (
     get_failure_msg,
     get_success_msg,
 )
+from orca_backend import settings
+
+_logger = get_logging(settings.LOGGING_FILE).getLogger(__name__)
 
 
 @api_view(["GET", "PUT"])
@@ -32,6 +36,7 @@ def port_groups(request):
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", "")
         if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
             return Response(
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -52,18 +57,21 @@ def port_groups(request):
         for req_data in req_data_list:
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
                 return Response(
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             port_group_id = req_data.get("port_group_id", "")
             if not port_group_id:
+                _logger.error("Required field device port_group_id not found.")
                 return Response(
                     {"status": "Required field device port_group_id not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             speed = req_data.get("speed", "")
             if not speed:
+                _logger.error("Required field device speed not found.")
                 return Response(
                     {"status": "Required field device speed not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -73,9 +81,11 @@ def port_groups(request):
                     device_ip=device_ip, port_group_id=port_group_id, speed=Speed.get_enum_from_str(speed)
                 )
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info("Set port group speed success.")
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+                _logger.error("Set port group speed failed.")
     return Response(
         {"result": result},
         status=status.HTTP_200_OK
@@ -97,12 +107,14 @@ def port_group_members(request):
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", "")
         if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
             return Response(
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         port_group_id = request.GET.get("port_group_id", "")
         if not port_group_id:
+            _logger.error("Required field device port_group_id not found.")
             return Response(
                 {"status": "Required field device port_group_id not found."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -129,12 +141,14 @@ def port_group_from_intfc_name(request):
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", "")
         if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
             return Response(
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         intf_name = request.GET.get("intf_name", "")
         if not intf_name:
+            _logger.error("Required field intf_name not found.")
             return Response(
                 {"status": "Required field intf_name not found."},
                 status=status.HTTP_400_BAD_REQUEST,

@@ -18,6 +18,11 @@ from network.util import (
     get_failure_msg,
     get_success_msg,
 )
+from orca_nw_lib.utils import get_logging
+
+from orca_backend import settings
+
+_logger = get_logging(settings.LOGGING_FILE).getLogger(__name__)
 
 
 @api_view(["GET", "PUT", "DELETE"])
@@ -55,6 +60,7 @@ def device_bgp_global(request):
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", "")
         if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
             return Response(
                 {"result": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -72,24 +78,31 @@ def device_bgp_global(request):
         for req_data in req_data_list:
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
                 return Response(
                     {"result": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             local_asn = req_data.get("local_asn")
             if not local_asn:
+                _logger.error("Required field local_asn not found.")
                 return Response(
                     {"result": "Required field local_asn not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             try:
                 config_bgp_global(
-                    device_ip, local_asn, device_ip, vrf_name=req_data.get("vrf_name")
+                    device_ip=device_ip,
+                    local_asn=local_asn,
+                    router_id=req_data.get("router_id"),
+                    vrf_name=req_data.get("vrf_name")
                 )
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info(f"Configured BGP global on {device_ip}.")
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+                _logger.error("Failed to configure BGP global on %s: %s", device_ip, err)
 
     elif request.method == "DELETE":
         req_data_list = (
@@ -98,6 +111,7 @@ def device_bgp_global(request):
         for req_data in req_data_list:
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
                 return Response(
                     {"result": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -105,6 +119,7 @@ def device_bgp_global(request):
 
             vrf_name = req_data.get("vrf_name")
             if not vrf_name:
+                _logger.error("Required field vrf_name not found.")
                 return Response(
                     {"result": "Required field vrf_name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -112,9 +127,11 @@ def device_bgp_global(request):
             try:
                 del_bgp_global(device_ip, vrf_name)
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info(f"Deleted BGP global on {device_ip}.")
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+                _logger.error("Failed to delete BGP global on %s: %s", device_ip, err)
 
     return Response(
         {"result": result},
@@ -148,12 +165,14 @@ def bgp_nbr_config(request):
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", "")
         if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
             return Response(
                 {"result": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         local_asn = request.GET.get("local_asn", None)
         if not local_asn:
+            _logger.error("Required field device local_asn not found.")
             return Response(
                 {"result": "Required field device local_asn not found."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -174,12 +193,14 @@ def bgp_nbr_config(request):
         for req_data in req_data_list:
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
                 return Response(
                     {"result": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             remote_asn = req_data.get("remote_asn")
             if not remote_asn:
+                _logger.error("Required field remote_asn not found.")
                 return Response(
                     {"result": "Required field remote_asn not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -187,6 +208,7 @@ def bgp_nbr_config(request):
 
             neighbor_ip = req_data.get("neighbor_ip")
             if not neighbor_ip:
+                _logger.error("Required field neighbor_ip not found.")
                 return Response(
                     {"result": "Required field neighbor_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -194,6 +216,7 @@ def bgp_nbr_config(request):
 
             remote_vrf = req_data.get("remote_vrf")
             if not remote_vrf:
+                _logger.error("Required field remote_vrf not found.")
                 return Response(
                     {"result": "Required field remote_vrf not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -202,6 +225,7 @@ def bgp_nbr_config(request):
             try:
                 config_bgp_neighbors(device_ip, remote_asn, neighbor_ip, remote_vrf)
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info(f"Configured BGP neighbor on {device_ip}.")
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
@@ -212,6 +236,7 @@ def bgp_nbr_config(request):
         for req_data in req_data_list:
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
                 return Response(
                     {"result": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -219,9 +244,11 @@ def bgp_nbr_config(request):
             try:
                 del_all_bgp_neighbors(device_ip)
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info(f"Deleted all BGP neighbors on {device_ip}.")
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+                _logger.error("Failed to delete all BGP neighbors on %s.", device_ip)
 
     return Response(
         {"result": result},

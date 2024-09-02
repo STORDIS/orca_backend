@@ -1,5 +1,6 @@
 import traceback
 
+from orca_nw_lib.utils import get_logging
 from rest_framework.decorators import api_view
 
 from log_manager.decorators import log_request
@@ -10,8 +11,12 @@ from network.util import add_msg_to_list, get_success_msg, get_failure_msg
 from orca_nw_lib.common import STPEnabledProtocol
 from orca_nw_lib.stp import (config_stp_global,
                              get_stp_global_config,
-                             delete_stp_global_config, delete_stp_global_config_disabled_vlans)
+                             delete_stp_global_config,
+                             delete_stp_global_config_disabled_vlans)
 
+from orca_backend import settings
+
+_logger = get_logging(settings.LOGGING_FILE).getLogger(__name__)
 
 @api_view(["GET", "PUT", "DELETE"])
 @log_request
@@ -43,6 +48,7 @@ def stp_global_config(request):
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", "")
         if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
             return Response(
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -58,6 +64,7 @@ def stp_global_config(request):
         if request.method == "PUT":
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
                 return Response(
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -78,12 +85,15 @@ def stp_global_config(request):
                     portfast=req_data.get("portfast"),
                 )
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info("Successfully configured STP global config for device: %s", device_ip)
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+                _logger.error("Failed to configure STP global config for device: %s", device_ip)
         if request.method == "DELETE":
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
                 return Response(
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -91,9 +101,11 @@ def stp_global_config(request):
             try:
                 delete_stp_global_config(device_ip=device_ip)
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info("Successfully deleted STP global config for device: %s", device_ip)
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+                _logger.error("Failed to delete STP global config for device: %s", device_ip)
     return Response(
         {"result": result},
         status=(status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR),
@@ -116,12 +128,14 @@ def delete_disabled_vlans(request):
         req_data = request.data
         device_ip = req_data.get("mgt_ip", "")
         if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
             return Response(
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         disabled_vlans = req_data.get("disabled_vlans")
         if not disabled_vlans and len(disabled_vlans) == 0:
+            _logger.error("Required field disabled_vlans not found.")
             return Response(
                 {"status": "Required field disabled_vlans not found."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -129,10 +143,12 @@ def delete_disabled_vlans(request):
         try:
             delete_stp_global_config_disabled_vlans(device_ip=device_ip, disabled_vlans=disabled_vlans)
             add_msg_to_list(result, get_success_msg(request))
+            _logger.info("Successfully deleted disabled VLANs for device: %s", device_ip)
         except Exception as err:
             print(traceback.format_exc())
             add_msg_to_list(result, get_failure_msg(err, request))
             http_status = http_status and False
+            _logger.error("Failed to delete disabled VLANs for device: %s", device_ip)
     return Response(
         {"result": result},
         status=(status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR)

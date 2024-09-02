@@ -1,12 +1,17 @@
 from django.contrib.auth.models import User
+from orca_nw_lib.utils import get_logging
 from rest_framework import status, permissions, generics
 from rest_framework.authtoken.models import Token
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from orca_backend import settings
 from .permission import IsAdmin
 from .serializers import RegisterSerializer
+
+
+_logger = get_logging(settings.LOGGING_FILE).getLogger(__name__)
 
 
 class UserList(generics.ListAPIView):
@@ -44,9 +49,11 @@ class RegisterView(APIView):
             serializer = RegisterSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save()
+                _logger.info("User created successfully.")
                 return Response({"message": "successfully created."}, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
+            _logger.error("Error while creating user: %s", str(e))
             return Response(data={"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -75,10 +82,13 @@ class LoginView(APIView):
             data = request.data
             user = User.objects.get(username=data["username"])
             if not user.check_password(raw_password=data["password"]):
+                _logger.error("Invalid credentials")
                 return Response({'message': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
             token, created = Token.objects.get_or_create(user=user)
+            _logger.info("User logged in successfully.")
             return Response({'token': token.key}, status=status.HTTP_200_OK)
         except Exception as e:
+            _logger.error("Error while login user: %s", str(e))
             return Response(data={"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -112,6 +122,7 @@ class GetUserView(APIView):
             }
             return Response(data=data, status=status.HTTP_200_OK)
         except Exception as e:
+            _logger.error("Error while getting user: %s", str(e))
             return Response(data={"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -143,10 +154,13 @@ class DeleteUserView(APIView):
             user = get_object_or_404(User.objects.filter(email=data["email"]))
             if user:
                 user.delete()
+                _logger.info("User deleted successfully.")
                 return Response(data={"message": "Successfully deleted user."}, status=status.HTTP_200_OK)
             else:
+                _logger.error("User not found.")
                 return Response(data={"message": "User not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
+            _logger.error("Error while deleting user: %s", str(e))
             return Response(data={"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -180,12 +194,16 @@ class ChangePasswordView(APIView):
             if user.check_password(data["old_password"]):
                 user.set_password(data["new_password"])
                 user.save()
+                _logger.info("Password changed successfully.")
                 return Response(data={"message": "Successfully saved password."}, status=status.HTTP_200_OK)
             else:
+                _logger.error("Old password is not correct.")
                 return Response(data={"message": "Old password is not correct."}, status=status.HTTP_404_NOT_FOUND)
         except KeyError as e:
+            _logger.error("Error while changing password: %s", str(e))
             return Response(data={"message": str(e)}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
+            _logger.error("Error while changing password: %s", str(e))
             return Response(data={"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -218,10 +236,13 @@ class UpdateUserView(APIView):
             email = data.pop("email", "")
             update_data = {k: v for k, v in data.items() if k not in ["is_staff", "is_superuser", "password"]}
             User.objects.filter(email=email).update(**update_data)
+            _logger.info("User updated successfully.")
             return Response(data={"message": "Update successful."}, status=status.HTTP_200_OK)
         except KeyError as e:
+            _logger.error("Error while updating user: %s", str(e))
             return Response(data={"message": str(e)}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
+            _logger.error("Error while updating user: %s", str(e))
             return Response(data={"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -254,8 +275,11 @@ class UpdateIsStaffView(APIView):
             email = data.pop("email", "")
             update_data = {"is_staff": True if kwargs.get("value") == "true" else False}
             User.objects.filter(email=email).update(**update_data)
+            _logger.info("User updated successfully.")
             return Response(data={"message": "Update successful."}, status=status.HTTP_200_OK)
         except KeyError as e:
+            _logger.error("Error while updating user: %s", str(e))
             return Response(data={"message": str(e)}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
+            _logger.error("Error while updating user: %s", str(e))
             return Response(data={"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

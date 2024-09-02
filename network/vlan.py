@@ -1,5 +1,5 @@
 """ VLAN API. """
-
+from orca_nw_lib.utils import get_logging
 from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework.response import Response
@@ -20,6 +20,9 @@ from network.util import (
     get_failure_msg,
     get_success_msg,
 )
+from orca_backend import settings
+
+_logger = get_logging(settings.LOGGING_FILE).getLogger(__name__)
 
 
 @api_view(["GET", "PUT", "DELETE"])
@@ -39,6 +42,7 @@ def vlan_config(request):
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", "")
         if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
             return Response(
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -64,12 +68,14 @@ def vlan_config(request):
         if request.method == "PUT":
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
                 return Response(
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             vlan_name = req_data.get("name", "")
             if not vlan_name:
+                _logger.error("Required field device vlan_name not found.")
                 return Response(
                     {"status": "Required field device vlan_name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -102,13 +108,16 @@ def vlan_config(request):
                     mem_ifs=members if members else None,
                 )
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info("Successfully configured VLAN: %s", vlan_name)
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+                _logger.error("Failed to configure VLAN: %s", vlan_name)
 
         elif request.method == "DELETE":
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
                 return Response(
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -125,15 +134,19 @@ def vlan_config(request):
                                 mem_if,
                             )
                             add_msg_to_list(result, get_success_msg(request))
+                            _logger.info("Successfully deleted VLAN member: %s", mem_if)
                         except Exception as err:
                             add_msg_to_list(result, get_failure_msg(err, request))
                             http_status = http_status and False
+                            _logger.error("Failed to delete VLAN member: %s", mem_if)
             try:
                 del_vlan(device_ip, vlan_name)
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info("Successfully deleted VLAN: %s", vlan_name)
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+                _logger.error("Failed to delete VLAN: %s", vlan_name)
 
     return Response(
         {"result": result},
@@ -152,6 +165,7 @@ def remove_vlan_ip_address(request):
         req_data = request.data
         device_ip = req_data.get("mgt_ip", "")
         if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
             return Response(
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -168,18 +182,22 @@ def remove_vlan_ip_address(request):
                 vlan_name,
             )
             add_msg_to_list(result, get_success_msg(request))
+            _logger.info("Successfully removed IP address from VLAN: %s", vlan_name)
         except Exception as err:
             add_msg_to_list(result, get_failure_msg(err, request))
             http_status = http_status and False
+            _logger.error("Failed to remove IP address from VLAN: %s", vlan_name)
 
         if sag_ip_address:=req_data.get("sag_ip_address", []):
             for sag_ip in sag_ip_address:
                 try:
                     remove_anycast_ip_from_vlan(device_ip, vlan_name, sag_ip)
                     add_msg_to_list(result, get_success_msg(request))
+                    _logger.info("Successfully removed anycast IP address from VLAN: %s", vlan_name)
                 except Exception as err:
                     add_msg_to_list(result, get_failure_msg(err, request))
                     http_status = http_status and False
+                    _logger.error("Failed to remove anycast IP address from VLAN: %s", vlan_name)
     return Response(
         {"result": result},
         status=(
@@ -210,12 +228,14 @@ def vlan_mem_config(request):
         ):
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
                 return Response(
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             vlan_name = req_data.get("name", "")
             if not vlan_name:
+                _logger.error("Required field device vlan_name not found.")
                 return Response(
                     {"status": "Required field device vlan_name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -227,9 +247,11 @@ def vlan_mem_config(request):
                     try:
                         del_vlan_mem(device_ip, vlan_name, mem_if)
                         add_msg_to_list(result, get_success_msg(request))
+                        _logger.info("Successfully deleted VLAN member: %s", mem_if)
                     except Exception as err:
                         add_msg_to_list(result, get_failure_msg(err, request))
                         http_status = http_status and False
+                        _logger.error("Failed to delete VLAN member: %s", mem_if)
 
     return Response(
         {"result": result},

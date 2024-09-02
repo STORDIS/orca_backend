@@ -1,4 +1,5 @@
 """ View for network. """
+from orca_nw_lib.utils import get_logging
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -7,7 +8,9 @@ from orca_nw_lib.discovery import trigger_discovery
 
 from log_manager.decorators import log_request
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg
+from orca_backend import settings
 
+_logger = get_logging(settings.LOGGING_FILE).getLogger(__name__)
 
 @api_view(
     [
@@ -35,13 +38,15 @@ def delete_db(request):
             )
             for req_data in req_data_list:
                 device_ip = req_data.get("mgt_ip", "") 
-                
+                _logger.info("Deleting device: %s", device_ip)
                 del_res = delete_device(device_ip)
-                
+
                 if del_res:
                     add_msg_to_list(result, get_success_msg(request))
+                    _logger.debug("Deleted device: %s", device_ip)
                 else:
                     add_msg_to_list(result,get_failure_msg(Exception("Failed to Delete"),request))
+                    _logger.error("Failed to delete device: %s", device_ip)
                 
         except Exception as e:
             return Response(
@@ -79,12 +84,15 @@ def discover(request):
             for addr in addresses or []:
                 if addr and trigger_discovery(addr):
                     add_msg_to_list(result, get_success_msg(request))
+                    _logger.info("Discovered device: %s", addr)
 
         if not result:
             # Because orca_nw_lib returns report for errors in discovery.
             add_msg_to_list(result,get_success_msg(request))
+            _logger.info("Discovery is successful.")
         else:
             add_msg_to_list(result,get_failure_msg(Exception("Discovery is partially successful or failed."),request))
+            _logger.error("Discovery is partially successful or failed.")
         return Response({"result": result}, status=status.HTTP_100_CONTINUE)
 
 
@@ -106,6 +114,7 @@ def device_list(request):
     """
     if request.method == "GET":
         data = get_device_details(request.GET.get("mgt_ip", None))
+        _logger.debug(data)
         return (
             Response(data, status=status.HTTP_200_OK)
             if data

@@ -150,3 +150,9 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
 }
+
+
+# logging file path
+abspath = os.path.abspath(__file__)
+dname = os.path.dirname(abspath)
+LOGGING_FILE = f"{dname}/orca_backend_logging.yaml"
