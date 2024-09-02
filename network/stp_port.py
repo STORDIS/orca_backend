@@ -1,17 +1,16 @@
-from orca_nw_lib.utils import get_logging
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from log_manager.decorators import log_request
+from log_manager.logger import get_backend_logger
 from network.util import add_msg_to_list, get_success_msg, get_failure_msg
 from orca_nw_lib.common import STPPortEdgePort, STPPortLinkType, STPPortGuard
 from orca_nw_lib.stp import discover_stp
 from orca_nw_lib.stp_port import add_stp_port_members, get_stp_port_members, delete_stp_port_member, discover_stp_port
 
-from orca_backend import settings
 
-_logger = get_logging(settings.LOGGING_FILE).getLogger(__name__)
+_logger = get_backend_logger()
 
 
 @api_view(["PUT", "GET", "DELETE"])

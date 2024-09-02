@@ -1,12 +1,9 @@
 import traceback
-
-from orca_nw_lib.utils import get_logging
 from rest_framework.decorators import api_view
-
 from log_manager.decorators import log_request
 from rest_framework import status
 from rest_framework.response import Response
-
+from log_manager.logger import get_backend_logger
 from network.util import add_msg_to_list, get_success_msg, get_failure_msg
 from orca_nw_lib.common import STPEnabledProtocol
 from orca_nw_lib.stp import (config_stp_global,
@@ -14,9 +11,8 @@ from orca_nw_lib.stp import (config_stp_global,
                              delete_stp_global_config,
                              delete_stp_global_config_disabled_vlans)
 
-from orca_backend import settings
+_logger = get_backend_logger()
 
-_logger = get_logging(settings.LOGGING_FILE).getLogger(__name__)
 
 @api_view(["GET", "PUT", "DELETE"])
 @log_request
@@ -73,7 +69,8 @@ def stp_global_config(request):
             try:
                 config_stp_global(
                     device_ip=device_ip,
-                    enabled_protocol=[STPEnabledProtocol.get_enum_from_str(i) for i in enabled_protocol] if enabled_protocol else None,
+                    enabled_protocol=[STPEnabledProtocol.get_enum_from_str(i) for i in
+                                      enabled_protocol] if enabled_protocol else None,
                     bpdu_filter=req_data.get("bpdu_filter"),
                     forwarding_delay=req_data.get("forwarding_delay"),
                     hello_time=req_data.get("hello_time"),

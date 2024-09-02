@@ -11,14 +11,14 @@ from orca_nw_lib.portgroup import (
 )
 
 from log_manager.decorators import log_request
+from log_manager.logger import get_backend_logger
 from network.util import (
     add_msg_to_list,
     get_failure_msg,
     get_success_msg,
 )
-from orca_backend import settings
 
-_logger = get_logging(settings.LOGGING_FILE).getLogger(__name__)
+_logger = get_backend_logger()
 
 
 @api_view(["GET", "PUT"])

@@ -1,6 +1,5 @@
 """ Network Port Channel API. """
 from orca_nw_lib.common import IFMode
-from orca_nw_lib.utils import get_logging
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
@@ -16,12 +15,12 @@ from orca_nw_lib.port_chnl import (
     remove_all_port_channel_vlan_member,
 )
 from log_manager.decorators import log_request
+from log_manager.logger import get_backend_logger
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg
 from orca_nw_lib.port_chnl import add_port_chnl_vlan_members
 
-from orca_backend import settings
 
-_logger = get_logging(settings.LOGGING_FILE).getLogger(__name__)
+_logger = get_backend_logger()
 
 
 @api_view(["GET", "PUT", "DELETE"])
