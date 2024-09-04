@@ -1,5 +1,3 @@
-import time
-
 from rest_framework import status
 
 from network.test.test_common import TestORCA
