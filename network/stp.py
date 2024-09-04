@@ -1,15 +1,19 @@
 import traceback
-from rest_framework.decorators import api_view
-from log_manager.decorators import log_request
-from rest_framework import status
-from rest_framework.response import Response
-from log_manager.logger import get_backend_logger
-from network.util import add_msg_to_list, get_success_msg, get_failure_msg
+
 from orca_nw_lib.common import STPEnabledProtocol
-from orca_nw_lib.stp import (config_stp_global,
-                             get_stp_global_config,
-                             delete_stp_global_config,
-                             delete_stp_global_config_disabled_vlans)
+from orca_nw_lib.stp import (
+    config_stp_global,
+    delete_stp_global_config,
+    delete_stp_global_config_disabled_vlans,
+    get_stp_global_config,
+)
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+from log_manager.decorators import log_request
+from log_manager.logger import get_backend_logger
+from network.util import add_msg_to_list, get_failure_msg, get_success_msg
 
 _logger = get_backend_logger()
 
@@ -52,11 +56,17 @@ def stp_global_config(request):
 
         data = get_stp_global_config(device_ip)
         return (
-            Response(data if isinstance(data, list) else [data], status=status.HTTP_200_OK)
+            Response(
+                data if isinstance(data, list) else [data], status=status.HTTP_200_OK
+            )
             if data
             else Response({}, status=status.HTTP_204_NO_CONTENT)
         )
-    for req_data in (request.data if isinstance(request.data, list) else [request.data] if request.data else []):
+    for req_data in (
+        request.data
+        if isinstance(request.data, list)
+        else [request.data] if request.data else []
+    ):
         if request.method == "PUT":
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
@@ -69,8 +79,14 @@ def stp_global_config(request):
             try:
                 config_stp_global(
                     device_ip=device_ip,
-                    enabled_protocol=[STPEnabledProtocol.get_enum_from_str(i) for i in
-                                      enabled_protocol] if enabled_protocol else None,
+                    enabled_protocol=(
+                        [
+                            STPEnabledProtocol.get_enum_from_str(i)
+                            for i in enabled_protocol
+                        ]
+                        if enabled_protocol
+                        else None
+                    ),
                     bpdu_filter=req_data.get("bpdu_filter"),
                     forwarding_delay=req_data.get("forwarding_delay"),
                     hello_time=req_data.get("hello_time"),
@@ -82,11 +98,16 @@ def stp_global_config(request):
                     portfast=req_data.get("portfast"),
                 )
                 add_msg_to_list(result, get_success_msg(request))
-                _logger.info("Successfully configured STP global config for device: %s", device_ip)
+                _logger.info(
+                    "Successfully configured STP global config for device: %s",
+                    device_ip,
+                )
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
-                _logger.error("Failed to configure STP global config for device: %s", device_ip)
+                _logger.error(
+                    "Failed to configure STP global config for device: %s", device_ip
+                )
         if request.method == "DELETE":
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
@@ -98,14 +119,20 @@ def stp_global_config(request):
             try:
                 delete_stp_global_config(device_ip=device_ip)
                 add_msg_to_list(result, get_success_msg(request))
-                _logger.info("Successfully deleted STP global config for device: %s", device_ip)
+                _logger.info(
+                    "Successfully deleted STP global config for device: %s", device_ip
+                )
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
-                _logger.error("Failed to delete STP global config for device: %s", device_ip)
+                _logger.error(
+                    "Failed to delete STP global config for device: %s", device_ip
+                )
     return Response(
         {"result": result},
-        status=(status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR),
+        status=(
+            status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR
+        ),
     )
 
 
@@ -138,9 +165,13 @@ def delete_disabled_vlans(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
-            delete_stp_global_config_disabled_vlans(device_ip=device_ip, disabled_vlans=disabled_vlans)
+            delete_stp_global_config_disabled_vlans(
+                device_ip=device_ip, disabled_vlans=disabled_vlans
+            )
             add_msg_to_list(result, get_success_msg(request))
-            _logger.info("Successfully deleted disabled VLANs for device: %s", device_ip)
+            _logger.info(
+                "Successfully deleted disabled VLANs for device: %s", device_ip
+            )
         except Exception as err:
             print(traceback.format_exc())
             add_msg_to_list(result, get_failure_msg(err, request))
@@ -148,5 +179,7 @@ def delete_disabled_vlans(request):
             _logger.error("Failed to delete disabled VLANs for device: %s", device_ip)
     return Response(
         {"result": result},
-        status=(status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR)
+        status=(
+            status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR
+        ),
     )

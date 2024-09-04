@@ -1,5 +1,4 @@
 """ Port Group API. """
-from orca_nw_lib.utils import get_logging
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status

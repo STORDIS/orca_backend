@@ -6,12 +6,13 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from log_manager.logger import get_backend_logger
 from orca_backend import settings
 from .permission import IsAdmin
 from .serializers import RegisterSerializer
 
 
-_logger = get_logging(settings.LOGGING_FILE).getLogger(__name__)
+_logger = get_backend_logger()
 
 
 class UserList(generics.ListAPIView):
