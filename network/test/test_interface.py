@@ -456,8 +456,6 @@ class TestInterface(TestORCA):
         interface = self.get_req("device_interface_list", {"mgt_ip": device_ip, "name": ether_1})
         interface_alias = get_if_alias(interface.json()["alias"])
 
-        # adding breakout configuration
-
         request_body = {
             "mgt_ip": device_ip,
             "if_name": ether_1,
@@ -465,6 +463,18 @@ class TestInterface(TestORCA):
             "breakout_mode": "4xSPEED_25GB",
         }
 
+        # deleting breakout configuration
+        self.assert_response_status(
+            self.del_req("breakout", request_body),
+            status.HTTP_200_OK,
+            "resource not found",
+        )
+
+        interface = self.get_req("device_interface_list", {"mgt_ip": device_ip, "name": ether_1})
+        self.assertEqual(interface.json()["breakout_mode"], None)
+        self.assertIsNone(interface.json()["breakout_status"])
+
+        # adding breakout configuration
         response = self.put_req("breakout", request_body)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -506,3 +516,43 @@ class TestInterface(TestORCA):
         interface = self.get_req("device_interface_list", {"mgt_ip": device_ip, "name": ether_1})
         self.assertEqual(interface.json()["breakout_mode"], None)
         self.assertTrue(interface_alias in interface.json()["alias"])
+
+    def test_interface_breakout_supported(self):
+        device_ip = self.device_ips[0]
+
+        # adding interface member that is breakout supported
+        ether_1 = "Ethernet56"
+        itf_request_body = [
+            {
+                "mgt_ip": device_ip,
+                "name": ether_1,
+                "mtu": 9100,
+            },
+        ]
+        self.assert_with_timeout_retry(
+            lambda path, payload: self.put_req(path, payload),
+            "device_interface_list",
+            itf_request_body,
+            status=status.HTTP_200_OK,
+        )
+
+        interface = self.get_req("device_interface_list", {"mgt_ip": device_ip, "name": ether_1})
+        self.assertIsNotNone(interface.json()["breakout_supported"])
+
+        ether_1 = "Ethernet1"
+        itf_request_body = [
+            {
+                "mgt_ip": device_ip,
+                "name": ether_1,
+                "mtu": 9100,
+            },
+        ]
+        self.assert_with_timeout_retry(
+            lambda path, payload: self.put_req(path, payload),
+            "device_interface_list",
+            itf_request_body,
+            status=status.HTTP_200_OK,
+        )
+
+        interface = self.get_req("device_interface_list", {"mgt_ip": device_ip, "name": ether_1})
+        self.assertFalse(interface.json()["breakout_supported"])
