@@ -48,7 +48,8 @@ class TestORCA(APITestCase):
                 return
             while len(self.ether_names) < 4:
                 if (ifc := intfs.pop()) and ifc["name"].startswith("Ethernet"):
-                    self.ether_names.append(ifc["name"])
+                    if len(ifc["alias"].split("/")) <= 2:
+                        self.ether_names.append(ifc["name"])
 
         if not TestORCA.sync_done:
             # Resync the interfaces, because may be their state has been modified when ORCA was not up,
