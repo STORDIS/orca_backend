@@ -10,6 +10,15 @@ from orca_nw_lib.bgp import (
     get_neighbour_bgp,
     config_bgp_neighbors,
     del_all_bgp_neighbors,
+    config_bgp_global_af,
+    get_bgp_global_af,
+    del_bgp_global_af,
+    get_bgp_global_af_network,
+    config_bgp_global_af_network,
+    del_bgp_global_af_network,
+    get_bgp_global_af_aggregate_addr,
+    config_bgp_global_af_aggregate_addr,
+    del_bgp_global_af_aggregate_addr,
 )
 
 from log_manager.decorators import log_request
@@ -247,6 +256,340 @@ def bgp_nbr_config(request):
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
                 _logger.error("Failed to delete all BGP neighbors on %s.", device_ip)
+
+    return Response(
+        {"result": result},
+        status=status.HTTP_200_OK
+        if http_status
+        else status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
+
+
+@api_view(["GET", "PUT", "DELETE"])
+@log_request
+def bgp_af(request):
+    """
+    A view function that handles GET, PUT, and DELETE requests for BGP neighbor configuration.
+
+    Parameters:
+    - request: The request object containing the HTTP request details.
+
+    Returns:
+    - A Response object containing the BGP neighbor configuration data for the specified device and ASN, or an empty dictionary if no data is found.
+    """
+    result = []
+    http_status = True
+    if request.method == "GET":
+        device_ip = request.GET.get("mgt_ip", "")
+        if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
+            return Response(
+                {"result": "Required field device mgt_ip not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        local_asn = request.GET.get("local_asn", None)
+        if not local_asn:
+            _logger.error("Required field device local_asn not found.")
+            return Response(
+                {"result": "Required field device local_asn not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        data = get_bgp_global_af(
+            device_ip=device_ip,
+            asn=local_asn,
+            afi_safi=request.GET.get("afi_safi"),
+        )
+        return (
+            Response(data, status.HTTP_200_OK)
+            if data
+            else Response({}, status.HTTP_204_NO_CONTENT)
+        )
+    if request.method == "PUT":
+        req_data_list = (
+            request.data if isinstance(request.data, list) else [request.data]
+        )
+        for req_data in req_data_list:
+            device_ip = req_data.get("mgt_ip", "")
+            if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
+                return Response(
+                    {"result": "Required field device mgt_ip not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            afi_safi = req_data.get("afi_safi")
+            if not afi_safi:
+                _logger.error("Required field afi_safi not found.")
+                return Response(
+                    {"result": "Required field afi_safi not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            vrf_name = req_data.get("vrf_name")
+            if not vrf_name:
+                _logger.error("Required field vrf_name not found.")
+                return Response(
+                    {"result": "Required field vrf_name not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                config_bgp_global_af(
+                    device_ip=device_ip,
+                    afi_safi=afi_safi,
+                    vrf_name=vrf_name,
+                    max_ebgp_paths=req_data.get("max_ebgp_paths")
+                )
+                add_msg_to_list(result, get_success_msg(request))
+                _logger.info(f"Configured BGP af on {device_ip}.")
+            except Exception as err:
+                _logger.error("Failed to configure BGP af on %s.", device_ip)
+                add_msg_to_list(result, get_failure_msg(err, request))
+                http_status = http_status and False
+    elif request.method == "DELETE":
+        req_data_list = (
+            request.data if isinstance(request.data, list) else [request.data]
+        )
+        for req_data in req_data_list:
+            device_ip = req_data.get("mgt_ip", "")
+            if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
+                return Response(
+                    {"result": "Required field device mgt_ip not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                del_bgp_global_af(
+                    device_ip=device_ip,
+                    vrf_name=req_data.get("vrf_name"),
+                    afi_safi=req_data.get("afi_safi"),
+                )
+                add_msg_to_list(result, get_success_msg(request))
+                _logger.info(f"Deleted BGP af on {device_ip}.")
+            except Exception as err:
+                _logger.error("Failed to delete BGP af on %s.", device_ip)
+                add_msg_to_list(result, get_failure_msg(err, request))
+                http_status = http_status and False
+
+    return Response(
+        {"result": result},
+        status=status.HTTP_200_OK
+        if http_status
+        else status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
+
+
+@api_view(["GET", "PUT", "DELETE"])
+@log_request
+def bgp_af_network(request):
+    """
+    A view function that handles GET, PUT, and DELETE requests for BGP neighbor configuration.
+
+    Parameters:
+    - request: The request object containing the HTTP request details.
+
+    Returns:
+    - A Response object containing the BGP neighbor configuration data for the specified device and ASN, or an empty dictionary if no data is found.
+    """
+    result = []
+    http_status = True
+    if request.method == "GET":
+        device_ip = request.GET.get("mgt_ip", "")
+        if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
+            return Response(
+                {"result": "Required field device mgt_ip not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        local_asn = request.GET.get("local_asn", None)
+        if not local_asn:
+            _logger.error("Required field device local_asn not found.")
+            return Response(
+                {"result": "Required field device local_asn not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        data = get_bgp_global_af_network(
+            device_ip=device_ip,
+            asn=local_asn,
+            afi_safi=request.GET.get("afi_safi"),
+        )
+        return (
+            Response(data, status.HTTP_200_OK)
+            if data
+            else Response({}, status.HTTP_204_NO_CONTENT)
+        )
+    if request.method == "PUT":
+        req_data_list = (
+            request.data if isinstance(request.data, list) else [request.data]
+        )
+        for req_data in req_data_list:
+            device_ip = req_data.get("mgt_ip", "")
+            if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
+                return Response(
+                    {"result": "Required field device mgt_ip not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            afi_safi = req_data.get("afi_safi")
+            if not afi_safi:
+                _logger.error("Required field afi_safi not found.")
+                return Response(
+                    {"result": "Required field afi_safi not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            vrf_name = req_data.get("vrf_name")
+            if not vrf_name:
+                _logger.error("Required field vrf_name not found.")
+                return Response(
+                    {"result": "Required field vrf_name not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            ip_prefix = req_data.get("ip_prefix")
+            try:
+                config_bgp_global_af_network(
+                    device_ip=device_ip,
+                    afi_safi=afi_safi,
+                    vrf_name=vrf_name,
+                    ip_prefix=ip_prefix
+                )
+                add_msg_to_list(result, get_success_msg(request))
+                _logger.info(f"Configured BGP global on {device_ip}.")
+            except Exception as err:
+                _logger.error("Failed to configure BGP af network on %s.", device_ip)
+                add_msg_to_list(result, get_failure_msg(err, request))
+                http_status = http_status and False
+    elif request.method == "DELETE":
+        req_data_list = (
+            request.data if isinstance(request.data, list) else [request.data]
+        )
+        for req_data in req_data_list:
+            device_ip = req_data.get("mgt_ip", "")
+            if not device_ip:
+                return Response(
+                    {"result": "Required field device mgt_ip not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                del_bgp_global_af_network(
+                    device_ip=device_ip,
+                    vrf_name=req_data.get("vrf_name"),
+                    afi_safi=req_data.get("afi_safi"),
+                    ip_prefix=req_data.get("ip_prefix")
+                )
+                add_msg_to_list(result, get_success_msg(request))
+                _logger.info(f"Deleted BGP af network on {device_ip}.")
+            except Exception as err:
+                _logger.error("Failed to delete BGP af network on %s.", device_ip)
+                add_msg_to_list(result, get_failure_msg(err, request))
+                http_status = http_status and False
+
+    return Response(
+        {"result": result},
+        status=status.HTTP_200_OK
+        if http_status
+        else status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
+
+
+@api_view(["GET", "PUT", "DELETE"])
+@log_request
+def bgp_af_aggregate_addr(request):
+    """
+    A view function that handles GET, PUT, and DELETE requests for BGP neighbor configuration.
+
+    Parameters:
+    - request: The request object containing the HTTP request details.
+
+    Returns:
+    - A Response object containing the BGP neighbor configuration data for the specified device and ASN, or an empty dictionary if no data is found.
+    """
+    result = []
+    http_status = True
+    if request.method == "GET":
+        device_ip = request.GET.get("mgt_ip", "")
+        if not device_ip:
+            return Response(
+                {"result": "Required field device mgt_ip not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        local_asn = request.GET.get("local_asn", None)
+        if not local_asn:
+            return Response(
+                {"result": "Required field device local_asn not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        data = get_bgp_global_af_aggregate_addr(
+            device_ip=device_ip,
+            asn=local_asn,
+            afi_safi=request.GET.get("afi_safi"),
+        )
+        return (
+            Response(data, status.HTTP_200_OK)
+            if data
+            else Response({}, status.HTTP_204_NO_CONTENT)
+        )
+    if request.method == "PUT":
+        req_data_list = (
+            request.data if isinstance(request.data, list) else [request.data]
+        )
+        for req_data in req_data_list:
+            device_ip = req_data.get("mgt_ip", "")
+            if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
+                return Response(
+                    {"result": "Required field device mgt_ip not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            afi_safi = req_data.get("afi_safi")
+            if not afi_safi:
+                _logger.error("Required field afi_safi not found.")
+                return Response(
+                    {"result": "Required field afi_safi not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            vrf_name = req_data.get("vrf_name")
+            if not vrf_name:
+                _logger.error("Required field vrf_name not found.")
+                return Response(
+                    {"result": "Required field vrf_name not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            ip_prefix = req_data.get("ip_prefix")
+            try:
+                config_bgp_global_af_aggregate_addr(
+                    device_ip=device_ip,
+                    afi_safi=afi_safi,
+                    vrf_name=vrf_name,
+                    ip_prefix=ip_prefix
+                )
+                add_msg_to_list(result, get_success_msg(request))
+                _logger.info(f"Configured BGP af aggregate address on {device_ip}.")
+            except Exception as err:
+                _logger.error("Failed to configure BGP af aggregate address on %s.", device_ip)
+                add_msg_to_list(result, get_failure_msg(err, request))
+                http_status = http_status and False
+    elif request.method == "DELETE":
+        req_data_list = (
+            request.data if isinstance(request.data, list) else [request.data]
+        )
+        for req_data in req_data_list:
+            device_ip = req_data.get("mgt_ip", "")
+            if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
+                return Response(
+                    {"result": "Required field device mgt_ip not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                del_bgp_global_af_aggregate_addr(
+                    device_ip=device_ip,
+                    vrf_name=req_data.get("vrf_name"),
+                    afi_safi=req_data.get("afi_safi"),
+                    ip_prefix=req_data.get("ip_prefix")
+                )
+                add_msg_to_list(result, get_success_msg(request))
+                _logger.info(f"Deleted BGP af aggregate address on {device_ip}.")
+            except Exception as err:
+                _logger.error("Failed to delete BGP af aggregate address on %s.", device_ip)
+                add_msg_to_list(result, get_failure_msg(err, request))
+                http_status = http_status and False
 
     return Response(
         {"result": result},
