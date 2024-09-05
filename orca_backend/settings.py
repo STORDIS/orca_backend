@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
+import os
 
 from pathlib import Path
 
@@ -44,8 +45,12 @@ INSTALLED_APPS = [
     'authentication',
     'rest_framework.authtoken',
     'log_manager',
-    #'ORCASK'
 ]
+
+#check if orcask module is installed 
+if os.path.isdir(os.path.join(BASE_DIR, 'orcask')):
+    print("orcask folder exists.")
+    INSTALLED_APPS.append('orcask')
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

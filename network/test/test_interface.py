@@ -2,7 +2,6 @@
 This module contains tests for the Interface API.
 """
 
-import unittest
 from rest_framework import status
 from network.test.test_common import TestORCA
 
@@ -414,9 +413,7 @@ class TestInterface(TestORCA):
                 "name": eth,
                 "enabled": not resp["enabled"],  # Toggle value
                 "mtu": (9101 if resp["mtu"] <= 9100 else 9100),
-                # TODO : With speed and testing with multiple interfaces, this test case fails.
-                # but only doing speed test here (on multiuple interfaces) is passing, yet to debug.
-                #"speed": self.get_speed_to_set(resp["speed"]),
+                "speed": self.get_speed_to_set(resp["speed"]),
                 "description": f'{eth}_{resp.get("enabled")}_{resp.get("mtu")}',
             }
             self.assert_with_timeout_retry(
@@ -432,6 +429,6 @@ class TestInterface(TestORCA):
                 enabled=request_body.get("enabled"),
                 description=request_body.get("description"),
                 mtu=request_body.get("mtu"),
-                #speed=request_body.get("speed"),
+                speed=request_body.get("speed"),
                 status=status.HTTP_200_OK,
             )

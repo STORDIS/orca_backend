@@ -15,8 +15,12 @@ from orca_nw_lib.port_chnl import (
     remove_all_port_channel_vlan_member,
 )
 from log_manager.decorators import log_request
+from log_manager.logger import get_backend_logger
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg
 from orca_nw_lib.port_chnl import add_port_chnl_vlan_members
+
+
+_logger = get_backend_logger()
 
 
 @api_view(["GET", "PUT", "DELETE"])
@@ -46,6 +50,7 @@ def device_port_chnl_list(request):
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", "")
         if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
             return Response(
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -71,11 +76,13 @@ def device_port_chnl_list(request):
         for req_data in req_data_list:
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
                 return Response(
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             if not req_data.get("lag_name"):
+                _logger.error("Required field device lag_name not found.")
                 return Response(
                     {"status": "Required field device lag_name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -99,9 +106,11 @@ def device_port_chnl_list(request):
                     ip_addr_with_prefix=req_data.get("ip_address", None),
                 )
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info("Added port channel: %s", req_data.get("lag_name"))
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+                _logger.error("Failed to add port channel: %s", req_data.get("lag_name"))
 
             try:
                 if members := req_data.get("members"):
@@ -110,10 +119,12 @@ def device_port_chnl_list(request):
                         req_data.get("lag_name"),
                         members,
                     )
-                add_msg_to_list(result, get_success_msg(request))
+                    add_msg_to_list(result, get_success_msg(request))
+                    _logger.info("Added port channel members: %s", members)
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+                _logger.error(f"Failed to add port channel members: {err}",)
 
             # some time add port channel vlan members might fail due to L3 configuration etc.
             # hence try catch block and send additional failure message if it fails.
@@ -127,9 +138,11 @@ def device_port_chnl_list(request):
                         if_mode=if_mode,
                         vlan_ids=vlan_ids,
                     )
+                    _logger.info("Added port channel vlan members: %s", vlan_ids)
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+                _logger.error(f"Failed to add port channel vlan members: {err}",)
 
     elif request.method == "DELETE":
         req_data_list = (
@@ -138,6 +151,7 @@ def device_port_chnl_list(request):
         for req_data in req_data_list:
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
                 return Response(
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -146,9 +160,11 @@ def device_port_chnl_list(request):
             try:
                 del_port_chnl(device_ip, req_data.get("lag_name"))
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info("Deleted port channel: %s", req_data.get("lag_name"))
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+                _logger.error("Failed to delete port channel: %s", req_data.get("lag_name"))
 
     return Response(
         {"result": result},
@@ -171,18 +187,21 @@ def port_chnl_mem_ethernet(request):
     ) or []:
         device_ip = req_data.get("mgt_ip", "")
         if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
             return Response(
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         chnl_name = req_data.get("lag_name", "")
         if not chnl_name:
+            _logger.error("Required field device chnl_name not found.")
             return Response(
                 {"status": "Required field device chnl_name not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         members = req_data.get("members", None)
         if not members:
+            _logger.error("Required field device members not found.")
             return Response(
                 {"status": "Required field device members not found."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -198,9 +217,11 @@ def port_chnl_mem_ethernet(request):
                         members,
                     )
                     add_msg_to_list(result, get_success_msg(request))
+                    _logger.info("Added port channel members: %s", members)
                 except Exception as err:
                     add_msg_to_list(result, get_failure_msg(err, request))
                     http_status = http_status and False
+                    _logger.error("Failed to add port channel members: %s", members)
         elif request.method == "DELETE":
             try:
                 for mem in members:
@@ -210,9 +231,11 @@ def port_chnl_mem_ethernet(request):
                         mem,
                     )
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info("Deleted port channel members: %s", members)
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+                _logger.error("Failed to delete port channel members: %s", members)
     return Response(
         {"result": result},
         status=(
@@ -233,12 +256,14 @@ def remove_port_channel_ip_address(request):
         req_data = request.data
         device_ip = req_data.get("mgt_ip", "")
         if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
             return Response(
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         chnl_name = req_data.get("lag_name", "")
         if not chnl_name:
+            _logger.error("Required field device chnl_name not found.")
             return Response(
                 {"status": "Required field device chnl_name not found."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -247,9 +272,11 @@ def remove_port_channel_ip_address(request):
         try:
             remove_port_chnl_ip(device_ip, chnl_name, ip_addr)
             add_msg_to_list(result, get_success_msg(request))
+            _logger.info("Removed port channel IP address: %s", ip_addr)
         except Exception as err:
             add_msg_to_list(result, get_failure_msg(err, request))
             http_status = http_status and False
+            _logger.error("Failed to remove port channel IP address: %s", ip_addr)
     return Response(
         {"result": result},
         status=(
@@ -271,18 +298,21 @@ def port_channel_member_vlan(request):
     ) or []:
         device_ip = req_data.get("mgt_ip", "")
         if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
             return Response(
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         chnl_name = req_data.get("lag_name", "")
         if not chnl_name:
+            _logger.error("Required field device chnl_name not found.")
             return Response(
                 {"status": "Required field device chnl_name not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         vlan_members = req_data.get("vlan_members", None)
         if not vlan_members:
+            _logger.error("Required field device vlan_members not found.")
             return Response(
                 {"status": "Required field device vlan_members not found."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -301,19 +331,23 @@ def port_channel_member_vlan(request):
                     vlan_ids=vlan_ids,
                 )
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info("Added port channel vlan members: %s", vlan_ids)
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+                _logger.error(f"Failed to add port channel vlan members: {err}", )
 
         if request.method == "DELETE":
             if_mode = IFMode.get_enum_from_str(vlan_members.get("if_mode"))
             vlan_ids = vlan_members.get("vlan_ids")
             if not vlan_ids:
+                _logger.error("Required field vlan ids not found.")
                 return Response(
                     {"status": "Required field vlan ids not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             if not if_mode:
+                _logger.error("Required field if mode not found.")
                 return Response(
                     {"status": "Required field if mode not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -326,9 +360,11 @@ def port_channel_member_vlan(request):
                     vlan_ids=vlan_ids,
                 )
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info("Removed port channel vlan members: %s", vlan_ids)
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+                _logger.error("Failed to remove port channel vlan members: %s", vlan_ids)
     return Response(
         {"result": result},
         status=(
@@ -349,12 +385,14 @@ def remove_all_port_channel_member_vlan(request):
         req_data = request.data
         device_ip = req_data.get("mgt_ip", "")
         if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
             return Response(
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         chnl_name = req_data.get("lag_name", "")
         if not chnl_name:
+            _logger.error("Required field device chnl_name not found.")
             return Response(
                 {"status": "Required field device chnl_name not found."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -364,9 +402,11 @@ def remove_all_port_channel_member_vlan(request):
                 device_ip=device_ip, chnl_name=chnl_name
             )
             add_msg_to_list(result, get_success_msg(request))
+            _logger.info("Removed all port channel vlan members.")
         except Exception as err:
             add_msg_to_list(result, get_failure_msg(err, request))
             http_status = http_status and False
+            _logger.error("Failed to remove all port channel vlan members.")
     return Response(
         {"result": result},
         status=(
