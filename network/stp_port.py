@@ -3,10 +3,14 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from log_manager.decorators import log_request
+from log_manager.logger import get_backend_logger
 from network.util import add_msg_to_list, get_success_msg, get_failure_msg
 from orca_nw_lib.common import STPPortEdgePort, STPPortLinkType, STPPortGuard
 from orca_nw_lib.stp import discover_stp
 from orca_nw_lib.stp_port import add_stp_port_members, get_stp_port_members, delete_stp_port_member, discover_stp_port
+
+
+_logger = get_backend_logger()
 
 
 @api_view(["PUT", "GET", "DELETE"])
@@ -41,6 +45,7 @@ def stp_port_config(request):
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", "")
         if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
             return Response(
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -56,6 +61,7 @@ def stp_port_config(request):
         if request.method == "PUT":
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
                 return Response(
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -63,6 +69,7 @@ def stp_port_config(request):
 
             if_name = req_data.get("if_name", None)
             if not if_name:
+                _logger.error("Required field if_name not found.")
                 return Response(
                     {"status": "Required field if_name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -70,6 +77,7 @@ def stp_port_config(request):
 
             bpdu_guard = req_data.get("bpdu_guard", None)
             if bpdu_guard is None:
+                _logger.error("Required field bpdu_guard not found.")
                 return Response(
                     {"status": "Required field bpdu_guard not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -77,12 +85,14 @@ def stp_port_config(request):
 
             uplink_fast = req_data.get("uplink_fast", None)
             if uplink_fast is None:
+                _logger.error("Required field uplink_fast not found.")
                 return Response(
                     {"status": "Required field uplink_fast not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             stp_enabled = req_data.get("stp_enabled", None)
             if stp_enabled is None:
+                _logger.error("Required field stp_enabled not found.")
                 return Response(
                     {"status": "Required field stp_enabled not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -113,12 +123,15 @@ def stp_port_config(request):
                     stp_enabled=stp_enabled,
                 )
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info("Successfully added stp port members")
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+                _logger.error("Failed to add stp port members")
         if request.method == "DELETE":
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
                 return Response(
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -127,9 +140,11 @@ def stp_port_config(request):
             try:
                 delete_stp_port_member(device_ip=device_ip, if_name=if_name)
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info("Successfully deleted stp port members")
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+                _logger.error("Failed to delete stp port members")
     return Response(
         {"result": result},
         status=(status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR),
@@ -157,15 +172,19 @@ def stp_discovery(request):
         try:
             discover_stp(device_ip=device_ip)
             add_msg_to_list(result, get_success_msg(request))
+            _logger.info("Successfully discovered stp")
         except Exception as err:
             add_msg_to_list(result, get_failure_msg(err, request))
             http_status = http_status and False
+            _logger.error("Failed to discover stp")
         try:
             discover_stp_port(device_ip=device_ip)
             add_msg_to_list(result, get_success_msg(request))
+            _logger.info("Successfully discovered stp port")
         except Exception as err:
             add_msg_to_list(result, get_failure_msg(err, request))
             http_status = http_status and False
+            _logger.error("Failed to discover stp port")
     return Response(
         {"result": result},
         status=(status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR),

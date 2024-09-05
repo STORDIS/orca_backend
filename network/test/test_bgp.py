@@ -184,3 +184,42 @@ class TestBGP(TestORCA):
         response = self.get_req("bgp_global", request_body)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(response.data)
+
+    def test_bgp_different_router_id(self):
+        device_ip = self.device_ips[0]
+        request_body = {
+            "mgt_ip": device_ip,
+            "vrf_name": "default",
+            "local_asn": 64500,
+            "router_id": "192.10.10.8",
+        }
+
+        response = self.del_req("bgp_global", request_body)
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                if res != "\n"
+            )
+        )
+        response = self.get_req("bgp_global", request_body)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
+
+        response = self.put_req("bgp_global", request_body)
+        response = self.get_req("bgp_global", request_body)
+        self.assertEqual(request_body.get("local_asn"), response.json()["local_asn"])
+        self.assertEqual(request_body.get("vrf_name"), response.json()["vrf_name"])
+        self.assertEqual(request_body.get("router_id"), response.json()["router_id"])
+
+        response = self.del_req("bgp_global", request_body)
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "resource not found" in res.get("message", "").lower() for res in response.json()["result"]
+                if res != "\n"
+            )
+        )
+        response = self.get_req("bgp_global", request_body)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(response.data)
