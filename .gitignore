@@ -10,3 +10,4 @@ poetry.lock
 .idea
 orca.log
 models
+*.log
