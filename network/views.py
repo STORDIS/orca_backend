@@ -93,7 +93,7 @@ def discover(request):
         else:
             add_msg_to_list(result,get_failure_msg(Exception("Discovery is partially successful or failed."),request))
             _logger.error("Discovery is partially successful or failed.")
-        return Response({"result": result}, status=status.HTTP_100_CONTINUE)
+        return Response({"result": result}, status=status.HTTP_200_OK)
 
 
 @api_view(
