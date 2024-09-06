@@ -31,7 +31,7 @@ class TestDiscovery(TestORCA):
             "discover_from_config": True
         }
         response=self.put_req("discover",request_body)
-        self.assertTrue(response.status_code == status.HTTP_100_CONTINUE)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
         response=self.get_req("device")
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         self.assertTrue(device_ip in [device['mgt_ip'] for device in response.json()])
@@ -41,7 +41,7 @@ class TestDiscovery(TestORCA):
             "discover_from_config": True
         }
         response=self.put_req("discover",request_body)
-        self.assertTrue(response.status_code == status.HTTP_100_CONTINUE)
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
         response=self.get_req("device")
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         self.assertTrue(device_ip and '10.10.229.88' in [device['mgt_ip'] for device in response.json()])
