@@ -755,3 +755,362 @@ class TestBGP(TestORCA):
         response = self.get_req("bgp_global", request_body)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(response.data)
+
+    def test_bgp_neighbor_config(self):
+        device_ip = self.device_ips[0]
+        request_body = {
+            "mgt_ip": device_ip,
+            "vrf_name": "default",
+            "local_asn": 64500,
+            "router_id": device_ip,
+        }
+
+        # configuring bgp global
+        self.perform_add_bgp_global(request_body)
+
+        nbr_req = {
+            "mgt_ip": device_ip,
+            "remote_asn": 65100,
+            "vrf_name": "default",
+            "neighbor_ip": "1.1.1.1"
+        }
+
+        # delete bgp neighbor config if it exists
+        self.assert_response_status(
+            self.del_req("bgp_nbr", nbr_req),
+            status.HTTP_200_OK,
+            "resource not found",
+        )
+        response = self.get_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # add bgp neighbor config
+        response = self.put_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(nbr_req.get("neighbor_ip"), response.json()["neighbor_ip"])
+        self.assertEqual(nbr_req.get("remote_asn"), response.json()["remote_asn"])
+        self.assertEqual(nbr_req.get("vrf_name"), response.json()["vrf_name"])
+
+        # clean up
+        response = self.del_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        self.perform_delete_bgp_global(request_body)
+
+    def test_bgp_nbr_af_config(self):
+        device_ip = self.device_ips[0]
+        request_body = {
+            "mgt_ip": device_ip,
+            "vrf_name": "default",
+            "local_asn": 64500,
+            "router_id": device_ip,
+        }
+
+        # configuring bgp global
+        self.perform_add_bgp_global(request_body)
+
+        nbr_req = {
+            "mgt_ip": device_ip,
+            "remote_asn": 65100,
+            "vrf_name": "default",
+            "neighbor_ip": "1.1.1.1"
+        }
+
+        # delete bgp neighbor config if it exists
+        self.assert_response_status(
+            self.del_req("bgp_nbr", nbr_req),
+            status.HTTP_200_OK,
+            "resource not found",
+        )
+        response = self.get_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # add bgp neighbor config
+        response = self.put_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(nbr_req.get("neighbor_ip"), response.json()["neighbor_ip"])
+        self.assertEqual(nbr_req.get("remote_asn"), response.json()["remote_asn"])
+        self.assertEqual(nbr_req.get("vrf_name"), response.json()["vrf_name"])
+
+        # configuring bgp af
+        request_body = {
+            "mgt_ip": device_ip,
+            "afi_safi": "ipv4_unicast",
+            "vrf_name": "default",
+            "neighbor_ip": "1.1.1.1",
+        }
+
+        response = self.put_req("bgp_nbr_af", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req("bgp_nbr_af", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(request_body.get("afi_safi"), response.json()["afi_safi"])
+        self.assertEqual(request_body.get("vrf_name"), response.json()["vrf_name"])
+        self.assertEqual(request_body.get("neighbor_ip"), response.json()["neighbor_ip"])
+
+        # clean up
+        response = self.del_req("bgp_nbr_af", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req("bgp_nbr_af", request_body)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        response = self.del_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        self.perform_delete_bgp_global(request_body)
+
+    def test_bgp_ngr_multiple_af(self):
+        device_ip = self.device_ips[0]
+        request_body = {
+            "mgt_ip": device_ip,
+            "vrf_name": "default",
+            "local_asn": 64500,
+            "router_id": device_ip,
+        }
+
+        # configuring bgp global
+        self.perform_add_bgp_global(request_body)
+
+        nbr_req = {
+            "mgt_ip": device_ip,
+            "remote_asn": 65100,
+            "vrf_name": "default",
+            "neighbor_ip": "1.1.1.1"
+        }
+
+        # delete bgp neighbor config if it exists
+        self.assert_response_status(
+            self.del_req("bgp_nbr", nbr_req),
+            status.HTTP_200_OK,
+            "resource not found",
+        )
+        response = self.get_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # add bgp neighbor config
+        response = self.put_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(nbr_req.get("neighbor_ip"), response.json()["neighbor_ip"])
+        self.assertEqual(nbr_req.get("remote_asn"), response.json()["remote_asn"])
+        self.assertEqual(nbr_req.get("vrf_name"), response.json()["vrf_name"])
+
+        # configuring bgp af
+        nbr_af_body = [
+            {
+                "mgt_ip": device_ip,
+                "afi_safi": "ipv4_unicast",
+                "vrf_name": "default",
+                "neighbor_ip": "1.1.1.1",
+            },
+            {
+                "mgt_ip": device_ip,
+                "afi_safi": "ipv6_unicast",
+                "vrf_name": "default",
+                "neighbor_ip": "1.1.1.1",
+            }
+        ]
+
+        response = self.put_req("bgp_nbr_af", nbr_af_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req("bgp_nbr_af", {
+            "mgt_ip": device_ip, "neighbor_ip": "1.1.1.1", "afi_safi": "ipv4_unicast"
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(nbr_af_body[0].get("afi_safi"), response.json()["afi_safi"])
+        self.assertEqual(nbr_af_body[0].get("vrf_name"), response.json()["vrf_name"])
+        self.assertEqual(nbr_af_body[0].get("neighbor_ip"), response.json()["neighbor_ip"])
+
+        response = self.get_req("bgp_nbr_af", {
+            "mgt_ip": device_ip, "neighbor_ip": "1.1.1.1", "afi_safi": "ipv6_unicast"
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(nbr_af_body[1].get("afi_safi"), response.json()["afi_safi"])
+        self.assertEqual(nbr_af_body[1].get("vrf_name"), response.json()["vrf_name"])
+        self.assertEqual(nbr_af_body[1].get("neighbor_ip"), response.json()["neighbor_ip"])
+
+        # clean up
+        response = self.del_req("bgp_nbr_af", {
+            "mgt_ip": device_ip, "neighbor_ip": "1.1.1.1",
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req("bgp_nbr_af", {
+            "mgt_ip": device_ip, "neighbor_ip": "1.1.1.1",
+        })
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        response = self.del_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        self.perform_delete_bgp_global(request_body)
+
+    def test_bgp_neighbor_bgp(self):
+        device_ip = self.device_ips[0]
+        asn = 64500
+        request_body = {
+            "mgt_ip": device_ip,
+            "vrf_name": "default",
+            "local_asn": asn,
+            "router_id": device_ip,
+        }
+
+        # configuring bgp global
+        self.perform_add_bgp_global(request_body)
+
+        nbr_req = {
+            "mgt_ip": device_ip,
+            "remote_asn": asn,
+            "vrf_name": "default",
+            "neighbor_ip": "1.1.1.1"
+        }
+
+        # delete bgp neighbor config if it exists
+        self.assert_response_status(
+            self.del_req("bgp_nbr", nbr_req),
+            status.HTTP_200_OK,
+            "resource not found",
+        )
+        response = self.get_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # add bgp neighbor config
+        response = self.put_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(nbr_req.get("neighbor_ip"), response.json()["neighbor_ip"])
+        self.assertEqual(nbr_req.get("remote_asn"), response.json()["remote_asn"])
+        self.assertEqual(nbr_req.get("vrf_name"), response.json()["vrf_name"])
+
+        response = self.get_req("bgp_nbr_bgp", {
+            "mgt_ip": device_ip, "neighbor_ip": "1.1.1.1", "asn": asn
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(request_body.get("local_asn"), response.json()["local_asn"])
+        self.assertEqual(request_body.get("vrf_name"), response.json()["vrf_name"])
+        self.assertEqual(request_body.get("router_id"), response.json()["router_id"])
+
+        # clean up
+        response = self.del_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        self.perform_delete_bgp_global(request_body)
+
+    def test_bgp_sub_interface(self):
+        device_ip = self.device_ips[0]
+        ether_name = self.ether_names[1]
+        ip = "10.10.100.1"
+        prefix_len = 24
+        response = self.get_req(
+            "device_interface_list", {"mgt_ip": device_ip, "name": ether_name}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        intf_request_body = {
+            "mgt_ip": device_ip,
+            "name": ether_name,
+            "ip_address": f"{ip}/{prefix_len}",
+        }
+        self.assert_with_timeout_retry(
+            lambda path, data: self.put_req(path, data),
+            "device_interface_list",
+            intf_request_body,
+            status=status.HTTP_200_OK,
+        )
+
+        # verifying the ip_address value
+        response = self.get_req("subinterface", {"mgt_ip": device_ip, "name": ether_name})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_body = response.json()
+        if isinstance(response_body, list):
+            self.assertTrue(any([i["ip_address"] == ip for i in response_body]))
+        else:
+            self.assertEqual(response_body["ip_address"], ip)
+
+        asn = 64500
+        request_body = {
+            "mgt_ip": device_ip,
+            "vrf_name": "default",
+            "local_asn": asn,
+            "router_id": device_ip,
+        }
+
+        # configuring bgp global
+        self.perform_add_bgp_global(request_body)
+
+        nbr_req = {
+            "mgt_ip": device_ip,
+            "remote_asn": asn,
+            "vrf_name": "default",
+            "neighbor_ip": ip
+        }
+
+        # delete bgp neighbor config if it exists
+        self.assert_response_status(
+            self.del_req("bgp_nbr", nbr_req),
+            status.HTTP_200_OK,
+            "resource not found",
+        )
+        response = self.get_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # add bgp neighbor config
+        response = self.put_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(nbr_req.get("neighbor_ip"), response.json()["neighbor_ip"])
+        self.assertEqual(nbr_req.get("remote_asn"), response.json()["remote_asn"])
+        self.assertEqual(nbr_req.get("vrf_name"), response.json()["vrf_name"])
+
+        response = self.get_req("bgp_nbr_subinterface", {
+            "mgt_ip": device_ip, "neighbor_ip": ip,
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_body = response.json()
+        if isinstance(response_body, list):
+            self.assertTrue(any([i["ip_address"] == ip for i in response_body]))
+        else:
+            self.assertEqual(response_body["ip_address"], ip)
+
+        # clean up
+        response = self.del_req("subinterface", intf_request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # verifying the ip_address deletion
+        response = self.get_req("subinterface", {"mgt_ip": device_ip, "name": ether_name})
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        response = self.del_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req("bgp_nbr", nbr_req)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        self.perform_delete_bgp_global(request_body)

@@ -1,4 +1,5 @@
 """ Interface view. """
+from orca_nw_lib.utils import validate_and_get_ip_prefix
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -7,7 +8,7 @@ from orca_nw_lib.interface import (
     config_interface,
     get_pg_of_if,
     discover_interfaces,
-    remove_vlan,
+    remove_vlan, del_ip_from_intf, get_subinterfaces,
 )
 from orca_nw_lib.common import Speed, PortFec, IFMode
 
@@ -103,6 +104,7 @@ def device_interfaces_list(request):
                         )
                     ),
                     adv_speeds=req_data.get("adv_speeds"),
+                    ip_with_prefix=req_data.get("ip_address"),
                 )
                 add_msg_to_list(result, get_success_msg(request))
                 http_status = http_status and True
@@ -205,6 +207,105 @@ def interface_resync(request):
             add_msg_to_list(result, get_failure_msg(err, request))
             http_status = http_status and False
             _logger.error("Failed to resync interface %s.", intfc_name)
+    return Response(
+        {"result": result},
+        status=(
+            status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR
+        ),
+    )
+
+@api_view(["GET", "PUT", "DELETE"])
+def interface_subinterface_config(request):
+    """
+        Generates the function comment for the given function body.
+
+        Args:
+            request (Request): The request object.
+
+        Returns:
+            Response: The response object containing the result of the function.
+        """
+    result = []
+    http_status = True
+    if request.method == "GET":
+        device_ip = request.GET.get("mgt_ip", "")
+        if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
+            return Response(
+                {"status": "Required field device mgt_ip not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        intfc_name = request.GET.get("name", "")
+        if not intfc_name:
+            _logger.error("Required field device interface name not found.")
+            return Response(
+                {"status": "Required field device interface name not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        data = get_subinterfaces(device_ip, intfc_name)
+        return (
+            Response(data, status.HTTP_200_OK)
+            if data
+            else Response({}, status.HTTP_204_NO_CONTENT)
+        )
+    if request.method == "PUT":
+        req_data_list = (
+            request.data if isinstance(request.data, list) else [request.data]
+        )
+        for req_data in req_data_list:
+            device_ip = req_data.get("mgt_ip", "")
+            if not device_ip:
+                return Response(
+                    {"status": "Required field device mgt_ip not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            ip_address = req_data.get("ip_address", "")
+            if not ip_address:
+                return Response(
+                    {"status": "Required field device interface name not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if_name = req_data.get("name", "")
+            if not if_name:
+                return Response(
+                    {"status": "Required field device interface name not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                config_interface(
+                    device_ip=device_ip,
+                    if_name=if_name,
+                    ip_with_prefix=ip_address,
+                )
+                add_msg_to_list(result, get_success_msg(request))
+            except Exception as err:
+                add_msg_to_list(result, get_failure_msg(err, request))
+                http_status = http_status and False
+
+    if request.method == "DELETE":
+        req_data_list = (
+            request.data if isinstance(request.data, list) else [request.data]
+        )
+        for req_data in req_data_list:
+            device_ip = req_data.get("mgt_ip", "")
+            if not device_ip:
+                return Response(
+                    {"status": "Required field device mgt_ip not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if_name = req_data.get("name", "")
+            if not if_name:
+                return Response(
+                    {"status": "Required field device interface name not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                del_ip_from_intf(device_ip=device_ip, intfc_name=if_name)
+                add_msg_to_list(result, get_success_msg(request))
+            except Exception as err:
+                add_msg_to_list(result, get_failure_msg(err, request))
+                http_status = http_status and False
+
     return Response(
         {"result": result},
         status=(

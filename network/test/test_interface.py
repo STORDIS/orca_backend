@@ -432,3 +432,62 @@ class TestInterface(TestORCA):
                 speed=request_body.get("speed"),
                 status=status.HTTP_200_OK,
             )
+
+    def test_interface_ip_config(self):
+        device_ip = self.device_ips[0]
+        ether_name = self.ether_names[1]
+        ip = "10.10.100.1"
+        prefix_len = 24
+        response = self.get_req(
+            "device_interface_list", {"mgt_ip": device_ip, "name": ether_name}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        request_body = {
+            "mgt_ip": device_ip,
+            "name": ether_name,
+            "ip_address": f"{ip}/{prefix_len}",
+        }
+        self.assert_with_timeout_retry(
+            lambda path, data: self.put_req(path, data),
+            "device_interface_list",
+            request_body,
+            status=status.HTTP_200_OK,
+        )
+
+        # verifying the ip_address value
+        response = self.get_req("subinterface", {"mgt_ip": device_ip, "name": ether_name})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_body = response.json()
+        if isinstance(response_body, list):
+            self.assertTrue(any([i["ip_address"] == ip for i in response_body]))
+        else:
+            self.assertEqual(response_body["ip_address"], ip)
+
+        # updating the ip_address with new url
+        ip = "10.10.121.11"
+        request_body["ip_address"] = f"{ip}/{prefix_len}"
+
+        self.assert_with_timeout_retry(
+            lambda path, data: self.put_req(path, data),
+            "subinterface",
+            request_body,
+            status=status.HTTP_200_OK,
+        )
+
+        # verifying the ip_address value after changing the ip_address with changed values
+        response = self.get_req("subinterface", {"mgt_ip": device_ip, "name": ether_name})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_body = response.json()
+        if isinstance(response_body, list):
+            self.assertTrue(any([i["ip_address"] == ip for i in response_body]))
+        else:
+            self.assertEqual(response_body["ip_address"], ip)
+
+        # removing the ip_address with new url
+        response = self.del_req("subinterface", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # verifying the ip_address deletion
+        response = self.get_req("subinterface", {"mgt_ip": device_ip, "name": ether_name})
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
