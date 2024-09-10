@@ -1,5 +1,4 @@
 """ Interface view. """
-from orca_nw_lib.utils import validate_and_get_ip_prefix
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -255,18 +254,21 @@ def interface_subinterface_config(request):
         for req_data in req_data_list:
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
                 return Response(
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             ip_address = req_data.get("ip_address", "")
             if not ip_address:
+                _logger.error("Required field device interface name not found.")
                 return Response(
                     {"status": "Required field device interface name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             if_name = req_data.get("name", "")
             if not if_name:
+                _logger.error("Required field device interface name not found.")
                 return Response(
                     {"status": "Required field device interface name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -278,7 +280,9 @@ def interface_subinterface_config(request):
                     ip_with_prefix=ip_address,
                 )
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info("Interface %s ip configured successfully.", if_name)
             except Exception as err:
+                _logger.error("Failed to configure ip for interface %s.", if_name)
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
 
@@ -302,7 +306,9 @@ def interface_subinterface_config(request):
             try:
                 del_ip_from_intf(device_ip=device_ip, intfc_name=if_name)
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info("Interface %s ip deleted successfully.", if_name)
             except Exception as err:
+                _logger.error("Failed to delete ip for interface %s.", if_name)
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
 
