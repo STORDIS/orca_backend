@@ -1,5 +1,4 @@
 """ Interface view. """
-
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -13,7 +12,10 @@ from orca_nw_lib.interface import (
 from orca_nw_lib.common import Speed, PortFec, IFMode
 
 from log_manager.decorators import log_request
+from log_manager.logger import get_backend_logger
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg
+
+_logger = get_backend_logger()
 
 
 @api_view(["GET", "PUT", "DELETE"])
@@ -33,6 +35,7 @@ def device_interfaces_list(request):
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", "")
         if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
             return Response(
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -52,12 +55,14 @@ def device_interfaces_list(request):
         for req_data in req_data_list:
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
                 return Response(
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
             if not req_data.get("name"):
+                _logger.error("Required field name not found.")
                 return Response(
                     {"status": "Required field name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -101,9 +106,11 @@ def device_interfaces_list(request):
                 )
                 add_msg_to_list(result, get_success_msg(request))
                 http_status = http_status and True
+                _logger.info("Interface %s config updated successfully.", req_data.get("name"))
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+                _logger.error("Failed to configure interface %s.", req_data.get("name"))
     elif request.method == "DELETE":
         req_data_list = (
             request.data if isinstance(request.data, list) else [request.data]
@@ -111,12 +118,14 @@ def device_interfaces_list(request):
         for req_data in req_data_list:
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
                 return Response(
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
             if not req_data.get("name"):
+                _logger.error("Required field name not found.")
                 return Response(
                     {"status": "Required field name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -129,9 +138,11 @@ def device_interfaces_list(request):
                 )
                 add_msg_to_list(result, get_success_msg(request))
                 http_status = http_status and True
+                _logger.info("Interface %s removed successfully.", req_data.get("name"))
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
+                _logger.error("Failed to remove interface %s.", req_data.get("name"))
 
     return Response(
         {"result": result},
@@ -149,12 +160,14 @@ def interface_pg(request):
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", "")
         if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
             return Response(
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         intfc_name = request.GET.get("name", "")
         if not intfc_name:
+            _logger.error("Required field device interface name not found.")
             return Response(
                 {"status": "Required field device interface name not found."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -176,6 +189,7 @@ def interface_resync(request):
     if request.method == "POST":
         device_ip = request.data.get("mgt_ip", "")
         if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
             return Response(
                 {"status": "Required field device mgt_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -186,9 +200,11 @@ def interface_resync(request):
             discover_interfaces(device_ip, intfc_name)
             add_msg_to_list(result, get_success_msg(request))
             http_status = http_status and True
+            _logger.info("Interface %s resynced successfully.", intfc_name)
         except Exception as err:
             add_msg_to_list(result, get_failure_msg(err, request))
             http_status = http_status and False
+            _logger.error("Failed to resync interface %s.", intfc_name)
     return Response(
         {"result": result},
         status=(
@@ -218,24 +234,21 @@ def interface_breakout(request):
         for req_data in req_data_list:
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
                 return Response(
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             if_alias = req_data.get("if_alias", "")
             if not if_alias:
+                _logger.error("Required field device interface alias name not found.")
                 return Response(
                     {"status": "Required field device interface alias name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            if_name = req_data.get("if_name", "")
-            if not if_name:
-                return Response(
-                    {"status": "Required field device interface name not found."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
             breakout_mode = req_data.get("breakout_mode", "")
             if not breakout_mode:
+                _logger.error("Required field breakout mode not found.")
                 return Response(
                     {"status": "Required field breakout mode not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -244,10 +257,12 @@ def interface_breakout(request):
                 config_interface_breakout(
                     device_ip=device_ip,
                     if_alias=if_alias,
-                    if_name=if_name,
                     breakout_mode=breakout_mode,
                 )
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info(
+                    "Interface %s breakout mode configured successfully.", if_alias
+                )
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
@@ -259,20 +274,24 @@ def interface_breakout(request):
         for req_data in req_data_list:
             device_ip = req_data.get("mgt_ip", "")
             if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
                 return Response(
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            if_name = req_data.get("if_name", "")
-            if not if_name:
+            if_alias = req_data.get("if_alias", "")
+            if not if_alias:
+                _logger.error("Required field device interface alias name not found.")
                 return Response(
-                    {"status": "Required field device interface name not found."},
+                    {"status": "Required field device interface alias name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             try:
-                delete_interface_breakout(device_ip=device_ip, if_name=if_name)
+                delete_interface_breakout(device_ip=device_ip, if_alias=if_alias)
                 add_msg_to_list(result, get_success_msg(request))
+                _logger.info("Interface %s breakout mode removed successfully.", if_alias)
             except Exception as err:
+                _logger.error("Failed to remove interface %s breakout mode.", if_alias)
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
 

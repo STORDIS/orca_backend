@@ -49,6 +49,9 @@ urlpatterns = [
         mclag.config_mclag_fast_convergence,
         name="config_mclag_fast_convergence",
     ),
+    path("bgp_af", bgp.bgp_af, name="bgp_af"),
+    path("bgp_af_network", bgp.bgp_af_network, name="bgp_af_network"),
+    path("bgp_af_aggregate_addr", bgp.bgp_af_aggregate_addr, name="bgp_af_aggregate_addr"),
     re_path("bgp", bgp.device_bgp_global, name="bgp_global"),
     re_path("nbrs", bgp.bgp_nbr_config, name="bgp_nbr"),
     re_path(
