@@ -37,7 +37,6 @@ class TestORCA(APITestCase):
 
         for device in response.json():
             self.device_ips.append(device["mgt_ip"])
-            break  ## only one device is enough for tests
 
         if self.device_ips:
             response = self.get_req(

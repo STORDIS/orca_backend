@@ -17,6 +17,7 @@ from orca_nw_lib.bgp import (
     config_bgp_global_af_aggregate_addr,
     del_bgp_global_af_aggregate_addr, delete_all_bgp_neighbor_af, get_bgp_neighbor_sub_interface,
     config_bgp_neighbor_af, get_bgp_neighbor_af, delete_bgp_neighbor, get_bgp_neighbors, get_bgp_neighbor_remote_bgp,
+    get_bgp_neighbor_local_bgp,
 )
 
 from log_manager.decorators import log_request
@@ -768,7 +769,7 @@ def bgp_neighbor_sub_interface(request):
 
 @api_view(["GET"])
 @log_request
-def bgp_neighbor_bgp(request):
+def bgp_neighbor_remote_bgp(request):
     result = []
     http_status = True
     if request.method == "GET":
@@ -787,6 +788,45 @@ def bgp_neighbor_bgp(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         data = get_bgp_neighbor_remote_bgp(
+            device_ip=device_ip,
+            neighbor_ip=neighbor_ip,
+            asn=request.GET.get("asn"),
+        )
+        return (
+            Response(data, status.HTTP_200_OK)
+            if data
+            else Response({}, status.HTTP_204_NO_CONTENT)
+        )
+
+    return Response(
+        {"result": result},
+        status=status.HTTP_200_OK
+        if http_status
+        else status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
+
+
+@api_view(["GET"])
+@log_request
+def bgp_neighbor_local_bgp(request):
+    result = []
+    http_status = True
+    if request.method == "GET":
+        device_ip = request.GET.get("mgt_ip", "")
+        if not device_ip:
+            _logger.error("Required field device mgt_ip not found.")
+            return Response(
+                {"result": "Required field device mgt_ip not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        neighbor_ip = request.GET.get("neighbor_ip", "")
+        if not neighbor_ip:
+            _logger.error("Required field neighbor_ip not found.")
+            return Response(
+                {"result": "Required field neighbor_ip not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        data = get_bgp_neighbor_local_bgp(
             device_ip=device_ip,
             neighbor_ip=neighbor_ip,
             asn=request.GET.get("asn"),

@@ -54,7 +54,8 @@ urlpatterns = [
     path("bgp_af_aggregate_addr", bgp.bgp_af_aggregate_addr, name="bgp_af_aggregate_addr"),
     path("nbrs_af", bgp.bgp_neighbor_af, name="bgp_nbr_af"),
     path("nbrs", bgp.bgp_nbr_config, name="bgp_nbr"),
-    path("nbrs_bgp", bgp.bgp_neighbor_bgp, name="bgp_nbr_bgp"),
+    path("nbrs_remote_bgp", bgp.bgp_neighbor_remote_bgp, name="bgp_nbr_remote_bgp"),
+    path("nbrs_local_bgp", bgp.bgp_neighbor_local_bgp, name="bgp_nbr_local_bgp"),
     path("nbrs_subinterface", bgp.bgp_neighbor_sub_interface, name="bgp_nbr_subinterface"),
     re_path("bgp", bgp.device_bgp_global, name="bgp_global"),
     re_path(
