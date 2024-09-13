@@ -37,7 +37,7 @@ class TestSTPVlan(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
 
     def test_stp_vlan_config(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         vlan_1_name = "Vlan3"
         vlan_1_id = 3
         vlan_2_name = "Vlan4"
@@ -83,7 +83,7 @@ class TestSTPVlan(TestORCA):
         self.assertEqual(response.json()["name"], vlan_2_name)
 
         # adding stp config
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         stp_global_request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],
@@ -155,7 +155,7 @@ class TestSTPVlan(TestORCA):
         self.perform_delete_stp_global(request_body=stp_global_request_body)
 
     def test_stp_vlan_bridge_priority(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         vlan_1_name = "Vlan3"
         vlan_1_id = 3
 
@@ -185,7 +185,7 @@ class TestSTPVlan(TestORCA):
         self.assertEqual(response.json()["name"], vlan_1_name)
 
         # adding stp config
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         stp_global_request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],
@@ -259,7 +259,7 @@ class TestSTPVlan(TestORCA):
         self.perform_delete_stp_global(request_body=stp_global_request_body)
 
     def test_stp_vlan_forwarding_delay(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         vlan_1_name = "Vlan3"
         vlan_1_id = 3
 
@@ -289,7 +289,7 @@ class TestSTPVlan(TestORCA):
         self.assertEqual(response.json()["name"], vlan_1_name)
 
         # adding stp config
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         stp_global_request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],
@@ -363,7 +363,7 @@ class TestSTPVlan(TestORCA):
         self.perform_delete_stp_global(request_body=stp_global_request_body)
 
     def test_stp_vlan_hello_time(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         vlan_1_name = "Vlan3"
         vlan_1_id = 3
 
@@ -393,7 +393,7 @@ class TestSTPVlan(TestORCA):
         self.assertEqual(response.json()["name"], vlan_1_name)
 
         # adding stp config
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         stp_global_request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],
@@ -467,7 +467,7 @@ class TestSTPVlan(TestORCA):
         self.perform_delete_stp_global(request_body=stp_global_request_body)
 
     def test_stp_vlan_max_age(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         vlan_1_name = "Vlan3"
         vlan_1_id = 3
 
@@ -497,7 +497,7 @@ class TestSTPVlan(TestORCA):
         self.assertEqual(response.json()["name"], vlan_1_name)
 
         # adding stp config
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         stp_global_request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],

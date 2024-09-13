@@ -27,7 +27,7 @@ class TestBGP(TestORCA):
         Returns:
             None
         """
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -107,7 +107,7 @@ class TestBGP(TestORCA):
 
     def test_bgp_af_config(self):
         # configuring bgp global
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -153,7 +153,7 @@ class TestBGP(TestORCA):
 
     def test_bgp_af_update(self):
         # configuring bgp global
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -240,7 +240,7 @@ class TestBGP(TestORCA):
 
     def test_bgp_af_delete(self):
         # configuring bgp global
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -316,7 +316,7 @@ class TestBGP(TestORCA):
 
     def test_bgp_af_network(self):
         # configuring bgp global
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -364,7 +364,7 @@ class TestBGP(TestORCA):
 
     def test_bgp_af_network_update(self):
         # configuring bgp global
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -431,7 +431,7 @@ class TestBGP(TestORCA):
 
     def test_bgp_af_network_delete(self):
         # configuring bgp global
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -512,7 +512,7 @@ class TestBGP(TestORCA):
 
     def test_bgp_af_aggregate_addr(self):
         # configuring bgp global
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -560,7 +560,7 @@ class TestBGP(TestORCA):
 
     def test_bgp_af_aggregate_addr_update(self):
         # configuring bgp global
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -638,7 +638,7 @@ class TestBGP(TestORCA):
 
     def test_bgp_af_aggregate_addr_delete(self):
         # configuring bgp global
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -718,7 +718,7 @@ class TestBGP(TestORCA):
         })
 
     def test_bgp_different_router_id(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
