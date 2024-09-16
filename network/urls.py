@@ -14,6 +14,7 @@ urlpatterns = [
     re_path("del_db", views.delete_db, name="del_db"),
     re_path("discover", views.discover, name="discover"),
     re_path("devices", views.device_list, name="device"),
+    path("subinterface", interface.interface_subinterface_config, name="subinterface"),
     re_path("interface_pg", interface.interface_pg, name="interface_pg"),
     path("interface_resync", interface.interface_resync, name="interface_resync"),
     re_path(
@@ -52,8 +53,12 @@ urlpatterns = [
     path("bgp_af", bgp.bgp_af, name="bgp_af"),
     path("bgp_af_network", bgp.bgp_af_network, name="bgp_af_network"),
     path("bgp_af_aggregate_addr", bgp.bgp_af_aggregate_addr, name="bgp_af_aggregate_addr"),
+    path("nbrs_af", bgp.bgp_neighbor_af, name="bgp_nbr_af"),
+    path("nbrs", bgp.bgp_nbr_config, name="bgp_nbr"),
+    path("nbrs_remote_bgp", bgp.bgp_neighbor_remote_bgp, name="bgp_nbr_remote_bgp"),
+    path("nbrs_local_bgp", bgp.bgp_neighbor_local_bgp, name="bgp_nbr_local_bgp"),
+    path("nbrs_subinterface", bgp.bgp_neighbor_sub_interface, name="bgp_nbr_subinterface"),
     re_path("bgp", bgp.device_bgp_global, name="bgp_global"),
-    re_path("nbrs", bgp.bgp_nbr_config, name="bgp_nbr"),
     re_path(
         "group_from_intfc",
         port_group.port_group_from_intfc_name,
