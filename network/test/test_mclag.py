@@ -29,7 +29,7 @@ class TestMclag(TestORCA):
 
         :return: None
         """
-        device_ip_1 = self.device_ips[0]
+        device_ip_1 = list(self.device_ips.keys())[0]
         response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
 
         self.assertTrue(
@@ -97,7 +97,7 @@ class TestMclag(TestORCA):
         self.remove_mclag(device_ip_1)
 
     def test_mclag_delay_restore(self):
-        device_ip_1 = self.device_ips[0]
+        device_ip_1 = list(self.device_ips.keys())[0]
 
         # create mclag with only domain id and delay_restore
         request_body = {
@@ -140,7 +140,7 @@ class TestMclag(TestORCA):
         self.remove_mclag(device_ip_1)
 
     def test_mclag_session_timeout(self):
-        device_ip_1 = self.device_ips[0]
+        device_ip_1 = list(self.device_ips.keys())[0]
         # create mclag with only domain id and session_timeout
         request_body = {
             "mgt_ip": device_ip_1,
@@ -181,7 +181,7 @@ class TestMclag(TestORCA):
         self.remove_mclag(device_ip_1)
 
     def test_mclag_keepalive_interval(self):
-        device_ip_1 = self.device_ips[0]
+        device_ip_1 = list(self.device_ips.keys())[0]
         # create mclag with only domain id and keepalive_interval
         request_body = {
             "mgt_ip": device_ip_1,
@@ -235,7 +235,7 @@ class TestMclag(TestORCA):
 
         :return: None
         """
-        device_ip_1 = self.device_ips[0]
+        device_ip_1 = list(self.device_ips.keys())[0]
 
         self.remove_mclag(device_ip_1)
         
@@ -385,7 +385,7 @@ class TestMclag(TestORCA):
         :return: None
         """
 
-        device_ip_1 = self.device_ips[0]
+        device_ip_1 = list(self.device_ips.keys())[0]
         gw_mac = "aa:bb:aa:bb:aa:bb"
         response = self.del_req("mclag_gateway_mac", {"mgt_ip": device_ip_1})
         self.assertTrue(
@@ -432,7 +432,7 @@ class TestMclag(TestORCA):
         self.assertFalse(response.data)
 
     def test_mclag_domain_fast_convergence(self):
-        device_ip_1 = self.device_ips[0]
+        device_ip_1 = list(self.device_ips.keys())[0]
         response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
 
         self.assertTrue(
@@ -510,7 +510,7 @@ class TestMclag(TestORCA):
         self.remove_mclag(device_ip_1)
 
     def test_config_mclag_domain_fast_convergence(self):
-        device_ip_1 = self.device_ips[0]
+        device_ip_1 = list(self.device_ips.keys())[0]
         response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
 
         self.assertTrue(
@@ -605,7 +605,7 @@ class TestMclag(TestORCA):
         """
 
         # delete mclag config
-        device_ip_1 = self.device_ips[0]
+        device_ip_1 = list(self.device_ips.keys())[0]
         response = self.del_req("device_mclag_list", {"mgt_ip": device_ip_1})
 
         self.assertTrue(

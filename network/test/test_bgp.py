@@ -27,7 +27,7 @@ class TestBGP(TestORCA):
         Returns:
             None
         """
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -107,7 +107,7 @@ class TestBGP(TestORCA):
 
     def test_bgp_af_config(self):
         # configuring bgp global
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -153,7 +153,7 @@ class TestBGP(TestORCA):
 
     def test_bgp_af_update(self):
         # configuring bgp global
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -240,7 +240,7 @@ class TestBGP(TestORCA):
 
     def test_bgp_af_delete(self):
         # configuring bgp global
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -316,7 +316,7 @@ class TestBGP(TestORCA):
 
     def test_bgp_af_network(self):
         # configuring bgp global
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -364,7 +364,7 @@ class TestBGP(TestORCA):
 
     def test_bgp_af_network_update(self):
         # configuring bgp global
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -431,7 +431,7 @@ class TestBGP(TestORCA):
 
     def test_bgp_af_network_delete(self):
         # configuring bgp global
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -512,7 +512,7 @@ class TestBGP(TestORCA):
 
     def test_bgp_af_aggregate_addr(self):
         # configuring bgp global
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -560,7 +560,7 @@ class TestBGP(TestORCA):
 
     def test_bgp_af_aggregate_addr_update(self):
         # configuring bgp global
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -638,7 +638,7 @@ class TestBGP(TestORCA):
 
     def test_bgp_af_aggregate_addr_delete(self):
         # configuring bgp global
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -718,7 +718,7 @@ class TestBGP(TestORCA):
         })
 
     def test_bgp_different_router_id(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -757,7 +757,7 @@ class TestBGP(TestORCA):
         self.assertFalse(response.data)
 
     def test_bgp_neighbor_config(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -804,7 +804,7 @@ class TestBGP(TestORCA):
         self.perform_delete_bgp_global(request_body)
 
     def test_bgp_nbr_af_config(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -874,7 +874,7 @@ class TestBGP(TestORCA):
         self.perform_delete_bgp_global(request_body)
 
     def test_bgp_nbr_multiple_af(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "vrf_name": "default",
@@ -966,7 +966,7 @@ class TestBGP(TestORCA):
         self.perform_delete_bgp_global(request_body)
 
     def test_bgp_neighbor_bgp(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         asn = 64500
         request_body = {
             "mgt_ip": device_ip,
@@ -1022,8 +1022,8 @@ class TestBGP(TestORCA):
         self.perform_delete_bgp_global(request_body)
 
     def test_bgp_sub_interface(self):
-        device_ip = self.device_ips[0]
-        ether_name = self.ether_names[1]
+        device_ip = list(self.device_ips.keys())[0]
+        ether_name = self.device_ips[device_ip]["interfaces"][0]
         ip = "10.10.100.1"
         prefix_len = 24
         response = self.get_req(
@@ -1116,8 +1116,9 @@ class TestBGP(TestORCA):
         self.perform_delete_bgp_global(request_body)
 
     def test_bgp_neighbors_remote_bgp(self):
-        device_ip_1 = self.device_ips[0]
-        device_ip_2 = self.device_ips[1]
+        devices = list(self.device_ips.keys())
+        device_ip_1 = devices[0]
+        device_ip_2 = devices[1]
 
         device_1_asn = 64500
         device_2_asn = 64501
@@ -1176,8 +1177,9 @@ class TestBGP(TestORCA):
             self.perform_delete_bgp_global(req_body)
 
     def test_bgp_neighbors_local_bgp(self):
-        device_ip_1 = self.device_ips[0]
-        device_ip_2 = self.device_ips[1]
+        devices = list(self.device_ips.keys())
+        device_ip_1 = devices[0]
+        device_ip_2 = devices[1]
 
         device_1_asn = 64500
         device_2_asn = 64501
@@ -1238,15 +1240,16 @@ class TestBGP(TestORCA):
 
     def test_complete_bgp_setup(self):
 
-        device_ip_1 = self.device_ips[0]
-        device_ip_2 = self.device_ips[1]
+        devices = list(self.device_ips.keys())
+        device_ip_1 = devices[0]
+        device_ip_2 = devices[1]
 
         device_1_asn = 64501
         device_2_asn = 64502
 
         # adding neighbor to ethernet subinterface to device 1
         neighbor_ip_1 = "1.1.1.1"
-        ether_name = self.ether_names[0]
+        ether_name = self.device_ips[device_ip_1]["interfaces"][0]
         prefix_len = 24
         response = self.get_req(
             "device_interface_list", {"mgt_ip": device_ip_2, "name": ether_name}

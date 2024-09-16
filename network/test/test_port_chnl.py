@@ -30,7 +30,7 @@ class TestPortChnl(TestORCA):
         Returns:
         None
         """
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
 
         # First delete mclag, if it exists.
         # port channel deletion will fail if port channel is found to be a member of mclag.
@@ -63,12 +63,12 @@ class TestPortChnl(TestORCA):
         """
         Test the configuration of port channel members.
         """
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
 
-        ether_1 = self.ether_names[0]
-        ether_2 = self.ether_names[1]
-        ether_3 = self.ether_names[2]
-        ether_4 = self.ether_names[3]
+        ether_1 = self.device_ips[device_ip]["interfaces"][0]
+        ether_2 = self.device_ips[device_ip]["interfaces"][1]
+        ether_3 = self.device_ips[device_ip]["interfaces"][2]
+        ether_4 = self.device_ips[device_ip]["interfaces"][3]
         mtu = 9100
 
         request_body = [
@@ -156,7 +156,7 @@ class TestPortChnl(TestORCA):
         self.perform_del_port_chnl(request_body)
 
     def test_port_chnl_static_attribute(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         self.remove_mclag(device_ip)
         port_channel = "PortChannel103"
 
@@ -194,7 +194,7 @@ class TestPortChnl(TestORCA):
         self.perform_del_port_chnl(request_body)
 
     def test_port_chnl_fallback_attribute(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         self.remove_mclag(device_ip)
         port_channel = "PortChannel103"
 
@@ -234,7 +234,7 @@ class TestPortChnl(TestORCA):
         self.perform_del_port_chnl(request_body)
 
     def test_port_chnl_fast_rate_attribute(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         self.remove_mclag(device_ip)
         port_channel = "PortChannel103"
 
@@ -273,7 +273,7 @@ class TestPortChnl(TestORCA):
         self.perform_del_port_chnl(request_body)
 
     def test_port_chnl_min_links_attribute(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         self.remove_mclag(device_ip)
         port_channel = "PortChannel103"
 
@@ -312,7 +312,7 @@ class TestPortChnl(TestORCA):
         self.perform_del_port_chnl(request_body)
 
     def test_port_chnl_description_attribute(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         self.remove_mclag(device_ip)
         port_channel = "PortChannel103"
 
@@ -351,7 +351,7 @@ class TestPortChnl(TestORCA):
         self.perform_del_port_chnl(request_body)
 
     def test_port_chnl_grace_full_shutdown_attributes(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         self.remove_mclag(device_ip)
         port_channel = "PortChannel103"
 
@@ -390,7 +390,7 @@ class TestPortChnl(TestORCA):
         self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": port_channel})
 
     def test_port_channel_ip_delete(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         self.remove_mclag(device_ip)
         ip_address_1 = "192.10.10.9/24"
         port_channel = "PortChannel103"
@@ -426,7 +426,7 @@ class TestPortChnl(TestORCA):
         self.perform_del_port_chnl({"mgt_ip": device_ip, "lag_name": port_channel})
 
     def test_port_channel_ip(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         self.remove_mclag(device_ip)
         ip_address_1 = "192.10.10.9/24"
         ip_address_2 = "192.11.10.9/24"
@@ -479,7 +479,7 @@ class TestPortChnl(TestORCA):
 
     def test_port_channel_vlan_members_access_vlan_members_update(self):
         # Creating vlan for testing
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         vlan_1_name = "Vlan4"
         vlan_1_id = 4
         vlan_2_name = "Vlan5"
@@ -624,7 +624,7 @@ class TestPortChnl(TestORCA):
 
     def test_port_channel_vlan_members_trunk_members_update(self):
         # Creating vlan for testing
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         vlan_1_name = "Vlan4"
         vlan_1_id = 4
         vlan_2_name = "Vlan5"
@@ -752,7 +752,7 @@ class TestPortChnl(TestORCA):
         Test case for adding vlan members in port channel in series with hyphen.
         eg . {trunk_vlans: [1, "3..5"], access_vlan: 4}
         """
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         self.remove_mclag(device_ip)
         port_channel = "PortChannel103"
         vlan_1_name = "Vlan3"
@@ -868,7 +868,7 @@ class TestPortChnl(TestORCA):
         Test case for adding vlan members in port channel in series with hyphen.
         eg . {trunk_vlans: [1, "3-5"], access_vlan: 4}
         """
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         self.remove_mclag(device_ip)
         port_channel = "PortChannel103"
         vlan_1_name = "Vlan3"
@@ -980,7 +980,7 @@ class TestPortChnl(TestORCA):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_delete_port_channel_given_vlan_members(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         self.remove_mclag(device_ip)
         port_channel = "PortChannel103"
         vlan_1_name = "Vlan3"
@@ -1145,7 +1145,7 @@ class TestPortChnl(TestORCA):
 
     def test_port_channel_vlan_member_switch_from_access_to_trunk(self):
         # Creating vlan for testing
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         vlan_1_name = "Vlan4"
         vlan_1_id = 4
         vlan_2_name = "Vlan5"
@@ -1270,7 +1270,7 @@ class TestPortChnl(TestORCA):
 
     def test_port_channel_vlan_member_switch_from_trunk_to_access(self):
         # Creating vlan for testing
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         vlan_1_name = "Vlan4"
         vlan_1_id = 4
         vlan_2_name = "Vlan5"

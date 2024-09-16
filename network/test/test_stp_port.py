@@ -76,10 +76,10 @@ class TestSTPPort(TestORCA):
         )
 
     def test_stp_port_config(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
 
         # adding interface member
-        ether_1 = self.ether_names[0]
+        ether_1 = self.device_ips[device_ip]["interfaces"][0]
         itf_request_body = [
             {
                 "mgt_ip": device_ip,
@@ -108,7 +108,7 @@ class TestSTPPort(TestORCA):
         self.perform_add_port_chnl([port_channel_request_body])
 
         # adding stp config
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         stp_global_request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],
@@ -166,7 +166,7 @@ class TestSTPPort(TestORCA):
         self.perform_delete_stp_global(request_body=stp_global_request_body)
 
     def test_stp_port_bpdu_guard(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
 
         # adding port channel
         port_channel_1 = "PortChannel104"
@@ -182,7 +182,7 @@ class TestSTPPort(TestORCA):
         self.perform_add_port_chnl([port_channel_request_body])
 
         # adding stp config
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         stp_global_request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["MSTP"],
@@ -245,7 +245,7 @@ class TestSTPPort(TestORCA):
         self.perform_delete_stp_global(request_body=stp_global_request_body)
 
     def test_stp_port_bpdu_filter(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
 
         # adding port channel
         port_channel_1 = "PortChannel104"
@@ -261,7 +261,7 @@ class TestSTPPort(TestORCA):
         self.perform_add_port_chnl([port_channel_request_body])
 
         # adding stp config
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         stp_global_request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],
@@ -325,7 +325,7 @@ class TestSTPPort(TestORCA):
         self.perform_delete_stp_global(request_body=stp_global_request_body)
 
     def test_stp_port_portfast(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
 
         # adding port channel
         port_channel_1 = "PortChannel104"
@@ -341,7 +341,7 @@ class TestSTPPort(TestORCA):
         self.perform_add_port_chnl([port_channel_request_body])
 
         # adding stp config
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         stp_global_request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],
@@ -406,7 +406,7 @@ class TestSTPPort(TestORCA):
         self.perform_delete_stp_global(request_body=stp_global_request_body)
 
     def test_stp_port_uplink_fast(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
 
         # adding port channel
         port_channel_1 = "PortChannel104"
@@ -422,7 +422,7 @@ class TestSTPPort(TestORCA):
         self.perform_add_port_chnl([port_channel_request_body])
 
         # adding stp config
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         stp_global_request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],
@@ -484,7 +484,7 @@ class TestSTPPort(TestORCA):
         self.perform_delete_stp_global(request_body=stp_global_request_body)
 
     def test_stp_port_stp_enabled(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
 
         # adding port channel
         port_channel_1 = "PortChannel104"
@@ -500,7 +500,7 @@ class TestSTPPort(TestORCA):
         self.perform_add_port_chnl([port_channel_request_body])
 
         # adding stp config
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         stp_global_request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],
@@ -563,7 +563,7 @@ class TestSTPPort(TestORCA):
         self.perform_delete_stp_global(request_body=stp_global_request_body)
 
     def test_stp_port_edge_port(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
 
         # adding port channel
         port_channel_1 = "PortChannel104"
@@ -579,7 +579,7 @@ class TestSTPPort(TestORCA):
         self.perform_add_port_chnl([port_channel_request_body])
 
         # adding stp config
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         stp_global_request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["MSTP"],
@@ -644,7 +644,7 @@ class TestSTPPort(TestORCA):
         self.perform_delete_stp_global(request_body=stp_global_request_body)
 
     def test_stp_port_link_type(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
 
         # adding port channel
         port_channel_1 = "PortChannel104"
@@ -660,7 +660,7 @@ class TestSTPPort(TestORCA):
         self.perform_add_port_chnl([port_channel_request_body])
 
         # adding stp config
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         stp_global_request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["MSTP"],
@@ -725,7 +725,7 @@ class TestSTPPort(TestORCA):
         self.perform_delete_stp_global(request_body=stp_global_request_body)
 
     def test_stp_port_guard(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
 
         # adding port channel
         port_channel_1 = "PortChannel104"
@@ -741,7 +741,7 @@ class TestSTPPort(TestORCA):
         self.perform_add_port_chnl([port_channel_request_body])
 
         # adding stp config
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         stp_global_request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["MSTP"],
@@ -807,7 +807,7 @@ class TestSTPPort(TestORCA):
         self.perform_delete_stp_global(request_body=stp_global_request_body)
 
     def test_stp_port_bpdu_guard_port_shutdown(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
 
         # adding port channel
         port_channel_1 = "PortChannel104"
@@ -823,7 +823,7 @@ class TestSTPPort(TestORCA):
         self.perform_add_port_chnl([port_channel_request_body])
 
         # adding stp config
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         stp_global_request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],
@@ -888,7 +888,7 @@ class TestSTPPort(TestORCA):
         self.perform_delete_stp_global(request_body=stp_global_request_body)
 
     def test_stp_port_cost(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
 
         # adding port channel
         port_channel_1 = "PortChannel104"
@@ -904,7 +904,7 @@ class TestSTPPort(TestORCA):
         self.perform_add_port_chnl([port_channel_request_body])
 
         # adding stp config
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         stp_global_request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],
@@ -969,7 +969,7 @@ class TestSTPPort(TestORCA):
         self.perform_delete_stp_global(request_body=stp_global_request_body)
 
     def test_stp_port_port_priority(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
 
         # adding port channel
         port_channel_1 = "PortChannel104"
@@ -985,7 +985,7 @@ class TestSTPPort(TestORCA):
         self.perform_add_port_chnl([port_channel_request_body])
 
         # adding stp config
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         stp_global_request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],
@@ -1050,7 +1050,7 @@ class TestSTPPort(TestORCA):
         self.perform_delete_stp_global(request_body=stp_global_request_body)
 
     def test_stp_discovery(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
 
         # adding port channel
         port_channel_1 = "PortChannel104"
@@ -1066,7 +1066,7 @@ class TestSTPPort(TestORCA):
         self.perform_add_port_chnl([port_channel_request_body])
 
         # adding stp config
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         stp_global_request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],

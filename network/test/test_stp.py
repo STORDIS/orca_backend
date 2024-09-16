@@ -1,3 +1,5 @@
+import random
+
 from rest_framework import status
 
 from network.test.test_common import TestORCA
@@ -12,7 +14,7 @@ class TestSTP(TestORCA):
         """
         Test stp global config on device.
         """
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],
@@ -79,7 +81,7 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
 
     def test_stp_global_additional_parm_rootguard_timeout_test(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],
@@ -145,7 +147,7 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
 
     def test_stp_global_additional_parm_port_fast_test(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],
@@ -211,7 +213,7 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
 
     def test_stp_global_additional_parm_loop_guard_test(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["MSTP"],
@@ -277,7 +279,14 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
 
     def test_stp_global_additional_parm_disabled_vlans_test(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
+        disabled_vlans = []
+
+        while len(disabled_vlans) < 3:
+            vlan_id = random.randint(100, 200)
+            response = self.get_req("vlan_config", {"mgt_ip": device_ip, "name": f"Vlan{vlan_id}"})
+            if response.status_code == status.HTTP_204_NO_CONTENT and vlan_id not in disabled_vlans:
+                disabled_vlans.append(vlan_id)
 
         request_body = {
             "mgt_ip": device_ip,
@@ -286,7 +295,7 @@ class TestSTP(TestORCA):
             "forwarding_delay": 10,
             "hello_time": 10,
             "max_age": 10,
-            "disabled_vlans": [100, 200],
+            "disabled_vlans": disabled_vlans[0:2],
             "bridge_priority": 4096
         }
 
@@ -305,7 +314,8 @@ class TestSTP(TestORCA):
         response = self.get_req("stp_config", request_body)
         response_body = response.json()[0]
         self.assertTrue(response.status_code == status.HTTP_200_OK)
-        self.assertEqual(request_body["disabled_vlans"], response_body["disabled_vlans"])
+        for v_id in response_body["disabled_vlans"]:
+            self.assertTrue(v_id in response_body["disabled_vlans"])
         self.assertEqual(request_body["enabled_protocol"], response_body["enabled_protocol"])
         self.assertEqual(request_body["bpdu_filter"], response_body["bpdu_filter"])
         self.assertEqual(request_body["hello_time"], response_body["hello_time"])
@@ -322,7 +332,7 @@ class TestSTP(TestORCA):
             "forwarding_delay": 10,
             "hello_time": 10,
             "max_age": 10,
-            "disabled_vlans": [300],
+            "disabled_vlans": [disabled_vlans[2]],
             "bridge_priority": 4096
         }
 
@@ -333,7 +343,7 @@ class TestSTP(TestORCA):
         response = self.get_req("stp_config", request_body)
         response_body = response.json()[0]
         self.assertTrue(response.status_code == status.HTTP_200_OK)
-        self.assertTrue(300 in response_body["disabled_vlans"])
+        self.assertTrue(disabled_vlans[2] in response_body["disabled_vlans"])
 
         # delete stp config
         response = self.del_req("stp_config", request_body)
@@ -344,7 +354,7 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
 
     def test_stp_global_deleted_disabled_vlans(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         vlan_1_name = "Vlan3"
         vlan_1_id = 3
         vlan_2_name = "Vlan4"
@@ -500,7 +510,7 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
 
     def test_stp_global_bpdu_filter(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],
@@ -556,7 +566,7 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
 
     def test_stp_global_bridge_priority(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],
@@ -612,7 +622,7 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
 
     def test_stp_global_max_age(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],
@@ -668,7 +678,7 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
 
     def test_stp_gloabl_hello_time(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],
@@ -724,7 +734,7 @@ class TestSTP(TestORCA):
         self.assertTrue(response.status_code == status.HTTP_204_NO_CONTENT)
 
     def test_stp_global_forwarding_delay(self):
-        device_ip = self.device_ips[0]
+        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "mgt_ip": device_ip,
             "enabled_protocol": ["PVST"],

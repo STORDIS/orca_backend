@@ -10,6 +10,7 @@ urlpatterns = [
     path("stp_port", stp_port.stp_port_config, name="stp_port"),
     path("stp_discovery", stp_port.stp_discovery, name="stp_discovery"),
     path("stp_vlan", stp_vlan.stp_vlan_config, name="stp_vlan_config"),
+    path("breakout", interface.interface_breakout, name="breakout"),
     re_path("del_db", views.delete_db, name="del_db"),
     re_path("discover", views.discover, name="discover"),
     re_path("devices", views.device_list, name="device"),

@@ -15,8 +15,7 @@ class TestORCA(APITestCase):
     Test utility functions
     """
 
-    device_ips = []
-    ether_names = []
+    device_ips = {}
 
     sync_done = False
 
@@ -36,19 +35,29 @@ class TestORCA(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         for device in response.json():
-            self.device_ips.append(device["mgt_ip"])
-
-        if self.device_ips:
             response = self.get_req(
-                "device_interface_list", {"mgt_ip": self.device_ips[0]}
+                "device_interface_list", {"mgt_ip": device["mgt_ip"]}
             )
+            interfaces = []
             intfs = response.data
             if not intfs or not isinstance(intfs, list):
                 return
-            while len(self.ether_names) < 4:
+            while len(interfaces) < 4:
                 if (ifc := intfs.pop()) and ifc["name"].startswith("Ethernet"):
-                    if len(ifc["alias"].split("/")) <= 2:
-                        self.ether_names.append(ifc["name"])
+                    # Ethernet124 and Ethernet125 do not support all tests
+                    # Device IP: 10.10.131.111
+                    # Platform: x86_64-accton_as7726_32x-r0
+                    # When the interface FEC is FEC_RS, the speed cannot be changed. so skip it.
+                    # When valid_speeds is None, the interface adv_speed cannot be changed. so skip it.
+                    if ifc.get("fec") == "FEC_RS" or ifc.get("valid_speeds") is None:
+                        continue
+                    interfaces.append(ifc["name"])
+            breakout_eths = []
+            while not len(breakout_eths):
+                if (ifc := intfs.pop()) and ifc["name"].startswith("Ethernet"):
+                    if ifc.get("breakout_supported"):
+                        breakout_eths.append(ifc["name"])
+            self.device_ips[device["mgt_ip"]] = {"interfaces": interfaces, "breakouts": breakout_eths}
 
         if not TestORCA.sync_done:
             # Resync the interfaces, because may be their state has been modified when ORCA was not up,
@@ -59,7 +68,7 @@ class TestORCA(APITestCase):
             # In this case subscription response will not be generated .
             # Hence resulting in test failure.
             for ip in self.device_ips:
-                for if_name in self.ether_names:
+                for if_name in self.device_ips[ip]["interfaces"]:
                     response1 = self.post_req(
                         "interface_resync", {"mgt_ip": ip, "name": if_name}
                     )
