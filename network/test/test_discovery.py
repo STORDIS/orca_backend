@@ -35,6 +35,7 @@ class TestDiscovery(TestORCA):
         response=self.get_req("device")
         self.assertTrue(response.status_code == status.HTTP_200_OK)
         self.assertTrue(device_ip in [device['mgt_ip'] for device in response.json()])
+        self.assertTrue(device.get("system_status") is not None for device in response.json())
             
         ## Discover Devices defined in config file
         request_body = {

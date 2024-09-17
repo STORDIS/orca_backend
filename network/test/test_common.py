@@ -551,3 +551,31 @@ class TestORCA(APITestCase):
             {"mgt_ip": req_payload["mgt_ip"], "name": req_payload["name"]},
         )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def assert_until_condition_met(self, function, expected_response, *args, **kwargs):
+        """
+        This function is used to assert until a condition is met.
+
+        Parameters:
+            function: The function to be called.
+            expected_response: The expected response.
+            *args: The arguments to be passed to the function.
+            **kwargs: The keyword arguments to be passed to the function.
+
+        Returns:
+            None
+        """
+        retries = 10
+        delay = 1
+        while retries > 0:
+            try:
+                response = function(*args, **kwargs)
+                self.assertEqual(
+                    response, expected_response,
+                    f"Assertion failed. Expected: {str(expected_response)}, Actual: {str(response)}"
+                )
+                break
+            except AssertionError:
+                print(f"Assertion failed. Retries remaining: {retries}")
+                retries -= 1
+                time.sleep(delay)

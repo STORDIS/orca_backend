@@ -1249,7 +1249,7 @@ class TestBGP(TestORCA):
 
         # adding neighbor to ethernet subinterface to device 1
         neighbor_ip_1 = "1.1.1.1"
-        ether_name = self.device_ips[device_ip_1]["interfaces"][0]
+        ether_name = self.device_ips[device_ip_1]["interfaces"][1]
         prefix_len = 24
         response = self.get_req(
             "device_interface_list", {"mgt_ip": device_ip_2, "name": ether_name}
