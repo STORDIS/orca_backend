@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 
 from network.models import ReDiscoveryConfig
-from network.serializers import ReDiscoveryConfigSerializer
+from network.scheduler import add_scheduler, remove_scheduler
 from orca_nw_lib.device import get_device_details
 from orca_nw_lib.discovery import trigger_discovery, trigger_discovery_by_feature
 from log_manager.decorators import log_request
@@ -163,6 +163,7 @@ def discover_by_feature(request):
 
 
 @api_view(["GET", "PUT", "DELETE"])
+@log_request
 def discovery_scheduler(request):
     """
     This function is an API view that handles the HTTP GET, PUT, and DELETE requests for the 'discovery_scheduler' endpoint.
@@ -178,29 +179,54 @@ def discovery_scheduler(request):
         data = ReDiscoveryConfig.objects.filter(
             device_ip=device_ip
         ).values()
-        return Response(data, status=status.HTTP_200_OK)
+        return (
+            Response(data, status=status.HTTP_200_OK)
+            if data
+            else Response({}, status=status.HTTP_204_NO_CONTENT)
+        )
 
     if request.method == "PUT":
-        device_ip = request.data.get("mgt_ip", None)
-        if not device_ip:
-            _logger.error("Required field device mgt_ip not found.")
-            return Response(
-                {"result": "Required field device mgt_ip not found."},
-                status=status.HTTP_400_BAD_REQUEST,
+        req_data_list = (
+            request.data if isinstance(request.data, list) else [request.data]
+        )
+        for req_data in req_data_list:
+            device_ip = req_data.get("mgt_ip", None)
+            if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
+                return Response(
+                    {"result": "Required field device mgt_ip not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            interval = req_data.get("interval", None)
+            if not interval:
+                _logger.error("Required field interval not found.")
+                return Response(
+                    {"result": "Required field interval not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            obj, created = ReDiscoveryConfig.objects.update_or_create(
+                device_ip=device_ip, defaults={
+                    "interval": interval
+                }
             )
-        serializer = ReDiscoveryConfigSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            add_scheduler(device_ip)
+            if created:
+                return Response({"result": "create success"}, status=status.HTTP_200_OK)
+            else:
+                return Response({"result": "update success"}, status=status.HTTP_200_OK)
 
     if request.method == "DELETE":
-        device_ip = request.data.get("mgt_ip", None)
-        if not device_ip:
-            _logger.error("Required field device mgt_ip not found.")
-            return Response(
-                {"result": "Required field device mgt_ip not found."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        ReDiscoveryConfig.objects.filter(device_ip=device_ip).delete()
-        return Response({"result": "success"}, status=status.HTTP_200_OK)
+        req_data_list = (
+            request.data if isinstance(request.data, list) else [request.data]
+        )
+        for req_data in req_data_list:
+            device_ip = req_data.get("mgt_ip", None)
+            if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
+                return Response(
+                    {"result": "Required field device mgt_ip not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            ReDiscoveryConfig.objects.filter(device_ip=device_ip).delete()
+            remove_scheduler(device_ip)
+            return Response({"result": "delete success"}, status=status.HTTP_200_OK)
