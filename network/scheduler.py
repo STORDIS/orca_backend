@@ -1,3 +1,4 @@
+import threading
 from datetime import datetime
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -7,10 +8,11 @@ from orca_nw_lib.discovery import trigger_discovery
 from network.models import ReDiscoveryConfig
 
 _logger = get_backend_logger()
+scheduler = BackgroundScheduler()
+discovery_lock = threading.Lock()
 
 
 def add_scheduler(device_ip):
-    scheduler = BackgroundScheduler()
     obj = ReDiscoveryConfig.objects.get(device_ip=device_ip)
     scheduler.add_job(
         scheduled_discovery, 'interval',
@@ -20,11 +22,11 @@ def add_scheduler(device_ip):
         id=f"job_{device_ip}",
         replace_existing=True
     )
-    scheduler.start()
+    if not scheduler.running:
+        scheduler.start()
 
 
 def remove_scheduler(device_ip):
-    scheduler = BackgroundScheduler()
     job_id = f"job_{device_ip}"
     jobs = scheduler.get_jobs()
     if job_id in [job.id for job in jobs]:
@@ -33,7 +35,8 @@ def remove_scheduler(device_ip):
 
 def scheduled_discovery(device_ip):
     try:
-        trigger_discovery(device_ip)
+        with discovery_lock:
+            trigger_discovery(device_ip)
     except Exception as e:
         _logger.error(e)
     obj = ReDiscoveryConfig.objects.get(device_ip=device_ip)

@@ -63,6 +63,7 @@ MIDDLEWARE = [
     ##Added
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'network.middleware.BlockPutDuringDiscoveryMiddleware'
 ]
 
 #Added
