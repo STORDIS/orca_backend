@@ -71,8 +71,8 @@ def scheduled_discovery(device_ip: str):
     except Exception as e:
         _logger.error(f"Failed to schedule discovery on device {device_ip}, Reason: {e}")
     finally:
-        rediscovery_obj = ReDiscoveryConfig.objects.get(device_ip=device_ip)
+        OrcaState.update_state(device_ip, State.AVAILABLE)
+        rediscovery_obj = ReDiscoveryConfig.objects.filter(device_ip=device_ip).first()
         if rediscovery_obj:
             rediscovery_obj.last_discovered = datetime.datetime.now(tz=datetime.timezone.utc)
             rediscovery_obj.save()
-        OrcaState.update_state(device_ip, State.AVAILABLE)
