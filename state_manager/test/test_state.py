@@ -51,7 +51,8 @@ class TestState(TestCommon):
 
     @classmethod
     def tearDownClass(cls):
-        scheduler.shutdown()
+        if scheduler.running:
+            scheduler.shutdown()
 
     def test_discovery_state(self):
         response = self.client.get(reverse("orca_state", kwargs={"device_ip": "127.0.0.1"}), )
@@ -87,6 +88,7 @@ class TestState(TestCommon):
 
         request = self.factory.put(path=reverse('device_interface_list'), data={"mgt_ip": "127.0.0.1"}, format="json")
         middleware = BlockPutMiddleware(lambda req: put_stub(req, self.client))
+
         response = middleware(request)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -169,7 +171,6 @@ class TestState(TestCommon):
 
         response = self.client.get(reverse("discover_scheduler"), {"mgt_ip": device_ip})
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-
 
     def test_schedule_discovery(self):
 

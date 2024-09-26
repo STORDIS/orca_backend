@@ -11,6 +11,16 @@ _logger = get_backend_logger()
 
 @api_view(["GET"])
 def get_orca_state(request, device_ip):
+    """
+    A function that returns the state of the device.
+
+    Parameters:
+        request (HttpRequest): The HTTP request object.
+        device_ip (str): The IP address of the device.
+
+    Returns:
+        Response: The HTTP response object with the result of the state retrieval operation.
+    """
     if request.method == "GET":
         if not device_ip:
             _logger.error("Required field device mgt_ip not found.")

@@ -10,6 +10,15 @@ scheduler = BackgroundScheduler()
 
 
 def add_scheduler(device_ip, interval):
+    """ Adds a new scheduler job for the given device.
+
+    Args:
+        device_ip (str): Device IP address.
+        interval (int): Interval in minutes.
+
+    Returns:
+        None
+    """
     scheduler.add_job(
         func=scheduled_discovery,
         trigger='interval',
@@ -24,13 +33,31 @@ def add_scheduler(device_ip, interval):
 
 
 def remove_scheduler(device_ip):
+    """
+    Removes a scheduler job for the given device.
+
+    Args:
+        device_ip (str): Device IP address.
+
+    Returns:
+        None
+    """
     job_id = f"job_{device_ip}"
     jobs = scheduler.get_jobs()
     if job_id in [job.id for job in jobs]:
         scheduler.remove_job(f"job_{device_ip}")
 
 
-def scheduled_discovery(device_ip):
+def scheduled_discovery(device_ip: str):
+    """
+    Schedules discovery for the given device.
+
+    Args:
+        device_ip (str): Device IP address.
+
+    Returns:
+        None
+    """
     try:
         obj, created = OrcaState.objects.get_or_create(
             device_ip=device_ip, defaults={

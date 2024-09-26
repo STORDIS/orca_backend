@@ -191,6 +191,7 @@ def discover_scheduler(request):
         )
 
     if request.method == "PUT":
+        result = []
         req_data_list = (
             request.data if isinstance(request.data, list) else [request.data]
         )
@@ -209,16 +210,15 @@ def discover_scheduler(request):
                     {"result": "Required field interval not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            obj, created = ReDiscoveryConfig.objects.update_or_create(
+            ReDiscoveryConfig.objects.update_or_create(
                 device_ip=device_ip, defaults={
                     "interval": interval
                 }
             )
             add_scheduler(device_ip, interval)
-            if created:
-                return Response({"result": "create success"}, status=status.HTTP_200_OK)
-            else:
-                return Response({"result": "update success"}, status=status.HTTP_200_OK)
+            _logger.info("scheduler created for device: %s", device_ip)
+            add_msg_to_list(result, get_success_msg(request))
+        return Response({"result": result}, status=status.HTTP_200_OK)
 
     if request.method == "DELETE":
         req_data_list = (
