@@ -221,6 +221,7 @@ def discover_scheduler(request):
         return Response({"result": result}, status=status.HTTP_200_OK)
 
     if request.method == "DELETE":
+        result = []
         req_data_list = (
             request.data if isinstance(request.data, list) else [request.data]
         )
@@ -234,7 +235,9 @@ def discover_scheduler(request):
                 )
             ReDiscoveryConfig.objects.filter(device_ip=device_ip).delete()
             remove_scheduler(device_ip)
-            return Response({"result": "delete success"}, status=status.HTTP_200_OK)
+            add_msg_to_list(result, get_success_msg(request))
+            _logger.info("scheduler deleted for device: %s", device_ip)
+        return Response({"result": result}, status=status.HTTP_200_OK)
 
 
 def remove_schedular_and_state(device_ip: str):
