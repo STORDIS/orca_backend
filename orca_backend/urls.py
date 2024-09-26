@@ -23,6 +23,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("auth/", include("authentication.urls")),
     path("logs/", include("log_manager.urls")),
+    path("state/", include("state_manager.urls")),
 ]
 
 if 'orcask' in INSTALLED_APPS:

@@ -1,3 +1,4 @@
+import sys
 from django.apps import AppConfig
 
 
@@ -6,8 +7,9 @@ class NetworkConfig(AppConfig):
     name = "network"
 
     def ready(self):
-        from network.scheduler import add_scheduler
-        from network.models import ReDiscoveryConfig
-        objs = ReDiscoveryConfig.objects.all()
-        for obj in objs:
-            add_scheduler(obj.device_ip)
+        if 'runserver' in sys.argv:
+            from network.models import ReDiscoveryConfig
+            from network.scheduler import add_scheduler
+            objs = ReDiscoveryConfig.objects.all()
+            for obj in objs:
+                add_scheduler(obj.device_ip, obj.interval)

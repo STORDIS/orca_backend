@@ -1,22 +1,19 @@
-import threading
-from datetime import datetime
-
+import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
-
 from log_manager.logger import get_backend_logger
 from orca_nw_lib.discovery import trigger_discovery
 from network.models import ReDiscoveryConfig
+from state_manager.models import OrcaState, State
 
 _logger = get_backend_logger()
 scheduler = BackgroundScheduler()
-discovery_lock = threading.Lock()
 
 
-def add_scheduler(device_ip):
-    obj = ReDiscoveryConfig.objects.get(device_ip=device_ip)
+def add_scheduler(device_ip, interval):
     scheduler.add_job(
-        scheduled_discovery, 'interval',
-        minutes=obj.interval,
+        func=scheduled_discovery,
+        trigger='interval',
+        minutes=interval,
         max_instances=1,
         args=[device_ip],
         id=f"job_{device_ip}",
@@ -35,11 +32,20 @@ def remove_scheduler(device_ip):
 
 def scheduled_discovery(device_ip):
     try:
-        with discovery_lock:
+        obj, created = OrcaState.objects.get_or_create(
+            device_ip=device_ip, defaults={
+                "state": str(State.AVAILABLE),
+                "last_updated_time": datetime.datetime.now(datetime.timezone.utc)
+            }
+        )
+        if obj.state == str(State.AVAILABLE):
+            OrcaState.update_state(device_ip, State.SCHEDULED_DISCOVERY_IN_PROGRESS)
             trigger_discovery(device_ip)
     except Exception as e:
-        _logger.error(e)
-    obj = ReDiscoveryConfig.objects.get(device_ip=device_ip)
-    if obj:
-        obj.last_discovered = datetime.now()
-        obj.save()
+        _logger.error(f"Failed to schedule discovery on device {device_ip}, Reason: {e}")
+    finally:
+        rediscovery_obj = ReDiscoveryConfig.objects.get(device_ip=device_ip)
+        if rediscovery_obj:
+            rediscovery_obj.last_discovered = datetime.datetime.now(tz=datetime.timezone.utc)
+            rediscovery_obj.save()
+        OrcaState.update_state(device_ip, State.AVAILABLE)

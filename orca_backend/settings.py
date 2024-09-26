@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'authentication',
     'rest_framework.authtoken',
     'log_manager',
+    'state_manager',
 ]
 
 #check if orcask module is installed 
@@ -63,7 +64,7 @@ MIDDLEWARE = [
     ##Added
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'network.middleware.BlockPutDuringDiscoveryMiddleware'
+    'state_manager.middleware.BlockPutMiddleware'
 ]
 
 #Added

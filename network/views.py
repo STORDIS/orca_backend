@@ -1,4 +1,7 @@
 """ View for network. """
+import time
+
+from django.forms import model_to_dict
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -10,6 +13,7 @@ from orca_nw_lib.discovery import trigger_discovery, trigger_discovery_by_featur
 from log_manager.decorators import log_request
 from log_manager.logger import get_backend_logger
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg
+from state_manager.models import OrcaState
 
 _logger = get_backend_logger()
 
@@ -49,6 +53,7 @@ def delete_db(request):
                 else:
                     add_msg_to_list(result, get_failure_msg(Exception("Failed to Delete"), request))
                     _logger.error("Failed to delete device: %s", device_ip)
+                remove_schedular_and_state(device_ip=device_ip)
 
         except Exception as e:
             return Response(
@@ -164,9 +169,9 @@ def discover_by_feature(request):
 
 @api_view(["GET", "PUT", "DELETE"])
 @log_request
-def discovery_scheduler(request):
+def discover_scheduler(request):
     """
-    This function is an API view that handles the HTTP GET, PUT, and DELETE requests for the 'discovery_scheduler' endpoint.
+    This function is an API view that handles the HTTP GET, PUT, and DELETE requests for the 'discover_scheduler' endpoint.
     """
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip", None)
@@ -178,9 +183,9 @@ def discovery_scheduler(request):
             )
         data = ReDiscoveryConfig.objects.filter(
             device_ip=device_ip
-        ).values()
+        ).first()
         return (
-            Response(data, status=status.HTTP_200_OK)
+            Response(model_to_dict(data), status=status.HTTP_200_OK)
             if data
             else Response({}, status=status.HTTP_204_NO_CONTENT)
         )
@@ -209,7 +214,7 @@ def discovery_scheduler(request):
                     "interval": interval
                 }
             )
-            add_scheduler(device_ip)
+            add_scheduler(device_ip, interval)
             if created:
                 return Response({"result": "create success"}, status=status.HTTP_200_OK)
             else:
@@ -230,3 +235,33 @@ def discovery_scheduler(request):
             ReDiscoveryConfig.objects.filter(device_ip=device_ip).delete()
             remove_scheduler(device_ip)
             return Response({"result": "delete success"}, status=status.HTTP_200_OK)
+
+
+def remove_schedular_and_state(device_ip: str):
+    """
+    Remove scheduler and state for the given device from database.
+
+    Parameters:
+        device_ip (str): The IP address of the device.
+
+    Returns:
+        None
+    """
+    if device_ip:
+        # Removing scheduler
+        ReDiscoveryConfig.objects.filter(device_ip=device_ip).delete()
+        remove_scheduler(device_ip)
+
+        # Removing state
+        OrcaState.objects.filter(device_ip=device_ip).delete()
+    else:
+        # Removing all schedular of all devices
+        schedule_objs = ReDiscoveryConfig.objects.all()
+        for i in schedule_objs:
+            i.delete()
+            remove_scheduler(device_ip)
+
+        # Removing all state of all devices
+        state_objs = OrcaState.objects.all()
+        for i in state_objs:
+            i.delete()
