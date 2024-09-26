@@ -1,4 +1,5 @@
 """ View for network. """
+import datetime
 import time
 
 from django.forms import model_to_dict
@@ -7,7 +8,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 
 from network.models import ReDiscoveryConfig
-from network.scheduler import add_scheduler, remove_scheduler, scheduler
+from network.scheduler import add_scheduler, remove_scheduler
 from orca_nw_lib.device import get_device_details
 from orca_nw_lib.discovery import trigger_discovery, trigger_discovery_by_feature
 from log_manager.decorators import log_request
@@ -212,7 +213,8 @@ def discover_scheduler(request):
                 )
             ReDiscoveryConfig.objects.update_or_create(
                 device_ip=device_ip, defaults={
-                    "interval": interval
+                    "interval": interval,
+                    "last_discovered": datetime.datetime.now(tz=datetime.timezone.utc)
                 }
             )
             add_scheduler(device_ip, interval)
