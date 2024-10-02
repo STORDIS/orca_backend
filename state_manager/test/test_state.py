@@ -1,9 +1,13 @@
 import asyncio
+import base64
 import datetime
+import json
 import time
 
 import pytest
+import requests
 from django.urls import reverse
+from orca_nw_lib.utils import get_device_username, get_device_password
 from rest_framework import permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -100,7 +104,7 @@ class TestState(TestCommon):
     @pytest.mark.django_db
     def test_schedule_discovery_state(self):
         response = self.client.get(reverse("device"))
-        if response.data:
+        if not response.data:
             response = self.client.put(
                 path=reverse("discover"),
                 data={"discover_from_config": True},
@@ -121,7 +125,7 @@ class TestState(TestCommon):
             path=reverse("discover_scheduler"),
             data={
                 "mgt_ip": device_ip,
-                "interval": 1
+                "interval": 30
             },
             format="json"
         )
@@ -130,15 +134,15 @@ class TestState(TestCommon):
         # checking db
         response = self.client.get(reverse("discover_scheduler"), {"mgt_ip": device_ip})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.json().get("interval"), 1)
+        self.assertEqual(response.json().get("interval"), 30)
         self.assertEqual(response.json().get("device_ip"), device_ip)
 
-        job = scheduler.get_job("job_{}".format(device_ip))
-        next_run_time = job.next_run_time
-        print("time now: ", str(datetime.datetime.now(datetime.timezone.utc)))
-        print("next run time", str(next_run_time))
-        while datetime.datetime.now(datetime.timezone.utc) < next_run_time:
-            time.sleep(10)
+        job = scheduler.get_job(f"job_{device_ip}")
+        job.modify(
+            next_run_time=datetime.datetime.now() + datetime.timedelta(seconds=5)
+        )
+        time.sleep(10)
+
         response = self.client.get(reverse("orca_state", kwargs={"device_ip": device_ip}), )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json().get("state"), str(State.SCHEDULED_DISCOVERY_IN_PROGRESS))
@@ -175,7 +179,7 @@ class TestState(TestCommon):
     def test_schedule_discovery(self):
 
         response = self.client.get(reverse("device"))
-        if response.data:
+        if not response.data:
             response = self.client.put(
                 path=reverse("discover"),
                 data={"discover_from_config": True},
@@ -208,7 +212,7 @@ class TestState(TestCommon):
             path=reverse("discover_scheduler"),
             data={
                 "mgt_ip": device_ip,
-                "interval": 1
+                "interval": 30
             },
             format="json"
         )
@@ -217,10 +221,14 @@ class TestState(TestCommon):
         # checking db
         response = self.client.get(reverse("discover_scheduler"), {"mgt_ip": device_ip})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.json().get("interval"), 1)
+        self.assertEqual(response.json().get("interval"), 30)
         self.assertEqual(response.json().get("device_ip"), device_ip)
 
-        time.sleep(80)
+        job = scheduler.get_job(f"job_{device_ip}")
+        job.modify(
+            next_run_time=datetime.datetime.now() + datetime.timedelta(seconds=5)
+        )
+        time.sleep(10)
         response = self.client.get(reverse("orca_state", kwargs={"device_ip": device_ip}), )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json().get("device_ip"), device_ip)
@@ -245,4 +253,140 @@ class TestState(TestCommon):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response = self.client.get(reverse("discover_scheduler"), {"mgt_ip": device_ip})
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_sync_feature(self):
+        response = self.client.get(reverse("device"))
+        if not response.data:
+            response = self.client.put(
+                path=reverse("discover"),
+                data={"discover_from_config": True},
+                format="json"
+            )
+            if not response or response.get("result") == "Fail":
+                self.fail("Failed to discover devices")
+            response = self.client.get(reverse("device"))
+
+        assert response.status_code == status.HTTP_200_OK
+        device_ip = response.json()[0].get("mgt_ip")
+
+
+        # add vlan
+        vlan = "Vlan6"
+        self.del_vlan(
+            {"mgt_ip": device_ip, "name": vlan}
+        )
+
+        req_body = {
+            "openconfig-interfaces:interfaces": {
+                "interface": [{"name": vlan, "config": {"name": vlan}}]
+            }
+        }
+
+        url = f"https://{device_ip}/restconf/data/openconfig-interfaces:interfaces"
+
+        auth_string = base64.b64encode(
+            f"{get_device_username()}:{get_device_password()}".encode()
+        ).decode()
+        headers = {
+            "Authorization": f"Basic {auth_string}",
+            "Content-Type": "application/yang-data+json",
+        }
+
+        # checking orca state is available
+        response = self.client.get(reverse("orca_state", kwargs={"device_ip": device_ip}), )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # add vlan using restconf
+        response = requests.patch(
+            url, headers=headers, data=json.dumps(req_body), verify=False
+        )
+
+        # checking before sync
+        response = self.client.get(
+            reverse("vlan_config"),
+            {"mgt_ip": device_ip, "name": vlan},
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        response = self.client.put(
+            path=reverse("discover_scheduler"),
+            data={
+                "mgt_ip": device_ip,
+                "interval": 30
+            },
+            format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # checking db
+        response = self.client.get(reverse("discover_scheduler"), {"mgt_ip": device_ip})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json().get("interval"), 30)
+        self.assertEqual(response.json().get("device_ip"), device_ip)
+
+        job = scheduler.get_job(f"job_{device_ip}")
+        job.modify(
+            next_run_time=datetime.datetime.now() + datetime.timedelta(seconds=5)
+        )
+        time.sleep(10)
+        response = self.client.get(reverse("orca_state", kwargs={"device_ip": device_ip}), )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        state = response.json().get("state")
+        self.assertEqual(state, str(State.SCHEDULED_DISCOVERY_IN_PROGRESS))
+        # wait for scheduled discovery to complete
+        while state != str(State.AVAILABLE):
+            response = self.client.get(reverse("orca_state", kwargs={"device_ip": device_ip}), )
+            state = response.json().get("state")
+            time.sleep(5)
+
+        response = self.client.get(
+            reverse("vlan_config"), {"mgt_ip": device_ip, "name": vlan}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json().get("name"), vlan)
+
+        # clean up
+        # delete vlan
+        self.del_vlan({"mgt_ip": device_ip, "name": vlan})
+        response = self.client.delete(reverse("discover_scheduler"), {"mgt_ip": device_ip})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.client.get(reverse("discover_scheduler"), {"mgt_ip": device_ip})
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def del_vlan(self, req_payload):
+        response = self.client.delete(
+            reverse("vlan_ip_remove"),
+            data={"mgt_ip": req_payload["mgt_ip"], "name": req_payload["name"]},
+            format="json",
+        )
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
+                if res != "\n"
+            )
+        )
+        response = self.client.delete(
+            reverse("vlan_config"),
+            data={"mgt_ip": req_payload["mgt_ip"], "name": req_payload["name"]},
+            format="json",
+        )
+
+        self.assertTrue(
+            response.status_code == status.HTTP_200_OK
+            or any(
+                "not found" in res.get("message", "").lower()
+                for res in response.json()["result"]
+                if res != "\n"
+            )
+        )
+
+        response = self.client.get(
+            reverse("vlan_config"),
+            {"mgt_ip": req_payload["mgt_ip"], "name": req_payload["name"]},
+        )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
