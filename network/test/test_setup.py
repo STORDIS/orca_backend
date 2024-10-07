@@ -11,25 +11,34 @@ class TestSetup(TestORCA):
         for i in response.json():
             self.assertTrue(len(i["image_list"]) > 0)
 
-    @patch('paramiko.SSHClient')
-    def test_image_install_on_sonic_device(self, mock_ssh_client):
-        mock_ssh = MagicMock()
-        mock_ssh_client.return_value = mock_ssh
+    def test_image_install_on_sonic_device(self):
 
-        # Simulate stdout, stderr, and exit status
-        mock_stdout = MagicMock()
-        mock_stdout.read.return_value = b"command output"
-
-        mock_stderr = MagicMock()
-        mock_stderr.read.return_value = b"error output"
-
-        mock_ssh.exec_command.return_value = (MagicMock(), mock_stdout, mock_stderr)
-
-        device_ip = list(self.device_ips.keys())[0]
         request_body = {
             "image_url": "http://10.10.128.249/sonic/release/4.4.0/sonic-broadcom-enterprise-advanced.bin",
             "discover_also": True,
-            "device_ips": [device_ip]
+            "device_ips": self.sonic_ips
+        }
+
+        response = self.put_req("install_image", req_json=request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_body = response.json()
+        install_responses = response_body.get("install_response", {})
+        response = self.get_req("device")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        for device_ip in self.sonic_ips:
+            self.assertTrue(install_responses is not None)
+            self.assertTrue(install_responses.get(device_ip).get("error") is None)
+            self.assertTrue(install_responses.get(device_ip).get("output") is not None)
+            for i in response.json():
+                if i["device_ip"] == device_ip:
+                    self.assertTrue("SONiC-OS-4.4.0-Enterprise_Base" in i["image_list"])
+
+    def test_image_install_on_onie_device(self):
+        request_body = {
+            "image_url": "http://10.10.128.249/sonic/release/4.4.0/sonic-broadcom-enterprise-advanced.bin",
+            "discover_also": True,
+            "device_ips": self.onie_ips
         }
 
         response = self.put_req("install_image", req_json=request_body)
@@ -37,43 +46,17 @@ class TestSetup(TestORCA):
         response_body = response.json()
         install_responses = response_body.get("install_response", {})
         self.assertTrue(install_responses is not None)
-        self.assertTrue(install_responses.get("10.10.229.123").get("error") is not None)
-        self.assertTrue(install_responses.get("10.10.229.123").get("output") is not None)
-
-    @patch('paramiko.SSHClient')
-    def test_image_install_on_onie_device(self, mock_ssh_client):
-        mock_ssh = MagicMock()
-        mock_ssh_client.return_value = mock_ssh
-
-        # Simulate stdout, stderr, and exit status
-        mock_stdout = MagicMock()
-        mock_stdout.read.return_value = b"command output"
-
-        mock_stderr = MagicMock()
-        mock_stderr.read.return_value = b"error output"
-
-        mock_ssh.exec_command.return_value = (MagicMock(), mock_stdout, mock_stderr)
-
-        # hardcoded to 10.10.229.123/32 because ony ip with onie install mode running
-        request_body = {
-            "image_url": "http://10.10.128.249/sonic/release/4.4.0/sonic-broadcom-enterprise-advanced.bin",
-            "discover_also": True,
-            "device_ips": ["10.10.229.123"]
-        }
-
-        response = self.put_req("install_image", req_json=request_body)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response_body = response.json()
-        print(response_body)
-        install_responses = response_body.get("install_response", {})
-        self.assertTrue(install_responses is not None)
-        self.assertTrue(install_responses.get("10.10.229.123").get("error") is not None)
-        self.assertTrue(install_responses.get("10.10.229.123").get("output") is not None)
+        for device_ip in self.onie_ips:
+            self.assertTrue(install_responses.get(device_ip).get("error") is None)
+            self.assertTrue(install_responses.get(device_ip).get("output") is not None)
+            for i in response.json():
+                if i["device_ip"] == device_ip:
+                    self.assertTrue("SONiC-OS-4.4.0-Enterprise_Base" in i["image_list"])
 
     def test_install_image_with_network_ip(self):
         # ip is hardcoded to 10.10.229.123/32 because ony ip with onie install mode running
         # using 32 because it is only gives one ip
-        device_ips = ["10.10.229.123/32"]
+        device_ips = [f"{self.onie_ips[0]}/32"]
 
         req_body = {
             "device_ips": device_ips,
@@ -87,30 +70,72 @@ class TestSetup(TestORCA):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_body = response.json()
-        networks_details = response_body.get("networks", {}).get("10.10.229.123/32", {})
-        for i in networks_details:
-            self.assertTrue(i.get("mac_address") is not None)
-            self.assertTrue(i.get("version") is not None)
-            self.assertTrue(i.get("platform") is not None)
+        for device_ip in device_ips:
+            networks_details = response_body.get("networks", {}).get(device_ip, {})
+            for i in networks_details:
+                self.assertTrue(i.get("mac_address") is not None)
+                self.assertTrue(i.get("version") is not None)
+                self.assertTrue(i.get("platform") is not None)
 
-    @patch('paramiko.SSHClient')
-    def test_switch_image(self, mock_ssh_client):
-        mock_ssh = MagicMock()
-        mock_ssh_client.return_value = mock_ssh
+    def test_switch_image(self, ):
+        response = self.get_req("device")
+        image_list = response.json()[0]["image_list"]
+        current_image = response.json()[0]["img_name"]
+        new_image = None
 
-        # Simulate stdout, stderr, and exit status
-        mock_stdout = MagicMock()
-        mock_stdout.read.return_value = b"command output"
+        # checking if there are two or more images
+        if len(image_list) >= 2:
+            for image_name in image_list:
+                if current_image != image_name:
+                    new_image = image_name
+                    break
+        else:
 
-        mock_stderr = MagicMock()
-        mock_stderr.read.return_value = b"error output"
+            # if there is only one image then install new image and switch
+            if current_image == "SONiC-OS-4.4.0-Enterprise_Base":
+                url = "http://10.10.128.249/sonic/release/4.2.0/sonic-broadcom-enterprise-advanced.bin"
+            else:
+                url = "http://10.10.128.249/sonic/release/4.4.0/sonic-broadcom-enterprise-advanced.bin"
 
-        mock_ssh.exec_command.return_value = (MagicMock(), mock_stdout, mock_stderr)
+            req_body = {
+                "image_url": url,
+                "discover_also": True,
+                "device_ips": self.sonic_ips
+            }
 
-        device_ip = list(self.device_ips.keys())[0]
+            response = self.put_req("install_image", req_json=req_body)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            response_body = response.json()
+            install_responses = response_body.get("install_response", {})
+            for device_ip in self.sonic_ips:
+                self.assertTrue(install_responses.get(device_ip).get("error") is None)
+                self.assertTrue(install_responses.get(device_ip).get("output") is not None)
+
+            response = self.get_req("device")
+            image_list = response.json()[0]["image_list"]
+            self.assertTrue(len(image_list) >= 2)
+
+            for image_name in image_list:
+                if current_image != image_name:
+                    new_image = image_name
+                    break
+
+        # switching image
         response = self.put_req("switch_image", req_json={
-            "image_name": "SONiC-OS-4.4.0-Enterprise_Base",
-            "mgt_ip": device_ip
+            "image_name": new_image,
+            "mgt_ip": self.sonic_ips
         })
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+        response = self.get_req("device")
+        self.assertEqual(new_image, response.json()[0]["img_name"])
+
+        # switching back to previous image
+        response = self.put_req("switch_image", req_json={
+            "image_name": current_image,
+            "mgt_ip": self.sonic_ips
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req("device")
+        self.assertEqual(current_image, response.json()[0]["img_name"])
