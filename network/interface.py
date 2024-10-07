@@ -105,6 +105,7 @@ def device_interfaces_list(request):
                     ),
                     adv_speeds=req_data.get("adv_speeds"),
                     ip_with_prefix=req_data.get("ip_address"),
+                    secondary=req_data.get("secondary", False),
                 )
                 add_msg_to_list(result, get_success_msg(request))
                 http_status = http_status and True
@@ -280,6 +281,7 @@ def interface_subinterface_config(request):
                     device_ip=device_ip,
                     if_name=if_name,
                     ip_with_prefix=ip_address,
+                    secondary=req_data.get("secondary", False),
                 )
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Interface %s ip configured successfully.", if_name)
