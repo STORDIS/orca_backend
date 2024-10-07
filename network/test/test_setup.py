@@ -1,9 +1,19 @@
 from unittest.mock import patch, MagicMock
+
+import yaml
 from rest_framework import status
 from network.test.test_common import TestORCA
 
 
 class TestSetup(TestORCA):
+    sonic_ips = []
+    onie_ips = []
+    sonic_image_4_4_0_url = ""
+    sonic_image_4_2_0_url = ""
+
+    def setUp(self):
+        super().setUp()
+        self.load_test_config()
 
     def test_image_list(self):
         response = self.get_req("device")
@@ -14,7 +24,7 @@ class TestSetup(TestORCA):
     def test_image_install_on_sonic_device(self):
 
         request_body = {
-            "image_url": "http://10.10.128.249/sonic/release/4.4.0/sonic-broadcom-enterprise-advanced.bin",
+            "image_url": self.sonic_image_4_4_0_url,
             "discover_also": True,
             "device_ips": self.sonic_ips
         }
@@ -36,7 +46,7 @@ class TestSetup(TestORCA):
 
     def test_image_install_on_onie_device(self):
         request_body = {
-            "image_url": "http://10.10.128.249/sonic/release/4.4.0/sonic-broadcom-enterprise-advanced.bin",
+            "image_url": self.sonic_image_4_4_0_url,
             "discover_also": True,
             "device_ips": self.onie_ips
         }
@@ -60,7 +70,7 @@ class TestSetup(TestORCA):
 
         req_body = {
             "device_ips": device_ips,
-            "image_url": "http://10.10.128.249/sonic/release/4.4.0/sonic-broadcom-enterprise-advanced.bin",
+            "image_url": self.sonic_image_4_4_0_url,
             "discover_also": True
         }
 
@@ -93,9 +103,9 @@ class TestSetup(TestORCA):
 
             # if there is only one image then install new image and switch
             if current_image == "SONiC-OS-4.4.0-Enterprise_Base":
-                url = "http://10.10.128.249/sonic/release/4.2.0/sonic-broadcom-enterprise-advanced.bin"
+                url = self.sonic_image_4_2_0_url
             else:
-                url = "http://10.10.128.249/sonic/release/4.4.0/sonic-broadcom-enterprise-advanced.bin"
+                url = self.sonic_image_4_4_0_url
 
             req_body = {
                 "image_url": url,
@@ -139,3 +149,15 @@ class TestSetup(TestORCA):
 
         response = self.get_req("device")
         self.assertEqual(current_image, response.json()[0]["img_name"])
+
+    def load_test_config(self):
+        file = "./network/test/test_orca_setup_config.yaml"
+        with open(file, "r") as stream:
+            try:
+                config = yaml.safe_load(stream)
+                self.sonic_ips = config["sonic_ips"]
+                self.onie_ips = config["onie_ips"]
+                self.sonic_image_4_4_0_url = config["sonic_image_4.4.0_url"]
+                self.sonic_image_4_4_0_url = config["sonic_image_4.2.0_url"]
+            except yaml.YAMLError as exc:
+                print(exc)

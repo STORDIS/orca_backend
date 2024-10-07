@@ -4,7 +4,6 @@ Test utility functions
 
 import time
 
-import yaml
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
@@ -20,8 +19,6 @@ class TestORCA(APITestCase):
     device_ips = {}
 
     sync_done = False
-    sonic_ips = []
-    onie_ips = []
 
     def setUp(self):
         ## Autheticate the user
@@ -557,13 +554,3 @@ class TestORCA(APITestCase):
             {"mgt_ip": req_payload["mgt_ip"], "name": req_payload["name"]},
         )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-
-    def load_test_config(self):
-        file = "./network/test/test_orca_setup_config.yaml"
-        with open(file, "r") as stream:
-            try:
-                config = yaml.safe_load(stream)
-                self.sonic_ips = config["sonic_ips"]
-                self.onie_ips = config["onie_ips"]
-            except yaml.YAMLError as exc:
-                print(exc)
