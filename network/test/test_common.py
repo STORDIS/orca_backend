@@ -25,8 +25,6 @@ class TestORCA(APITestCase):
         user = User.objects.create_user(username="testuser", password="testpassword")
         self.client.force_authenticate(user)
 
-        self.load_test_config()
-
         response = self.get_req("device")
         ## If not devices discovered yet, discover them first.
         if not response.data:

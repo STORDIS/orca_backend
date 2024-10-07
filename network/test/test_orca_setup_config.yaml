@@ -1,5 +1,5 @@
 sonic_ips:
-  - 10.10.229.112
+  - 10.10.229.124
 onie_ips:
   - 10.10.229.123
 sonic_image_4.4.0_url: http://10.10.128.249/sonic/release/4.4.0/sonic-broadcom-enterprise-advanced.bin

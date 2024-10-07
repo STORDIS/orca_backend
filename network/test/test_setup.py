@@ -21,34 +21,24 @@ class TestSetup(TestORCA):
         for i in response.json():
             self.assertTrue(len(i["image_list"]) > 0)
 
+    def get_image_url(self, device_ip):
+
+        response = self.get_req("device", {"mgt_ip": device_ip})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        image_name = response.json()["img_name"]
+        if image_name == "SONiC-OS-4.4.0-Enterprise_Base":
+            return image_name, "SONiC-OS-4.2.0-Enterprise_Base", self.sonic_image_4_2_0_url
+        else:
+            return image_name, "SONiC-OS-4.4.0-Enterprise_Base", self.sonic_image_4_4_0_url
+
     def test_image_install_on_sonic_device(self):
 
+        device_ip = self.sonic_ips[0]
+        current_image, next_img, img_url = self.get_image_url(device_ip=device_ip)
         request_body = {
-            "image_url": self.sonic_image_4_4_0_url,
+            "image_url": img_url,
             "discover_also": True,
-            "device_ips": self.sonic_ips
-        }
-
-        response = self.put_req("install_image", req_json=request_body)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response_body = response.json()
-        install_responses = response_body.get("install_response", {})
-        response = self.get_req("device")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        for device_ip in self.sonic_ips:
-            self.assertTrue(install_responses is not None)
-            self.assertTrue(install_responses.get(device_ip).get("error") is None)
-            self.assertTrue(install_responses.get(device_ip).get("output") is not None)
-            for i in response.json():
-                if i["device_ip"] == device_ip:
-                    self.assertTrue("SONiC-OS-4.4.0-Enterprise_Base" in i["image_list"])
-
-    def test_image_install_on_onie_device(self):
-        request_body = {
-            "image_url": self.sonic_image_4_4_0_url,
-            "discover_also": True,
-            "device_ips": self.onie_ips
+            "device_ips": [device_ip]
         }
 
         response = self.put_req("install_image", req_json=request_body)
@@ -56,12 +46,43 @@ class TestSetup(TestORCA):
         response_body = response.json()
         install_responses = response_body.get("install_response", {})
         self.assertTrue(install_responses is not None)
-        for device_ip in self.onie_ips:
-            self.assertTrue(install_responses.get(device_ip).get("error") is None)
-            self.assertTrue(install_responses.get(device_ip).get("output") is not None)
-            for i in response.json():
-                if i["device_ip"] == device_ip:
-                    self.assertTrue("SONiC-OS-4.4.0-Enterprise_Base" in i["image_list"])
+        self.assertTrue(install_responses.get(device_ip).get("error") is None)
+        self.assertTrue(install_responses.get(device_ip).get("output") is not None)
+
+        response = self.get_req("device", {"mgt_ip": device_ip})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(next_img, response.json()["img_name"])
+
+        # roll back to previous image
+        response = self.put_req("switch_image", req_json={
+            "image_name": current_image,
+            "mgt_ip": device_ip
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req("device")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(current_image in response.json()["image_name"])
+
+    def test_image_install_on_onie_device(self):
+        device_ip = self.onie_ips[0]
+        request_body = {
+            "image_url": self.sonic_image_4_4_0_url,
+            "discover_also": True,
+            "device_ips": [device_ip]
+        }
+
+        response = self.put_req("install_image", req_json=request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_body = response.json()
+        install_responses = response_body.get("install_response", {})
+        self.assertTrue(install_responses is not None)
+        self.assertTrue(install_responses.get(device_ip).get("error") is None)
+        self.assertTrue(install_responses.get(device_ip).get("output") is not None)
+
+        response = self.get_req("device", {"mgt_ip": device_ip})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual("SONiC-OS-4.4.0-Enterprise_Base", response.json()["img_name"])
 
     def test_install_image_with_network_ip(self):
         # ip is hardcoded to 10.10.229.123/32 because ony ip with onie install mode running
