@@ -9,8 +9,9 @@ from rest_framework.decorators import api_view
 
 from network.models import ReDiscoveryConfig
 from network.scheduler import add_scheduler, remove_scheduler
+from orca_nw_lib.common import DiscoveryFeature
 from orca_nw_lib.device import get_device_details
-from orca_nw_lib.discovery import trigger_discovery, trigger_discovery_by_feature
+from orca_nw_lib.discovery import trigger_discovery, discover_nw_features
 from log_manager.decorators import log_request
 from log_manager.logger import get_backend_logger
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg
@@ -159,7 +160,7 @@ def discover_by_feature(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             try:
-                trigger_discovery_by_feature(device_ip, feature)
+                discover_nw_features(device_ip, DiscoveryFeature(feature))
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Rediscovered device: %s", device_ip)
             except Exception as e:
