@@ -1,5 +1,5 @@
 import datetime
-from enum import Enum, auto
+from enum import Enum
 
 from django.db import models
 
@@ -22,11 +22,11 @@ class OrcaState(models.Model):
 
 
 class State(Enum):
-    AVAILABLE = auto()
-    DISCOVERY_IN_PROGRESS = auto()
-    FEATURE_DISCOVERY_IN_PROGRESS = auto()
-    SCHEDULED_DISCOVERY_IN_PROGRESS = auto()
-    CONFIG_IN_PROGRESS = auto()
+    AVAILABLE = "Available"
+    DISCOVERY_IN_PROGRESS = "Discovery in progress"
+    FEATURE_DISCOVERY_IN_PROGRESS = "Feature discovery in progress"
+    SCHEDULED_DISCOVERY_IN_PROGRESS = "Scheduled discovery in progress"
+    CONFIG_IN_PROGRESS = "Config in progress"
 
     @staticmethod
     def get_enum_from_str(name: str):

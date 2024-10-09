@@ -1,4 +1,3 @@
-import datetime
 import json
 
 from django.http import JsonResponse
@@ -25,22 +24,15 @@ class BlockPutMiddleware:
                     defaults={"state": str(State.AVAILABLE)},
                 )
 
-                # Mapping states to error messages
-                state_block_map = {
-                    str(State.DISCOVERY_IN_PROGRESS): "Discovery in progress",
-                    str(State.FEATURE_DISCOVERY_IN_PROGRESS): "Feature discovery in progress",
-                    str(State.SCHEDULED_DISCOVERY_IN_PROGRESS): "Scheduled discovery in progress",
-                    str(State.CONFIG_IN_PROGRESS): "Config in progress, please try again later",
-                }
-
                 # Check if current state is blocking
-                if state_obj.state in state_block_map:
+                current_state = State.get_enum_from_str(state_obj.state)
+                if current_state != State.AVAILABLE:
                     return JsonResponse(
-                        {"result": state_block_map[state_obj.state]},
+                        {"result": current_state.value},
                         status=status.HTTP_409_CONFLICT,
                     )
 
-                if state_obj.state == str(State.AVAILABLE):
+                if current_state == State.AVAILABLE:
                     self._update_state(device_ip=ip, state=next_state)
 
             response = self.get_response(request)
@@ -101,4 +93,3 @@ class BlockPutMiddleware:
                 device_ip = i.get("mgt_ip", "")
                 result.update({device_ip: State.CONFIG_IN_PROGRESS})
         return result
-

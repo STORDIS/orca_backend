@@ -1,4 +1,3 @@
-import asyncio
 import base64
 import datetime
 import json
@@ -21,9 +20,10 @@ from state_manager.test.test_common import TestCommon
 @api_view(["PUT"])
 @permission_classes([permissions.AllowAny])
 def discovery_stub(request, client=None):
-    response = client.get(reverse("orca_state", kwargs={"device_ip": "127.0.0.1"}), )
+    device_ip = request.data.get("address")
+    response = client.get(reverse("orca_state", kwargs={"device_ip": device_ip}), )
     assert response.status_code == status.HTTP_200_OK
-    assert response.json().get("device_ip") == "127.0.0.1"
+    assert response.json().get("device_ip") == device_ip
     assert response.json().get("state") == str(State.DISCOVERY_IN_PROGRESS)
     return Response({"result": [{"message": "testing", "status": "success"}]}, status=200)
 
@@ -31,9 +31,10 @@ def discovery_stub(request, client=None):
 @api_view(["PUT"])
 @permission_classes([permissions.AllowAny])
 def put_stub(request, client=None):
-    response = client.get(reverse("orca_state", kwargs={"device_ip": "127.0.0.1"}), )
+    device_ip = request.data.get("mgt_ip")
+    response = client.get(reverse("orca_state", kwargs={"device_ip": device_ip}), )
     assert response.status_code == status.HTTP_200_OK
-    assert response.json().get("device_ip") == "127.0.0.1"
+    assert response.json().get("device_ip") == device_ip
     assert response.json().get("state") == str(State.CONFIG_IN_PROGRESS)
     return Response({"result": [{"message": "testing", "status": "success"}]}, status=200)
 
@@ -41,9 +42,10 @@ def put_stub(request, client=None):
 @api_view(["PUT"])
 @permission_classes([permissions.AllowAny])
 def feature_discovery_stub(request, client=None):
-    response = client.get(reverse("orca_state", kwargs={"device_ip": "127.0.0.1"}), )
+    device_ip = request.data.get("mgt_ip")
+    response = client.get(reverse("orca_state", kwargs={"device_ip": device_ip}), )
     assert response.status_code == status.HTTP_200_OK
-    assert response.json().get("device_ip") == "127.0.0.1"
+    assert response.json().get("device_ip") == device_ip
     assert response.json().get("state") == str(State.FEATURE_DISCOVERY_IN_PROGRESS)
     return Response({"result": [{"message": "testing", "status": "success"}]}, status=200)
 
