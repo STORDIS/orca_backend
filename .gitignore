@@ -11,3 +11,4 @@ poetry.lock
 orca.log
 models
 *.log
+!**/migrations/__init__.py
