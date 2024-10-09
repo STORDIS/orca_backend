@@ -36,7 +36,11 @@ def config_image(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             try:
-                switch_image_on_device(device_ip, image_name)
+                output, error = switch_image_on_device(device_ip, image_name)
+                if error:
+                    add_msg_to_list(result, get_failure_msg(error, request))
+                else:
+                    add_msg_to_list(result, get_success_msg(request))
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Successfully changed image on device %s.", device_ip)
             except Exception as err:
