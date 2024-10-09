@@ -18,7 +18,7 @@ class BlockPutMiddleware:
     def __call__(self, request):
         # Check if it's a PUT request and if discovery is in progress
         if request.method == 'PUT':
-            ip_next_state = self._get_device_ip_next_state_list(request)
+            ip_next_state = self._get_device_state(request)
             for ip, next_state in ip_next_state.items():
                 state_obj, created = OrcaState.objects.get_or_create(
                     device_ip=ip,
@@ -73,7 +73,7 @@ class BlockPutMiddleware:
         )
 
     @staticmethod
-    def _get_device_ip_next_state_list(request):
+    def _get_device_state(request):
         """
         Returns a dictionary with device_ip as key and next state as value
 
@@ -92,7 +92,7 @@ class BlockPutMiddleware:
                 address = i.get("address", "all")  # when address is not provided, discover from configured devices
                 address_list = address if isinstance(address, list) else [address]
                 result.update({i: State.DISCOVERY_IN_PROGRESS for i in address_list})
-        if url_name == "discover_by_feature":
+        elif url_name == "discover_by_feature":
             for i in data:
                 device_ip = i.get("mgt_ip", "")
                 result.update({device_ip: State.FEATURE_DISCOVERY_IN_PROGRESS})
