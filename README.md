@@ -40,6 +40,7 @@ ORCA Backend is a REST API server written using Django framework to access orca_
   - [APIs and ORCA UI](#apis-and-orca-ui)
     - [Steps to Use APIs](#steps-to-use-apis)
   - [To execute tests](#to-execute-tests)
+  - [To Run GitHub Actions Locally](#to-run-github-actions-locally)
 
 ## Quick Start in 2 simple steps
 
@@ -237,3 +238,15 @@ For a quick start, APIs can be directly used from browser with django rest frame
 
         export discover_networks="<Device(s) or Network(s) IP.>"
         python manage.py test network.test.interface_test
+
+## To Run GitHub Actions Locally
+
+- Install "act" as explained in [here](https://nektosact.com/installation/index.html?highlight=install#installation).
+- Create a github_secret_file and add the secrets used by GitHub Actions file.
+  
+            STORDIS_DOCKER_HUB_USER="xyz"
+            STORDIS_DOCKER_HUB_ACCESS_TOKEN="abc"
+- Run GitHub actions locally as follows:
+
+            cd orca_backend
+            act --secret-file github_secret_file
