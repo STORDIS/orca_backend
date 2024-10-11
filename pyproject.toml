@@ -17,9 +17,3 @@ APScheduler = "^3.10.4"
 orca-nw-lib = "*" # Use latest version of orca_nw_lib from PyPI
 packaging = "^23.2"# Because of langchain dependencies in ORCASK, packaging should not be greater than 23.y.z.
 setuptools = "65.5.1"# Fixing the version otherwise poetry install tries to update the setuptools, and the update fails in GitHub Actions, Issue is specific to GitHub Actions only, but when running locally the update works.
-
-[tool.poetry.dev-dependencies]
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
