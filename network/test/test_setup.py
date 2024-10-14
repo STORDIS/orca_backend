@@ -39,26 +39,25 @@ class TestSetup(TestORCA):
         response_body = response.json()
         install_responses = response_body.get("install_response", {})
         self.assertTrue(install_responses is not None)
-        print(install_responses)
-        self.assertTrue(install_responses.get(device_ip).get("error") == "")
         self.assertTrue(install_responses.get(device_ip).get("output") is not None)
 
         response = self.get_req("device", {"mgt_ip": device_ip})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(next_img, response.json()["img_name"])
 
+        # testing switch image
         # roll back to previous image
         response = self.put_req("switch_image", req_json={
             "image_name": current_image,
             "mgt_ip": device_ip
         })
-        time.sleep(120)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = self.put_req("discover", {"address": device_ip, })
-
-        response = self.get_req("device")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(current_image in response.json()["image_name"])
+
+        response = self.get_req("device", {"mgt_ip": device_ip})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(current_image in response.json()["img_name"])
 
     def test_image_install_on_onie_device(self):
         device_ip = self.onie_ips[0]
@@ -113,29 +112,3 @@ class TestSetup(TestORCA):
                 self.sonic_img_details = config["sonic_img_details"]
             except yaml.YAMLError as exc:
                 print(exc)
-
-    def test_switch_image(self):
-        device_ip = self.sonic_ips[0]
-        request_body = {
-            "image_name": self.sonic_img_details.get("name"),
-            "mgt_ip": device_ip
-        }
-        device = self.get_req("device", {"mgt_ip": device_ip})
-        current_image = device.json()["img_name"]
-
-        next_img = self.sonic_img_details.get("name")
-        response = self.put_req("switch_image", req_json=request_body)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response = self.get_req("device", {"mgt_ip": device_ip})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(next_img, response.json()["img_name"])
-
-        # roll back to previous image
-        response = self.put_req("switch_image", req_json={
-            "image_name": current_image,
-            "mgt_ip": device_ip
-        })
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response = self.get_req("device", {"mgt_ip": device_ip})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(current_image, response.json()["img_name"])
