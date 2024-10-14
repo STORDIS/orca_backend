@@ -217,6 +217,7 @@ def interface_resync(request):
 
 
 @api_view(["GET", "PUT", "DELETE"])
+@log_request
 def interface_subinterface_config(request):
     """
         Generates the function comment for the given function body.
