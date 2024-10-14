@@ -308,7 +308,12 @@ def interface_subinterface_config(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             try:
-                del_ip_from_intf(device_ip=device_ip, intfc_name=if_name)
+                del_ip_from_intf(
+                    device_ip=device_ip,
+                    intfc_name=if_name,
+                    ip_address=req_data.get("ip_address", ""),
+                    secondary=req_data.get("secondary", False),
+                )
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Interface %s ip deleted successfully.", if_name)
             except Exception as err:

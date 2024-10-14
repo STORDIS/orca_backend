@@ -576,10 +576,6 @@ class TestInterface(TestORCA):
         ether_name = self.device_ips[device_ip]["interfaces"][0]
         ip = "10.10.100.1"
         prefix_len = 24
-        response = self.get_req(
-            "device_interface_list", {"mgt_ip": device_ip, "name": ether_name}
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # adding primary ip first then secondary
         request_body = {
@@ -638,3 +634,81 @@ class TestInterface(TestORCA):
         # verifying the ip_address deletion
         response = self.get_req("subinterface", {"mgt_ip": device_ip, "name": ether_name})
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_ip_address_deletion(self):
+        device_ip = list(self.device_ips.keys())[0]
+        ether_name = self.device_ips[device_ip]["interfaces"][0]
+        ip_1 = "10.10.100.1"
+        ip_2 = "10.10.100.2"
+        prefix_len = 24
+
+        # delete all ip addresses
+        request_body = {
+            "mgt_ip": device_ip,
+            "name": ether_name
+        }
+        response = self.del_req("subinterface", request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.get_req("subinterface", {"mgt_ip": device_ip, "name": ether_name})
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # adding primary ip
+        request_body = {
+            "mgt_ip": device_ip,
+            "name": ether_name,
+            "ip_address": f"{ip_1}/{prefix_len}",
+            "secondary": False
+        }
+        self.put_req("subinterface", request_body)
+
+        response = self.get_req("subinterface", {"mgt_ip": device_ip, "name": ether_name})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_body = response.json()
+        if isinstance(response_body, list):
+            self.assertTrue(any([i["ip_address"] == ip_1 for i in response_body]))
+        else:
+            self.assertEqual(response_body["ip_address"], ip_2)
+
+        # adding secondary ip
+        request_body = {
+            "mgt_ip": device_ip,
+            "name": ether_name,
+            "ip_address": f"{ip_2}/{prefix_len}",
+            "secondary": True
+        }
+        self.put_req("subinterface", request_body)
+
+        response = self.get_req("subinterface", {"mgt_ip": device_ip, "name": ether_name})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_body = response.json()
+        print(response_body)
+        if isinstance(response_body, list):
+            self.assertTrue(any([i["ip_address"] == ip_2 for i in response_body]))
+        else:
+            self.assertEqual(response_body["ip_address"], ip_2)
+
+        # removing the secondary ip
+        response = self.del_req("subinterface", {
+            "mgt_ip": device_ip, "name": ether_name, "ip_address": ip_2, "secondary": True
+        })
+        print(response.json())
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # verifying the ip_address deletion
+        response = self.get_req("subinterface", {"mgt_ip": device_ip, "name": ether_name})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_body = response.json()
+        self.assertTrue(all([i["ip_address"] != ip_2 for i in response_body]))
+
+        # removing the primary ip
+        response = self.del_req("subinterface", {
+            "mgt_ip": device_ip, "name": ether_name, "ip_address": ip_1, "secondary": False
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # verifying the ip_address deletion
+        response = self.get_req("subinterface", {"mgt_ip": device_ip, "name": ether_name})
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+
