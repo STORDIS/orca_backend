@@ -507,6 +507,10 @@ class TestInterface(TestORCA):
                 status.HTTP_200_OK,
                 "Port breakout is in progress.",
             )
+            eth_names = int(eth.replace("Ethernet", ""))
+            for i in range(eth_names, eth_names + 3):
+                response = self.get_req("device_interface_list", {"mgt_ip": device_ip, "name": f"Ethernet{i}"})
+                self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
             interface = self.get_req("device_interface_list", {"mgt_ip": device_ip, "name": eth})
             self.assertEqual(interface.json()["breakout_mode"], None)
@@ -710,5 +714,3 @@ class TestInterface(TestORCA):
         # verifying the ip_address deletion
         response = self.get_req("subinterface", {"mgt_ip": device_ip, "name": ether_name})
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-
-
