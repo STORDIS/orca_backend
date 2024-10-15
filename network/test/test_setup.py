@@ -73,10 +73,9 @@ class TestSetup(TestORCA):
         install_responses = response_body.get("install_response", {})
         self.assertTrue(install_responses is not None)
         self.assertTrue(install_responses.get(device_ip).get("output") is not None)
-
-        response = self.get_req("device", {"mgt_ip": device_ip})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.sonic_img_details.get("name"), response.json()["img_name"])
+        # onie changes device ip after installing image.
+        # so we cannot test discover on onie device.
+        # we need to change device back to onie after install else test will fail.
 
     def test_install_image_with_network_ip(self):
         # ip is hardcoded to 10.10.229.123/32 because ony ip with onie install mode running
