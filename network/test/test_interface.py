@@ -475,7 +475,8 @@ class TestInterface(TestORCA):
             self.assertFalse(interface.json()["breakout_supported"])
 
             eth_names = int(eth.replace("Ethernet", ""))
-            for i in range(eth_names, eth_names + 3):
+
+            for i in range(eth_names, eth_names + 4):
                 interface = self.get_req("device_interface_list", {"mgt_ip": device_ip, "name": f"Ethernet{i}"})
                 self.assertEqual(interface.json()["breakout_mode"], request_body["breakout_mode"])
                 self.assertTrue(interface_alias in interface.json()["alias"])
@@ -501,14 +502,16 @@ class TestInterface(TestORCA):
             self.assertTrue(interface_alias in interface.json()["alias"])
             self.assertTrue(interface.json()["breakout_status"] in ["InProgress", "Completed"])
 
+            response = self.get_req("device_interface_list", {"mgt_ip": device_ip, "name": eth})
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
             # deleting breakout configuration
-            self.assert_response_status(
-                self.del_req("breakout", request_body),
-                status.HTTP_200_OK,
-                "Port breakout is in progress.",
-            )
+            response = self.del_req("breakout", {"mgt_ip": device_ip, "if_alias": response.json()["alias"]})
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            # verifying that breakout configuration is deleted.
             eth_names = int(eth.replace("Ethernet", ""))
-            for i in range(eth_names, eth_names + 3):
+            for i in range(eth_names + 1, eth_names + 4):
                 response = self.get_req("device_interface_list", {"mgt_ip": device_ip, "name": f"Ethernet{i}"})
                 self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -696,7 +699,6 @@ class TestInterface(TestORCA):
         response = self.del_req("subinterface", {
             "mgt_ip": device_ip, "name": ether_name, "ip_address": ip_2, "secondary": True
         })
-        print(response.json())
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # verifying the ip_address deletion
