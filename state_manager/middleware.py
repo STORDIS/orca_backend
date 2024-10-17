@@ -88,6 +88,10 @@ class BlockPutMiddleware:
             for i in data:
                 device_ip = i.get("mgt_ip", "")
                 result.update({device_ip: State.FEATURE_DISCOVERY_IN_PROGRESS})
+        elif url_name == "install_image":
+            for i in data:
+                device_ips = i.get("device_ips", "")
+                result.update({i: State.INSTALL_IN_PROGRESS for i in device_ips})
         else:
             for i in data:
                 device_ip = i.get("mgt_ip", "")
