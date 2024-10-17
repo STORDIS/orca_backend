@@ -2,7 +2,8 @@
     "python.testing.pytestArgs": [
         "network/test",
         "authentication/test",
-        "orcask/test"    ],
+        "orcask/test",
+        "state_manager/test"   ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true
 }
