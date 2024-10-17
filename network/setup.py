@@ -41,7 +41,6 @@ def config_image(request):
                     add_msg_to_list(result, get_failure_msg(error, request))
                 else:
                     add_msg_to_list(result, get_success_msg(request))
-                add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Successfully changed image on device %s.", device_ip)
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
