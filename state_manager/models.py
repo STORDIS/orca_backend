@@ -27,6 +27,7 @@ class State(Enum):
     FEATURE_DISCOVERY_IN_PROGRESS = "Feature discovery in progress"
     SCHEDULED_DISCOVERY_IN_PROGRESS = "Scheduled discovery in progress"
     CONFIG_IN_PROGRESS = "Config in progress"
+    INSTALL_IN_PROGRESS = "Install in progress"
 
     @staticmethod
     def get_enum_from_str(name: str):

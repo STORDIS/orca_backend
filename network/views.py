@@ -160,7 +160,7 @@ def discover_by_feature(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             try:
-                discover_nw_features(device_ip, DiscoveryFeature(feature))
+                discover_nw_features(device_ip, DiscoveryFeature.get_enum_from_str(feature))
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Rediscovered device: %s", device_ip)
             except Exception as e:
