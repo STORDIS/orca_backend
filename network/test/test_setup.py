@@ -59,23 +59,23 @@ class TestSetup(TestORCA):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(current_image in response.json()["img_name"])
 
-    # def test_image_install_on_onie_device(self):
-    #     device_ip = self.onie_ips[0]
-    #     request_body = {
-    #         "image_url": self.sonic_img_details.get("url"),
-    #         "discover_also": True,
-    #         "device_ips": [device_ip]
-    #     }
-    #
-    #     response = self.put_req("install_image", req_json=request_body)
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     response_body = response.json()
-    #     install_responses = response_body.get("install_response", {})
-    #     self.assertTrue(install_responses is not None)
-    #     self.assertTrue(install_responses.get(device_ip).get("output") is not None)
-    #     # onie changes device ip after installing image.
-    #     # so we cannot test discover on onie device.
-    #     # we need to change device back to onie after install else test will fail.
+    def test_image_install_on_onie_device(self):
+        device_ip = self.onie_ips[0]
+        request_body = {
+            "image_url": self.sonic_img_details.get("url"),
+            "discover_also": True,
+            "device_ips": [device_ip]
+        }
+
+        response = self.put_req("install_image", req_json=request_body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_body = response.json()
+        install_responses = response_body.get("install_response", {})
+        self.assertTrue(install_responses is not None)
+        self.assertTrue(install_responses.get(device_ip).get("output") is not None)
+        # onie changes device ip after installing image.
+        # so we cannot test discover on onie device.
+        # we need to change device back to onie after install else test will fail.
 
     def test_install_image_with_network_ip(self):
         # ip is hardcoded to 10.10.229.123/32 because ony ip with onie install mode running
@@ -106,8 +106,8 @@ class TestSetup(TestORCA):
         with open(file, "r") as stream:
             try:
                 config = yaml.safe_load(stream)
-                self.sonic_ips = config["sonic_ips"]
-                self.onie_ips = config["onie_ips"]
+                self.sonic_ips = config["sonic_device_ips"]
+                self.onie_ips = config["onie_device_ips"]
                 self.sonic_img_details = config["sonic_img_details"]
             except yaml.YAMLError as exc:
                 print(exc)

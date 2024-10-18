@@ -1,6 +1,6 @@
-sonic_ips:
+sonic_device_ips:
   - 10.10.229.124
-onie_ips:
+onie_device_ips:
   - 10.10.229.123
 sonic_img_details:
   url: http://10.10.128.249/sonic/release/4.2.2/sonic-vs.bin
