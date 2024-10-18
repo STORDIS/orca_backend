@@ -82,12 +82,18 @@ def install_image(request):
             try:
                 networks = {}
                 install_responses = {}
-                for i in device_ips:
-                    response = install_image_on_device(i, image_url, discover_also)
+                for device_ip in device_ips:
+                    response = install_image_on_device(
+                        device_ip=device_ip,
+                        image_url=image_url,
+                        discover_also=discover_also,
+                        username=req_data.get("username", None),
+                        password=req_data.get("password", None)
+                    )
                     if "error" in response:
-                        install_responses[i] = response
+                        install_responses[device_ip] = response
                     else:
-                        networks[i] = response
+                        networks[device_ip] = response
                     return Response(
                         {"networks": networks, "install_response": install_responses}
                     )
