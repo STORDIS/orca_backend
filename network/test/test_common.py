@@ -76,6 +76,8 @@ class TestORCA(APITestCase):
                     self.assertEqual(response1.status_code, status.HTTP_200_OK)
                 TestORCA.sync_done = True
 
+        gnmi_subscribe_for_all_devices_in_db()  # Subscribe for all devices
+
     @classmethod
     def tearDownClass(cls) -> None:
         super().tearDownClass()
@@ -83,11 +85,6 @@ class TestORCA(APITestCase):
         for ip in cls.device_ips:
             thread_name = get_subscription_thread_name(ip)
             cls.assertTrue(thread_name not in get_running_thread_names(), f"Thread {thread_name} is still running")
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        gnmi_subscribe_for_all_devices_in_db() # Subscribe for all devices
 
     def del_port_chnl_ip(self, request_body):
         for data in (
