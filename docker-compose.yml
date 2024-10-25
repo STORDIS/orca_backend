@@ -1,0 +1,29 @@
+services:
+  orca_backend:
+      build: .
+      depends_on:
+        neo4j:
+          condition: service_healthy
+      environment:
+          neo4j_url: <neo4j_host_ip> # It by default converted to bolt://neo4j_host_ip:7687
+
+  neo4j:
+    image: neo4j:latest
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/password  # Replace with your desired username/password
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "password", "--cipher", "bolt",  "-c", "RETURN 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+  
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+
+## TODO celery container, and check if orca_backend container needs to be started separately.
