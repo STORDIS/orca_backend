@@ -282,11 +282,3 @@ def celery_result(request):
         if results
         else Response({}, status=status.HTTP_204_NO_CONTENT)
     )
-
-
-@api_view(["DELETE"])
-def close_tasks(request):
-    results = TaskResult.objects.all()
-    for i in results:
-        i.delete()
-    return Response({}, status=status.HTTP_204_NO_CONTENT)

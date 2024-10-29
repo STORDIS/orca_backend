@@ -1,6 +1,3 @@
-import json
-
-from django_celery_results.models import TaskResult
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -10,7 +7,6 @@ from log_manager.logger import get_backend_logger
 from network.tasks import install_task, switch_image_task
 
 from network.util import get_success_msg, add_msg_to_list, get_failure_msg
-from celery import states, signals
 
 
 _logger = get_backend_logger()
@@ -41,7 +37,7 @@ def config_image(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             switch_image_task.apply_async(
-                kwargs={"device_ip": device_ip, "image_name": image_name}
+                kwargs={"device_ip": device_ip, "image_name": image_name, "http_path": request.path}
             )
             add_msg_to_list(result, get_success_msg(request))
     return Response(
@@ -85,6 +81,7 @@ def install_image(request):
                         "discover_also": discover_also,
                         "username": req_data.get("username", None),
                         "password": req_data.get("password", None),
+                        "http_path": request.path,
                     }
                 )
                 add_msg_to_list(result, get_success_msg(request))
@@ -99,15 +96,4 @@ def install_image(request):
         status=(
             status.HTTP_202_ACCEPTED if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR
         ),
-    )
-
-
-@signals.task_sent.connect
-def task_sent(**kwargs):
-    TaskResult.objects.store_result(
-        task_id=kwargs["task_id"],
-        status=states.PENDING,
-        content_type="application/json",
-        content_encoding="utf-8",
-        result=json.dumps({"request_data": kwargs["kwargs"]}),
     )

@@ -1,5 +1,7 @@
 import json
 
+from django.db import transaction
+from django.forms import model_to_dict
 from django.http import JsonResponse
 from django.urls import resolve
 from rest_framework import status
@@ -19,14 +21,16 @@ class BlockPutMiddleware:
         if request.method == 'PUT':
             ip_next_state = self._get_device_state(request)
             for ip, next_state in ip_next_state.items():
-                state_obj, created = OrcaState.objects.get_or_create(
-                    device_ip=ip,
-                    defaults={"state": str(State.AVAILABLE)},
-                )
+                with transaction.atomic():
+                    state_obj, created = OrcaState.objects.get_or_create(
+                        device_ip=ip,
+                        defaults={"state": str(State.AVAILABLE)},
+                    )
+                    # Check if current state is blocking
+                    current_state = State.get_enum_from_str(state_obj.state)
 
-                # Check if current state is blocking
-                current_state = State.get_enum_from_str(state_obj.state)
                 if current_state != State.AVAILABLE:
+                    print(current_state)
                     return JsonResponse(
                         {"result": current_state.value},
                         status=status.HTTP_409_CONFLICT,
@@ -37,7 +41,7 @@ class BlockPutMiddleware:
             try:
                 response = self.get_response(request)
             except Exception as e:
-                return JsonResponse(
+                response = JsonResponse(
                     {"result": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
 

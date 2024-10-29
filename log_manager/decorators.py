@@ -17,7 +17,8 @@ def log_request(function):
             data = {
                 "timestamp": str(datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")),
                 "processing_time": time.time() - start,
-                "status_code": response.status_code
+                "status_code": response.status_code,
+                "http_path": request.path,
             }
             response_data = response.data
             if "result" in response_data:

@@ -13,12 +13,10 @@ class OrcaState(models.Model):
 
     @staticmethod
     def update_state(device_ip, state):
-        OrcaState.objects.update_or_create(
-            device_ip=device_ip, defaults={
-                "state": str(state),
-                "last_updated_time": datetime.datetime.now(datetime.timezone.utc)
-            }
-        )
+        state_obj = OrcaState.objects.get(device_ip=device_ip)
+        state_obj.state = str(state)
+        state_obj.last_updated_time = datetime.datetime.now(datetime.timezone.utc)
+        state_obj.save()
 
 
 class State(Enum):

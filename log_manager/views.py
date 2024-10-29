@@ -2,6 +2,7 @@ import datetime
 import json
 import traceback
 
+from celery.result import AsyncResult
 from django.core.paginator import Paginator, EmptyPage
 from django_celery_results.models import TaskResult
 from rest_framework import status
@@ -84,6 +85,7 @@ def get_celery_tasks_data():
                 "processing_time": (result.date_done - result.date_created).total_seconds(),
                 "response": responses.get("result", None),
                 "request_json": responses.get("request_data", None),
+                "http_path": responses.get("http_path", None),
             }
         )
     return result_data
