@@ -1,6 +1,9 @@
+import datetime
+import json
 import traceback
 
 from django.core.paginator import Paginator, EmptyPage
+from django_celery_results.models import TaskResult
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.request import Request
@@ -23,11 +26,20 @@ def get_logs(request: Request, **kwargs):
     - If fails returns a JSON response with 500 status.
     """
     try:
+        final_result = []
         query_params = request.query_params
         items = Logs.objects.all().order_by("-timestamp")
         paginator = Paginator(items, query_params.get("size", 10))  # sizeof return list
-        result = paginator.page(kwargs["page"])  # page no
-        return Response(result.object_list.values(), status=status.HTTP_200_OK)
+        logs_result = paginator.page(kwargs["page"])  # page no
+        final_result.extend(logs_result.object_list.values())
+        final_result.extend(get_celery_tasks_data())
+        final_result.sort(
+            key=lambda x: datetime.datetime.strptime(
+                x["timestamp"], "%Y-%m-%d %H:%M:%S"
+            ),
+            reverse=True
+        )
+        return Response(final_result, status=status.HTTP_200_OK)
     except EmptyPage as e:
         print(str(e))
         return Response({"message": str(e)}, status=status.HTTP_204_NO_CONTENT)
@@ -56,3 +68,22 @@ def delete_logs(request: Request, **kwargs):
         print(str(e))
         print(traceback.format_exc())
         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def get_celery_tasks_data():
+    task_results = TaskResult.objects.all()
+    result_data = []
+    for result in task_results:
+        responses = json.loads(result.result)
+        result_data.append(
+            {
+                "status": result.status,
+                "timestamp": result.date_created.strftime("%Y-%m-%d %H:%M:%S"),
+                "status_code": 200,
+                "http_method": "PUT",
+                "processing_time": (result.date_done - result.date_created).total_seconds(),
+                "response": responses.get("result", None),
+                "request_json": responses.get("request_data", None),
+            }
+        )
+    return result_data

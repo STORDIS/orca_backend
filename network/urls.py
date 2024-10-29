@@ -18,6 +18,7 @@ urlpatterns = [
     re_path("devices", views.device_list, name="device"),
     path("switch_image", setup.config_image, name="switch_image"),
     path("install_image", setup.install_image, name="install_image"),
+    path("celery_results", views.celery_result, name="celery_results"),
     path("subinterface", interface.interface_subinterface_config, name="subinterface"),
     re_path("interface_pg", interface.interface_pg, name="interface_pg"),
     path("interface_resync", interface.interface_resync, name="interface_resync"),

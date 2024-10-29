@@ -1,12 +1,17 @@
+import json
+
+from django_celery_results.models import TaskResult
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from log_manager.decorators import log_request
 from log_manager.logger import get_backend_logger
+from network.tasks import install_task, switch_image_task
 
 from network.util import get_success_msg, add_msg_to_list, get_failure_msg
-from orca_nw_lib.setup import install_image_on_device, switch_image_on_device
+from celery import states, signals
+
 
 _logger = get_backend_logger()
 
@@ -35,21 +40,14 @@ def config_image(request):
                     {"status": "Required field image name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            try:
-                output, error = switch_image_on_device(device_ip, image_name)
-                if error:
-                    add_msg_to_list(result, get_failure_msg(error, request))
-                else:
-                    add_msg_to_list(result, get_success_msg(request))
-                _logger.info("Successfully changed image on device %s.", device_ip)
-            except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request))
-                http_status = http_status and False
-                _logger.error("Failed to change image on device %s. Error: %s", device_ip, err)
+            switch_image_task.apply_async(
+                kwargs={"device_ip": device_ip, "image_name": image_name}
+            )
+            add_msg_to_list(result, get_success_msg(request))
     return Response(
         {"result": result},
         status=(
-            status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR
+            status.HTTP_202_ACCEPTED if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR
         ),
     )
 
@@ -80,23 +78,16 @@ def install_image(request):
                 )
             discover_also = req_data.get("discover_also", False)
             try:
-                networks = {}
-                install_responses = {}
-                for device_ip in device_ips:
-                    response = install_image_on_device(
-                        device_ip=device_ip,
-                        image_url=image_url,
-                        discover_also=discover_also,
-                        username=req_data.get("username", None),
-                        password=req_data.get("password", None)
-                    )
-                    if "error" in response:
-                        install_responses[device_ip] = response
-                    else:
-                        networks[device_ip] = response
-                    return Response(
-                        {"networks": networks, "install_response": install_responses}
-                    )
+                install_task.apply_async(
+                    kwargs={
+                        "device_ips": device_ips,
+                        "image_url": image_url,
+                        "discover_also": discover_also,
+                        "username": req_data.get("username", None),
+                        "password": req_data.get("password", None),
+                    }
+                )
+                add_msg_to_list(result, get_success_msg(request))
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
@@ -106,7 +97,17 @@ def install_image(request):
     return Response(
         {"result": result},
         status=(
-            status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR
+            status.HTTP_202_ACCEPTED if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR
         ),
     )
 
+
+@signals.task_sent.connect
+def task_sent(**kwargs):
+    TaskResult.objects.store_result(
+        task_id=kwargs["task_id"],
+        status=states.PENDING,
+        content_type="application/json",
+        content_encoding="utf-8",
+        result=json.dumps({"request_data": kwargs["kwargs"]}),
+    )

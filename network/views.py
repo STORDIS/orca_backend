@@ -3,6 +3,7 @@ import datetime
 import time
 
 from django.forms import model_to_dict
+from django_celery_results.models import TaskResult
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -271,3 +272,21 @@ def remove_schedular_and_state(device_ip: str):
         state_objs = OrcaState.objects.all()
         for i in state_objs:
             i.delete()
+
+
+@api_view(["GET"])
+def celery_result(request):
+    results = TaskResult.objects.all()
+    return (
+        Response(results.values(), status=status.HTTP_200_OK)
+        if results
+        else Response({}, status=status.HTTP_204_NO_CONTENT)
+    )
+
+
+@api_view(["DELETE"])
+def close_tasks(request):
+    results = TaskResult.objects.all()
+    for i in results:
+        i.delete()
+    return Response({}, status=status.HTTP_204_NO_CONTENT)

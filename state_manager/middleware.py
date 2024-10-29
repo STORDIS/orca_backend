@@ -34,8 +34,12 @@ class BlockPutMiddleware:
 
                 if current_state == State.AVAILABLE:
                     self._update_state(device_ip=ip, state=next_state)
-
-            response = self.get_response(request)
+            try:
+                response = self.get_response(request)
+            except Exception as e:
+                return JsonResponse(
+                    {"result": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
 
             # Reset state to AVAILABLE after processing
             for ip in ip_next_state.keys():
