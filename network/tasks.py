@@ -29,7 +29,7 @@ def install_task(self, device_ips, image_url, discover_also, username, password,
             else:
                 networks[device_ip] = response
         except Exception as err:
-            add_msg_to_list(result, {"status": "failed", "message": err})
+            install_responses[device_ip] = {"error": err}
             _logger.error("Failed to install image on device %s. Error: %s", device_ip, err)
     return {
         "result": {
