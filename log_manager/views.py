@@ -75,7 +75,7 @@ def get_celery_tasks_data():
     task_results = TaskResult.objects.all()
     result_data = []
     for result in task_results:
-        responses = json.loads(result.result)
+        responses = json.loads(result.result) if result.result else {}
         result_data.append(
             {
                 "status": result.status,

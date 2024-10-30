@@ -12,8 +12,9 @@ _logger = get_backend_logger()
 
 @shared_task(bind=True, track_started=True, trail=True, acks_late=True)
 def install_task(self, device_ips, image_url, discover_also, username, password, http_path):
-    result = []
-    save_default_result(task_id=self.request.id, result=result)
+    install_responses = {}
+    networks = {}
+    save_default_result(task_id=self.request.id, result={})
     for device_ip in device_ips:
         try:
             response = install_image_on_device(
@@ -24,14 +25,17 @@ def install_task(self, device_ips, image_url, discover_also, username, password,
                 password=password
             )
             if "output" in response:
-                result.append({"message": "success", "details": {"install_response": response}})
+                install_responses[device_ip] = response
             else:
-                result.append({"message": "success", "details": {"device_ips": response}})
+                networks[device_ip] = response
         except Exception as err:
             add_msg_to_list(result, {"status": "failed", "message": err})
             _logger.error("Failed to install image on device %s. Error: %s", device_ip, err)
     return {
-        "result": result,
+        "result": {
+            "install_responses": install_responses,
+            "networks": networks
+        },
         "request_data": {
             "device_ips": device_ips, "image_url": image_url, "discover_also": discover_also
         },
