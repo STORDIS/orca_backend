@@ -93,7 +93,7 @@ def get_celery_tasks_data() -> list:
                 "status_code": 200,
                 "http_method": "PUT",
                 "processing_time": (result.date_done - result.date_created).total_seconds(),
-                "response": result.result,
+                "response": json.loads(result.result),
                 "request_json": task_kwargs,
                 "http_path": http_path,
                 "task_id": result.task_id,
