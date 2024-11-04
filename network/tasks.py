@@ -88,3 +88,15 @@ def save_default_result(task_id, result):
     task.result = json.dumps(result)
     task.save()
 
+
+@signals.task_revoked.connect
+def task_revoked(**kwargs):
+    task_kwargs = kwargs["kwargs"]
+    http_path = task_kwargs.pop("http_path", None)
+    TaskResult.objects.store_result(
+        task_id=kwargs["task_id"],
+        status=states.PENDING,
+        content_type="application/json",
+        content_encoding="utf-8",
+        result=json.dumps({"request_data": kwargs["kwargs"], "http_path": http_path}),
+    )

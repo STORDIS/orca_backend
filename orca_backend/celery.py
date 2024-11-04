@@ -22,4 +22,4 @@ def debug_task(self):
 
 
 def cancel_task(task_id):
-    app.control.revoke(task_id, terminate=True)
+    app.control.revoke(task_id, terminate=True, signal="SIGKILL")
