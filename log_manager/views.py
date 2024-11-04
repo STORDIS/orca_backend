@@ -33,8 +33,10 @@ def get_logs(request: Request, **kwargs):
         items = Logs.objects.all().order_by("-timestamp")
         paginator = Paginator(items, query_params.get("size", 10))  # sizeof return list
         logs_result = paginator.page(kwargs["page"])  # page no
-        final_result.extend(logs_result.object_list.values())
-        final_result.extend(get_celery_tasks_data())
+        final_result.extend(logs_result.object_list.values())  # add logs
+        final_result.extend(get_celery_tasks_data())  # add celery task data
+
+        # sort by timestamp
         final_result.sort(
             key=lambda x: datetime.datetime.strptime(
                 x["timestamp"], "%Y-%m-%d %H:%M:%S"
@@ -72,7 +74,13 @@ def delete_logs(request: Request, **kwargs):
         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-def get_celery_tasks_data():
+def get_celery_tasks_data() -> list:
+    """
+    function to get celery tasks data from database
+
+    Returns:
+        - list: celery tasks data
+    """
     task_results = TaskResult.objects.all()
     result_data = []
     for result in task_results:

@@ -278,6 +278,9 @@ def remove_schedular_and_state(device_ip: str):
 @api_view(["DELETE"])
 @log_request
 def cancel_celery_task(request):
+    """
+    This function is an API view that handles the HTTP DELETE requests for the 'cancel_celery_task' endpoint.
+    """
     result = []
     req_data_list = (
         request.data if isinstance(request.data, list) else [request.data]
