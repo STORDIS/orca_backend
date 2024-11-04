@@ -1,7 +1,9 @@
+import ast
 import datetime
 import json
 import traceback
 
+from celery.result import AsyncResult
 from django.core.paginator import Paginator, EmptyPage
 from django_celery_results.models import TaskResult
 from rest_framework import status
@@ -74,7 +76,8 @@ def get_celery_tasks_data():
     task_results = TaskResult.objects.all()
     result_data = []
     for result in task_results:
-        responses = json.loads(result.result) if result.result else {}
+        task_kwargs = ast.literal_eval(result.task_kwargs.strip('\"')) if result.task_kwargs else {}
+        http_path = task_kwargs.pop("http_path", "")
         result_data.append(
             {
                 "status": result.status,
@@ -82,10 +85,10 @@ def get_celery_tasks_data():
                 "status_code": 200,
                 "http_method": "PUT",
                 "processing_time": (result.date_done - result.date_created).total_seconds(),
-                "response": responses.get("result", None),
-                "request_json": responses.get("request_data", None),
-                "http_path": responses.get("http_path", None),
-                "task_id": result.task_id
+                "response": result.result,
+                "request_json": task_kwargs,
+                "http_path": http_path,
+                "task_id": result.task_id,
             }
         )
     return result_data
