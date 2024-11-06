@@ -106,7 +106,7 @@ class TestSetup(TestORCA):
         }
 
         response = self.put_req("install_image", req_json=request_body)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
         response_body = response.json()
         task_id = response_body["result"][0]["task_id"]
         self.assertIsNotNone(task_id)
