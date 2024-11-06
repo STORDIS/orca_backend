@@ -7,11 +7,6 @@ from rest_framework import status
 from network.test.test_common import TestORCA
 
 
-@override_settings(
-    CELERY_TASK_ALWAYS_EAGER=True,
-    CELERY_TASK_EAGER_PROPAGATES_EXCEPTIONS=True,
-    CELERY_TASK_STORE_EAGER_RESULT=True
-)
 class TestSetup(TestORCA):
     databases = ["default"]
     sonic_ips = []
