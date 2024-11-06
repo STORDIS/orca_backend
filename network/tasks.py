@@ -80,9 +80,7 @@ def task_sent(**kwargs):
         status=states.PENDING,
         content_type="application/json",
         content_encoding="utf-8",
-        result={
-            "result": [],
-        },
+        result={},
         task_kwargs=task_kwargs,
     )
 

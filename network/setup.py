@@ -14,7 +14,7 @@ _logger = get_backend_logger()
 
 @api_view(["PUT"])
 @log_request
-def config_image(request):
+def switch_sonic_image(request):
     result = []
     http_status = True
     if request.method == "PUT":
@@ -36,10 +36,12 @@ def config_image(request):
                     {"status": "Required field image name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            switch_image_task.apply_async(
+            task = switch_image_task.apply_async(
                 kwargs={"device_ip": device_ip, "image_name": image_name, "http_path": request.path}
             )
-            add_msg_to_list(result, get_success_msg(request))
+            message = get_success_msg(request)
+            message["task_id"] = task.id
+            add_msg_to_list(result, message)
     return Response(
         {"result": result},
         status=(
@@ -74,7 +76,7 @@ def install_image(request):
                 )
             discover_also = req_data.get("discover_also", False)
             try:
-                install_task.apply_async(
+                task = install_task.apply_async(
                     kwargs={
                         "device_ips": device_ips,
                         "image_url": image_url,
@@ -84,7 +86,9 @@ def install_image(request):
                         "http_path": request.path,
                     }
                 )
-                add_msg_to_list(result, get_success_msg(request))
+                message = get_success_msg(request)
+                message["task_id"] = task.id
+                add_msg_to_list(result, message)
             except Exception as err:
                 add_msg_to_list(result, get_failure_msg(err, request))
                 http_status = http_status and False
