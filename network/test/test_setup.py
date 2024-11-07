@@ -156,6 +156,8 @@ class TestSetup(TestORCA):
 
         response = self.get_req("celery_task", {"task_id": task_id})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # using async result because celery not storing test results.
         result = AsyncResult(task_id)
         self.assertEqual(result.status, "SUCCESS")
 

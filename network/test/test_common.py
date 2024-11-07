@@ -12,6 +12,8 @@ from django.contrib.auth.models import User
 from django.test import override_settings
 
 
+# adding override_settings for celery to be eager it uses memory to store test tasks.
+# eager is used because celery is not storing test tasks.
 @override_settings(
     CELERY_TASK_ALWAYS_EAGER=True,
     CELERY_TASK_EAGER_PROPAGATES_EXCEPTIONS=True,
