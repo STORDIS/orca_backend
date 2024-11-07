@@ -6,8 +6,9 @@ import time
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
-from orca_nw_lib.gnmi_sub import gnmi_unsubscribe_for_all_devices_in_db
+from orca_nw_lib.gnmi_sub import gnmi_unsubscribe_for_all_devices_in_db, gnmi_subscribe_for_all_devices_in_db
 from django.contrib.auth.models import User
+from orca_nw_lib.gnmi_sub import get_subscription_thread_name, get_running_thread_names
 
 
 class TestORCA(APITestCase):
@@ -75,10 +76,15 @@ class TestORCA(APITestCase):
                     self.assertEqual(response1.status_code, status.HTTP_200_OK)
                 TestORCA.sync_done = True
 
+        gnmi_subscribe_for_all_devices_in_db()  # Subscribe for all devices
+
     @classmethod
     def tearDownClass(cls) -> None:
         super().tearDownClass()
         gnmi_unsubscribe_for_all_devices_in_db()
+        for ip in cls.device_ips:
+            thread_name = get_subscription_thread_name(ip)
+            cls.assertTrue(thread_name not in get_running_thread_names(), f"Thread {thread_name} is still running")
 
     def del_port_chnl_ip(self, request_body):
         for data in (
