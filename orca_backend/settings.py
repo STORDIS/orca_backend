@@ -46,7 +46,8 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'log_manager',
     'state_manager',
-    'django_celery_results'
+    'orca_setup',
+    'django_celery_results',
 ]
 
 #check if orcask module is installed 

@@ -9,17 +9,9 @@ from rest_framework import status
 from django.urls import reverse
 from orca_nw_lib.gnmi_sub import gnmi_unsubscribe_for_all_devices_in_db, gnmi_subscribe_for_all_devices_in_db
 from django.contrib.auth.models import User
-from django.test import override_settings
 from orca_nw_lib.gnmi_sub import get_subscription_thread_name, get_running_thread_names
 
 
-# adding override_settings for celery to be eager it uses memory to store test tasks.
-# eager is used because celery is not storing test tasks.
-@override_settings(
-    CELERY_TASK_ALWAYS_EAGER=True,
-    CELERY_TASK_EAGER_PROPAGATES_EXCEPTIONS=True,
-    CELERY_TASK_STORE_EAGER_RESULT=True
-)
 class TestORCA(APITestCase):
     """
     Test utility functions

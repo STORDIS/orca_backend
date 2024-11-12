@@ -2,7 +2,7 @@
 
 from django.urls import re_path, path
 
-from . import views, stp_vlan, stp_port, vlan, interface, port_chnl, mclag, bgp, port_group, stp, setup
+from . import views, stp_vlan, stp_port, vlan, interface, port_chnl, mclag, bgp, port_group, stp
 
 urlpatterns = [
     path("stp", stp.stp_global_config, name="stp_config"),
@@ -16,9 +16,6 @@ urlpatterns = [
     path("discover/feature", views.discover_by_feature, name="discover_by_feature"),
     path("discover/schedule", views.discover_scheduler, name="discover_scheduler"),
     re_path("devices", views.device_list, name="device"),
-    path("switch_image", setup.switch_sonic_image, name="switch_image"),
-    path("install_image", setup.install_image, name="install_image"),
-    path("celery", views.celery_task, name="celery_task"),
     path("subinterface", interface.interface_subinterface_config, name="subinterface"),
     re_path("interface_pg", interface.interface_pg, name="interface_pg"),
     path("interface_resync", interface.interface_resync, name="interface_resync"),

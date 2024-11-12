@@ -4,9 +4,7 @@ from rest_framework.response import Response
 
 from log_manager.decorators import log_request
 from log_manager.logger import get_backend_logger
-from network.tasks import install_task, switch_image_task
-
-from network.util import get_success_msg, add_msg_to_list, get_failure_msg
+from orca_setup.tasks import install_task, switch_image_task
 
 
 _logger = get_backend_logger()
@@ -39,9 +37,13 @@ def switch_sonic_image(request):
             task = switch_image_task.apply_async(
                 kwargs={"device_ip": device_ip, "image_name": image_name, "http_path": request.path}
             )
-            message = get_success_msg(request)
-            message["task_id"] = task.id
-            add_msg_to_list(result, message)
+            result.append(
+                {
+                    "message": f"{request.method}: request successful",
+                    "status": "success",
+                    "task_id": task.task_id
+                }
+            )
     return Response(
         {"result": result},
         status=(
@@ -86,11 +88,20 @@ def install_image(request):
                         "http_path": request.path,
                     }
                 )
-                message = get_success_msg(request)
-                message["task_id"] = task.id
-                add_msg_to_list(result, message)
+                result.append(
+                    {
+                        "message": f"{request.method}: request successful",
+                        "status": "success",
+                        "task_id": task.task_id
+                    }
+                )
             except Exception as err:
-                add_msg_to_list(result, get_failure_msg(err, request))
+                result.append(
+                    {
+                        "message": f"{request.method}: request failed with error: {err}",
+                        "status": "failed",
+                    }
+                )
                 http_status = http_status and False
                 _logger.error(
                     "Failed to install image. Error: %s", err

@@ -274,38 +274,3 @@ def remove_schedular_and_state(device_ip: str):
         state_objs = OrcaState.objects.all()
         for i in state_objs:
             i.delete()
-
-
-@api_view(["GET", "DELETE"])
-@log_request
-def celery_task(request):
-    """
-    This function is an API view that handles the HTTP DELETE requests for the 'cancel_celery_task' endpoint.
-    """
-    result = []
-    if request.method == "GET":
-        task_id = request.GET.get("task_id", None)
-        if task_id:
-            data = model_to_dict(TaskResult.objects.get_task(task_id=task_id))
-        else:
-            data = TaskResult.objects.all().values()
-        return (
-            Response(data, status=status.HTTP_200_OK)
-            if data
-            else Response({}, status=status.HTTP_204_NO_CONTENT)
-        )
-    if request.method == "DELETE":
-        req_data_list = (
-            request.data if isinstance(request.data, list) else [request.data]
-        )
-        for req_data in req_data_list:
-            task_id = req_data.get("task_id", None)
-            if not task_id:
-                _logger.error("Required field device task_id not found.")
-                return Response(
-                    {"result": "Required field device task_id not found."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            cancel_task(task_id)
-            add_msg_to_list(result, get_success_msg(request))
-        return Response({"result": result}, status=status.HTTP_200_OK)
