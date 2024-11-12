@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'log_manager',
     'state_manager',
+    'fileserver'
 ]
 
 #check if orcask module is installed 

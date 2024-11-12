@@ -14,9 +14,12 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from orca_backend.settings import INSTALLED_APPS
+
+from orca_backend import settings
 
 urlpatterns = [
     path("", include("network.urls")),
@@ -24,6 +27,7 @@ urlpatterns = [
     path("auth/", include("authentication.urls")),
     path("logs/", include("log_manager.urls")),
     path("state/", include("state_manager.urls")),
+    path("files/", include("fileserver.urls")),
 ]
 
 if 'orcask' in INSTALLED_APPS:
