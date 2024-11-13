@@ -4,7 +4,6 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from log_manager.decorators import log_request
 from log_manager.logger import get_backend_logger
 from orca_backend.celery import cancel_task
 
@@ -42,6 +41,7 @@ def celery_task(request):
                 )
             try:
                 cancel_task(task_id)
+
                 result.append({
                     "message": f"{request.method}: {task_id} canceled",
                     "status": "success"
