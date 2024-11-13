@@ -43,7 +43,7 @@ def install_task(device_ips, image_url, discover_also, username, password, http_
     return {"install_responses": install_responses, "networks": networks}
 
 
-@shared_task(track_started=True, trail=True)
+@shared_task(track_started=True, trail=True, acks_late=True)
 def switch_image_task(device_ip, image_name, http_path):
     """
     Changes the image on a device.
