@@ -11,7 +11,6 @@ _logger = get_backend_logger()
 
 
 @api_view(["PUT"])
-@log_request
 def switch_sonic_image(request):
     result = []
     http_status = True
@@ -53,7 +52,6 @@ def switch_sonic_image(request):
 
 
 @api_view(["PUT"])
-@log_request
 def install_image(request):
     result = []
     http_status = True

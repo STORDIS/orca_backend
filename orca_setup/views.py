@@ -12,7 +12,6 @@ _logger = get_backend_logger()
 
 
 @api_view(["GET", "DELETE"])
-@log_request
 def celery_task(request):
     """
     This function is an API view that handles the HTTP DELETE requests for the 'cancel_celery_task' endpoint.
