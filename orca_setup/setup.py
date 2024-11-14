@@ -1,11 +1,11 @@
+import ipaddress
+
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from log_manager.decorators import log_request
 from log_manager.logger import get_backend_logger
-from orca_setup.tasks import install_task, switch_image_task
-
+from orca_setup.tasks import install_task, switch_image_task, scan_network_task
 
 _logger = get_backend_logger()
 
@@ -60,6 +60,7 @@ def install_image(request):
             request.data if isinstance(request.data, list) else [request.data]
         )
         for req_data in req_data_list:
+            task_details = {}
             device_ips = req_data.get("device_ips", "")
             if not device_ips:
                 _logger.error("Required field device_ips not found.")
@@ -76,34 +77,39 @@ def install_image(request):
                 )
             discover_also = req_data.get("discover_also", False)
             try:
-                task = install_task.apply_async(
-                    kwargs={
-                        "device_ips": device_ips,
-                        "image_url": image_url,
-                        "discover_also": discover_also,
-                        "username": req_data.get("username", None),
-                        "password": req_data.get("password", None),
-                        "http_path": request.path,
-                    }
-                )
-                result.append(
-                    {
-                        "message": f"{request.method}: request successful",
-                        "status": "success",
-                        "task_id": task.task_id
-                    }
-                )
+                ips_to_install = []
+                ips_to_scan = []
+                for ip in device_ips:
+                    network = ipaddress.ip_network(ip, strict=False)
+                    if network.prefixlen == 32:
+                        ips_to_install.append(ip)
+                    else:
+                        ips_to_scan.append(ip)
+                if ips_to_scan:
+                    scan_task_details = scan_network_task.apply_async(
+                        kwargs={
+                            "device_ips": ips_to_scan,
+                            "http_path": request.path,
+                        }
+                    )
+                    task_details["scan_task_id"] = scan_task_details.task_id
+                if ips_to_install:
+                    install_task_details = install_task.apply_async(
+                        kwargs={
+                            "device_ips": ips_to_install,
+                            "image_url": image_url,
+                            "discover_also": discover_also,
+                            "username": req_data.get("username", None),
+                            "password": req_data.get("password", None),
+                            "http_path": request.path,
+                        }
+                    )
+                    task_details["install_task_id"] = install_task_details.task_id
+                result.append({**task_details, "message": f"{request.method}: request successful", "status": "success"})
             except Exception as err:
-                result.append(
-                    {
-                        "message": f"{request.method}: request failed with error: {err}",
-                        "status": "failed",
-                    }
-                )
+                result.append({"message": f"{request.method}: request failed with error: {err}", "status": "failed", })
                 http_status = http_status and False
-                _logger.error(
-                    "Failed to install image. Error: %s", err
-                )
+                _logger.error("Failed to install image. Error: %s", err)
     return Response(
         {"result": result},
         status=(

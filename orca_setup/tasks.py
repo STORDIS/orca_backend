@@ -2,8 +2,7 @@ from celery import signals, shared_task, states
 from django_celery_results.models import TaskResult
 
 from log_manager.logger import get_backend_logger
-from network.util import add_msg_to_list
-from orca_nw_lib.setup import switch_image_on_device, install_image_on_device
+from orca_nw_lib.setup import switch_image_on_device, install_image_on_device, scan_networks
 
 _logger = get_backend_logger()
 
@@ -23,7 +22,6 @@ def install_task(device_ips, image_url, discover_also, username, password, http_
         dict: A dictionary containing the results of the installation.
     """
     install_responses = {}
-    networks = {}
     for device_ip in device_ips:
         try:
             response = install_image_on_device(
@@ -33,14 +31,11 @@ def install_task(device_ips, image_url, discover_also, username, password, http_
                 username=username,
                 password=password
             )
-            if "output" in response:
-                install_responses[device_ip] = response
-            else:
-                networks[device_ip] = response
+            install_responses[device_ip] = response
         except Exception as err:
             install_responses[device_ip] = {"error": err}
             _logger.error("Failed to install image on device %s. Error: %s", device_ip, err)
-    return {"install_responses": install_responses, "networks": networks}
+    return install_responses
 
 
 @shared_task(track_started=True, trail=True, acks_late=True)
@@ -61,18 +56,49 @@ def switch_image_task(device_ip, image_name, http_path):
             result.append({"message": "success", "details": output})
             _logger.info("Successfully changed image on device %s.", device_ip)
     except Exception as err:
-        add_msg_to_list(result, {"status": "failed", "message": err})
+        result.append({"message": "failed", "details": str(err)})
         _logger.error("Failed to change image on device %s. Error: %s", device_ip, err)
     return result
+
+
+@shared_task(track_started=True, trail=True, acks_late=True)
+def scan_network_task(device_ips: list, http_path: str):
+    """
+    Scans the network of a device.
+    Args:
+        device_ips (list): A list of device IPs.
+        http_path (str): The HTTP path of the request.
+    """
+    onie_devices = {}
+    sonic_devices = {}
+    for device_ip in device_ips:
+        try:
+            onie, sonic = scan_networks(device_ip)
+            onie_devices[device_ip] = onie
+            sonic_devices[device_ip] = sonic
+        except Exception as err:
+            onie_devices[device_ip] = {"error": err}
+            sonic_devices[device_ip] = {"error": err}
+    return {"onie_devices": onie_devices, "sonic_devices": sonic_devices}
 
 
 @signals.task_sent.connect
 def task_sent(**kwargs):
     """
-    Signal handler for task_sent signal.
-    Stores the task ID in the database.
+    Signal handler for the Celery task_sent signal.
+
+    This function is triggered whenever a task is dispatched by Celery. It logs
+    the task's ID and initial status to the database to facilitate tracking
+    throughout its lifecycle. The task status is explicitly set to `PENDING`
+    here, as Celery does not automatically set this status at the point of
+    dispatch. Celery's task state transitions are typically tracked only after
+    task execution begins, so this manual entry of `PENDING` allows the system
+    to recognize that the task is awaiting processing right from dispatch.
+
     Args:
-        kwargs (dict): The keyword arguments passed to the signal handler.
+        kwargs (dict): The keyword arguments passed to the signal handler,
+                       containing details about the dispatched task, such as
+                       task_id and task arguments.
     """
     task_kwargs = kwargs["kwargs"]
     TaskResult.objects.store_result(
@@ -83,4 +109,3 @@ def task_sent(**kwargs):
         result={},
         task_kwargs=task_kwargs,
     )
-
