@@ -3,8 +3,12 @@ from django_celery_results.models import TaskResult
 
 from log_manager.logger import get_backend_logger
 from orca_nw_lib.setup import switch_image_on_device, install_image_on_device, scan_networks
+import multiprocessing
 
 _logger = get_backend_logger()
+
+# Create a separate process for the worker
+multiprocessing.set_start_method('spawn', force=True)
 
 
 @shared_task(track_started=True, trail=True, acks_late=True)
