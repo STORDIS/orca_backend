@@ -25,7 +25,6 @@ def celery_task(request):
             data = _modify_celery_results(TaskResult.objects.get_task(task_id=task_id))
         else:
             data = [_modify_celery_results(i) for i in TaskResult.objects.all()]
-        print(type(data))
         return (
             Response(data, status=status.HTTP_200_OK)
             if data
