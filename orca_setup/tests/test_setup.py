@@ -2,12 +2,11 @@ import time
 
 import yaml
 from celery.result import AsyncResult
-from django.test import override_settings
 from rest_framework import status
-from network.test.test_common import TestORCA
+from orca_setup.tests.test_common import TestCommon
 
 
-class TestSetup(TestORCA):
+class TestSetup(TestCommon):
     databases = ["default"]
     sonic_ips = []
     onie_ips = []
@@ -125,7 +124,7 @@ class TestSetup(TestORCA):
         # so we cannot test discover on onie device.
         # we need to change device back to onie after install else test will fail.
 
-    def test_install_image_with_network_ip(self):
+    def test_network_scan(self):
         device_ips = [f"{self.onie_ips[0]}/30"]
 
         req_body = {
