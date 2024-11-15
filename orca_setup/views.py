@@ -1,7 +1,6 @@
 import ast
 import json
 
-from django.forms import model_to_dict
 from django_celery_results.models import TaskResult
 from rest_framework import status
 from rest_framework.decorators import api_view
