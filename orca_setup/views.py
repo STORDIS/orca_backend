@@ -1,3 +1,6 @@
+import ast
+import json
+
 from django.forms import model_to_dict
 from django_celery_results.models import TaskResult
 from rest_framework import status
@@ -19,9 +22,10 @@ def celery_task(request):
     if request.method == "GET":
         task_id = request.GET.get("task_id", None)
         if task_id:
-            data = model_to_dict(TaskResult.objects.get_task(task_id=task_id))
+            data = _modify_celery_results(TaskResult.objects.get_task(task_id=task_id))
         else:
-            data = TaskResult.objects.all().values()
+            data = [_modify_celery_results(i) for i in TaskResult.objects.all()]
+        print(type(data))
         return (
             Response(data, status=status.HTTP_200_OK)
             if data
@@ -40,8 +44,8 @@ def celery_task(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             try:
+                _logger.info(f"canceling task {task_id}")
                 cancel_task(task_id)
-
                 result.append({
                     "message": f"{request.method}: {task_id} canceled",
                     "status": "success"
@@ -53,3 +57,19 @@ def celery_task(request):
                     "status": "failed"
                 })
         return Response({"result": result}, status=status.HTTP_200_OK)
+
+
+def _modify_celery_results(result):
+    task_kwargs = ast.literal_eval(result.task_kwargs.strip('\"')) if result.task_kwargs else {}
+    http_path = task_kwargs.pop("http_path", "")
+    return {
+        "status": result.status,
+        "timestamp": result.date_created.strftime("%Y-%m-%d %H:%M:%S"),
+        "status_code": 200,
+        "http_method": "PUT",
+        "processing_time": (result.date_done - result.date_created).total_seconds(),
+        "response": json.loads(result.result),
+        "request_json": task_kwargs,
+        "http_path": http_path,
+        "task_id": result.task_id,
+    }

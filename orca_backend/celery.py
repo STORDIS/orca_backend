@@ -1,5 +1,9 @@
 import os
 from celery import Celery
+import multiprocessing
+
+# Create a separate process for the worker
+multiprocessing.set_start_method('spawn', force=True)
 
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'orca_backend.settings')
