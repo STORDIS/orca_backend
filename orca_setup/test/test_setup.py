@@ -3,7 +3,7 @@ import time
 import yaml
 from celery.result import AsyncResult
 from rest_framework import status
-from orca_setup.tests.test_common import TestCommon
+from orca_setup.test.test_common import TestCommon
 
 
 class TestSetup(TestCommon):
@@ -30,20 +30,26 @@ class TestSetup(TestCommon):
             "discover_also": True,
             "device_ips": [device_ip]
         }
+
+        # discovering device before installation
+        response = self.put_req("discover", {"address": device_ip})
+        self.assertTrue(response.status_code == status.HTTP_200_OK)
         device = self.get_req("device", {"mgt_ip": device_ip})
         current_image = device.json()["img_name"]
         next_img = self.sonic_img_details.get("name")
 
+        # installing image
         response = self.put_req("install_image", req_json=request_body)
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
         response_body = response.json()
-        task_id = response_body["result"][0]["task_id"]
-        self.assertIsNotNone(task_id)
+        results = response_body["result"][0]
+        install_task_id = results["install_task_id"]
+        self.assertIsNotNone(install_task_id)
 
         task_status = ""
         max_retry = 30
         while task_status.lower() == "started":
-            response = self.get_req("celery_task", {"task_id": task_id})
+            response = self.get_req("celery_task", {"task_id": install_task_id})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             task_status = response.json()["status"]
             if max_retry == 0:
@@ -52,7 +58,7 @@ class TestSetup(TestCommon):
                 max_retry -= 1
             time.sleep(60)
 
-        response = self.get_req("celery_task", {"task_id": task_id})
+        response = self.get_req("celery_task", {"task_id": install_task_id})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["status"].lower(), "success")
 
@@ -102,13 +108,14 @@ class TestSetup(TestCommon):
         response = self.put_req("install_image", req_json=request_body)
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
         response_body = response.json()
-        task_id = response_body["result"][0]["task_id"]
-        self.assertIsNotNone(task_id)
+        result = response_body["result"][0]
+        install_task_id = result["install_task_id"]
+        self.assertIsNotNone(install_task_id)
 
         task_status = ""
         max_retry = 30
         while task_status.lower() == "started":
-            response = self.get_req("celery_task", {"task_id": task_id})
+            response = self.get_req("celery_task", {"task_id": install_task_id})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             task_status = response.json()["status"]
             if max_retry == 0:
@@ -117,7 +124,7 @@ class TestSetup(TestCommon):
                 max_retry -= 1
             time.sleep(60)
 
-        response = self.get_req("celery_task", {"task_id": task_id})
+        response = self.get_req("celery_task", {"task_id": install_task_id})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["status"].lower(), "success")
         # onie changes device ip after installing image.
@@ -125,10 +132,11 @@ class TestSetup(TestCommon):
         # we need to change device back to onie after install else test will fail.
 
     def test_network_scan(self):
-        device_ips = [f"{self.onie_ips[0]}/30"]
+        sonic_ips_to_scan = [f"{self.sonic_ips[0]}/30"]
+        onie_ips_to_scan = [f"{self.onie_ips[0]}/30"]
 
         req_body = {
-            "device_ips": device_ips,
+            "device_ips": [*sonic_ips_to_scan, *onie_ips_to_scan],
             "image_url": self.sonic_img_details.get("url"),
             "discover_also": True
         }
@@ -138,13 +146,14 @@ class TestSetup(TestCommon):
             "install_image", req_json=req_body
         )
         response_body = response.json()
-        task_id = response_body["result"][0]["task_id"]
-        self.assertIsNotNone(task_id)
+        results = response_body["result"][0]
+        scan_task_id = results.get("scan_task_id", None)
+        self.assertIsNotNone(scan_task_id)
 
         task_status = ""
         max_retry = 30
         while task_status.lower() == "started":
-            response = self.get_req("celery_task", {"task_id": task_id})
+            response = self.get_req("celery_task", {"task_id": scan_task_id})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             task_status = response.json()["status"]
             if max_retry == 0:
@@ -153,22 +162,24 @@ class TestSetup(TestCommon):
                 max_retry -= 1
             time.sleep(60)
 
-        response = self.get_req("celery_task", {"task_id": task_id})
+        response = self.get_req("celery_task", {"task_id": scan_task_id})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # using async result because celery not storing test results.
-        result = AsyncResult(task_id)
+        result = AsyncResult(scan_task_id)
         self.assertEqual(result.status, "SUCCESS")
 
-        for device_ip in device_ips:
-            networks_details = result.result.get("networks", {}).get(device_ip, {})
-            for i in networks_details:
-                self.assertTrue(i.get("mac_address") is not None)
-                self.assertTrue(i.get("version") is not None)
-                self.assertTrue(i.get("platform") is not None)
+        for ip in sonic_ips_to_scan:
+            sonic_device = result.result.get("sonic_devices").get(ip)
+            self.assertTrue(len(sonic_device) > 0)
+
+        # This condition might fail when device is not in onie mode.
+        for ip in onie_ips_to_scan:
+            onie_device = result.result.get("onie_devices").get(ip)
+            self.assertTrue(len(onie_device) > 0)
 
     def load_test_config(self):
-        file = "./network/test/test_orca_setup_config.yaml"
+        file = "./orca_setup/test/test_orca_setup_config.yaml"
         with open(file, "r") as stream:
             try:
                 config = yaml.safe_load(stream)

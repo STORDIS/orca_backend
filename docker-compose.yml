@@ -25,5 +25,14 @@ services:
     ports:
       - "6379:6379"
 
+  celery:
+    restart: unless-stopped
+    build: .
+    command: poetry run celery -A orca_backend worker --loglevel=info --pool=prefork --concurrency=1
+    volumes:
+      - .:/code
+    depends_on:
+      - neo4j
+      - redis
 
 ## TODO celery container, and check if orca_backend container needs to be started separately.
