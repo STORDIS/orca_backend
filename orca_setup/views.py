@@ -61,7 +61,7 @@ def _modify_celery_results(result):
     try:
         task_kwargs = ast.literal_eval(result.task_kwargs.strip('\"')) if result.task_kwargs else {}
     except:
-        task_kwargs = result.task_kwargs
+        task_kwargs = {"result": result.task_kwargs}
     http_path = task_kwargs.pop("http_path", "")
     return {
         "status": result.status,
