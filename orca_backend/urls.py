@@ -20,6 +20,7 @@ from orca_backend.settings import INSTALLED_APPS
 
 urlpatterns = [
     path("", include("network.urls")),
+    path("", include("orca_setup.urls")),
     path("admin/", admin.site.urls),
     path("auth/", include("authentication.urls")),
     path("logs/", include("log_manager.urls")),

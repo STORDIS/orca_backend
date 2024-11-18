@@ -1,7 +1,10 @@
 """ View for network. """
 import datetime
-import time
 
+from celery.result import AsyncResult
+from django_celery_results.models import TaskResult
+
+from orca_backend.celery import cancel_task
 from django.forms import model_to_dict
 from rest_framework.response import Response
 from rest_framework import status

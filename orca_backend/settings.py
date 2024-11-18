@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'log_manager',
     'state_manager',
+    'orca_setup',
+    'django_celery_results',
 ]
 
 #check if orcask module is installed 
@@ -152,3 +154,16 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
 }
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+CELERY_RESULT_EXTENDED = True
+CELERY_TASK_ALWAYS_EAGER = False
+CELERY_TASK_STORE_EAGER_RESULT = False
+CELERY_TASK_EAGER_PROPAGATES_EXCEPTIONS = False
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_BROKER_CONNECTION_RETRY = True
