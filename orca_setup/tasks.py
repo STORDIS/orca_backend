@@ -66,12 +66,12 @@ def switch_image_task(device_ip, image_name, http_path):
 
 
 @shared_task(track_started=True, trail=True, acks_late=True)
-def scan_network_task(device_ips: list, http_path: str):
+def scan_network_task(device_ips: list, **kwargs):
     """
     Scans the network of a device.
     Args:
         device_ips (list): A list of device IPs.
-        http_path (str): The HTTP path of the request.
+        kwargs (dict): The keyword arguments passed to the task.
     """
     onie_devices = {}
     sonic_devices = {}
