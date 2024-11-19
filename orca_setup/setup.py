@@ -89,6 +89,10 @@ def install_image(request):
                     scan_task_details = scan_network_task.apply_async(
                         kwargs={
                             "device_ips": ips_to_scan,
+                            "image_url": image_url,
+                            "discover_also": discover_also,
+                            "username": req_data.get("username", None),
+                            "password": req_data.get("password", None),
                             "http_path": request.path,
                         }
                     )
