@@ -15,5 +15,6 @@ class DHCPDevices(models.Model):
     device_ip = models.CharField(max_length=64, primary_key=True)
     hostname = models.CharField(max_length=64)
     mac_address = models.CharField(max_length=64)
+    dhcp_ip = models.CharField(max_length=64)
 
     objects = models.Manager()

@@ -16,7 +16,7 @@ def add_dhcp_leases_scheduler():
     scheduler.add_job(
         func=scan_dhcp_leases_file,
         trigger='interval',
-        minutes=5,
+        minutes=1,
         id="dhcp_list",
         replace_existing=True,
         max_instances=1,
@@ -43,12 +43,13 @@ def scan_dhcp_leases_file():
             )
             leases = IscDhcpLeases(destination_path)
             for lease in leases.get():
-                if lease.ip not in discovered_devices:
+                if lease.ip not in discovered_devices and "sonic" in lease.hostname:
                     DHCPDevices.objects.update_or_create(
-                        device_ip=device.device_ip,
+                        device_ip=lease.ip,
                         defaults={
                             'hostname': lease.hostname,
-                            'mac_address': lease.mac_address,
+                            'mac_address': lease.ethernet,
+                            'dhcp_ip': device.device_ip
                         }
                     )
     except Exception as e:

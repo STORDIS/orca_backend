@@ -1,0 +1,111 @@
+# DHCP leases file for SONiC hosts
+
+lease 192.168.1.101 {
+  starts 2 2024/11/11 09:00:00;
+  ends 2 2024/11/12 09:00:00;
+  cltt 2 2024/11/11 09:00:00;
+  binding state active;
+  next binding state free;
+  hardware ethernet 00:11:22:33:44:01;
+  uid "\001\000\021\"3D\001";
+  client-hostname "sonic1";
+}
+
+lease 192.168.1.102 {
+  starts 2 2024/11/11 09:05:00;
+  ends 2 2024/11/12 09:05:00;
+  cltt 2 2024/11/11 09:05:00;
+  binding state active;
+  next binding state free;
+  hardware ethernet 00:11:22:33:44:02;
+  uid "\001\000\021\"3D\002";
+  client-hostname "sonic2";
+}
+
+lease 192.168.1.103 {
+  starts 2 2024/11/11 09:10:00;
+  ends 2 2024/11/12 09:10:00;
+  cltt 2 2024/11/11 09:10:00;
+  binding state active;
+  next binding state free;
+  hardware ethernet 00:11:22:33:44:03;
+  uid "\001\000\021\"3D\003";
+  client-hostname "sonic3";
+}
+
+lease 192.168.1.104 {
+  starts 2 2024/11/11 09:15:00;
+  ends 2 2024/11/12 09:15:00;
+  cltt 2 2024/11/11 09:15:00;
+  binding state active;
+  next binding state free;
+  hardware ethernet 00:11:22:33:44:04;
+  uid "\001\000\021\"3D\004";
+  client-hostname "sonic4";
+}
+
+lease 192.168.1.105 {
+  starts 2 2024/11/11 09:20:00;
+  ends 2 2024/11/12 09:20:00;
+  cltt 2 2024/11/11 09:20:00;
+  binding state active;
+  next binding state free;
+  hardware ethernet 00:11:22:33:44:05;
+  uid "\001\000\021\"3D\005";
+  client-hostname "sonic5";
+}
+
+lease 192.168.1.106 {
+  starts 2 2024/11/11 09:25:00;
+  ends 2 2024/11/12 09:25:00;
+  cltt 2 2024/11/11 09:25:00;
+  binding state active;
+  next binding state free;
+  hardware ethernet 00:11:22:33:44:06;
+  uid "\001\000\021\"3D\006";
+  client-hostname "sonic6";
+}
+
+lease 192.168.1.107 {
+  starts 2 2024/11/11 09:30:00;
+  ends 2 2024/11/12 09:30:00;
+  cltt 2 2024/11/11 09:30:00;
+  binding state active;
+  next binding state free;
+  hardware ethernet 00:11:22:33:44:07;
+  uid "\001\000\021\"3D\007";
+  client-hostname "sonic7";
+}
+
+lease 192.168.1.108 {
+  starts 2 2024/11/11 09:35:00;
+  ends 2 2024/11/12 09:35:00;
+  cltt 2 2024/11/11 09:35:00;
+  binding state active;
+  next binding state free;
+  hardware ethernet 00:11:22:33:44:08;
+  uid "\001\000\021\"3D\008";
+  client-hostname "sonic8";
+}
+
+lease 192.168.1.109 {
+  starts 2 2024/11/11 09:40:00;
+  ends 2 2024/11/12 09:40:00;
+  cltt 2 2024/11/11 09:40:00;
+  binding state active;
+  next binding state free;
+  hardware ethernet 00:11:22:33:44:09;
+  uid "\001\000\021\"3D\009";
+  client-hostname "sonic9";
+}
+
+lease 192.168.1.110 {
+  starts 2 2024/11/11 09:45:00;
+  ends 2 2024/11/12 09:45:00;
+  cltt 2 2024/11/11 09:45:00;
+  binding state active;
+  next binding state free;
+  hardware ethernet 00:11:22:33:44:0A;
+  uid "\001\000\021\"3D\010";
+  client-hostname "sonic10";
+}
