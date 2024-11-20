@@ -1,7 +1,10 @@
 """ View for network. """
 import datetime
-import time
 
+from celery.result import AsyncResult
+from django_celery_results.models import TaskResult
+
+from orca_backend.celery import cancel_task
 from django.forms import model_to_dict
 from rest_framework.response import Response
 from rest_framework import status
@@ -160,7 +163,7 @@ def discover_by_feature(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             try:
-                discover_nw_features(device_ip, DiscoveryFeature(feature))
+                discover_nw_features(device_ip, DiscoveryFeature.get_enum_from_str(feature))
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Rediscovered device: %s", device_ip)
             except Exception as e:

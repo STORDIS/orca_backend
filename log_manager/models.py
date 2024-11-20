@@ -12,5 +12,6 @@ class Logs(models.Model):
     status_code = models.IntegerField()
     response = models.JSONField()
     http_method = models.CharField(max_length=32)
+    http_path = models.CharField(max_length=64)
 
     objects = models.Manager()

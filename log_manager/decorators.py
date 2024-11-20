@@ -17,18 +17,20 @@ def log_request(function):
             data = {
                 "timestamp": str(datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")),
                 "processing_time": time.time() - start,
-                "status_code": response.status_code
+                "status_code": response.status_code,
+                "http_path": request.path,
             }
-            # if response.status_code >= 400:
-            #     data["status"] = "failed"
-            # else:
-            #     data["status"] = "success"
             response_data = response.data
             if "result" in response_data:
                 responses = create_request_response_data(request_data=request.data, response_data=response_data["result"])
             else:
                 responses = create_request_response_data(request_data=request.data, response_data=response_data)
             for i in responses:
+                if "status" not in i:
+                    if response.status_code >= 400:
+                        i["status"] = "failed"
+                    else:
+                        i["status"] = "success"
                 serializer = LogSerializer(data={**data, **i, "http_method": request.method})
                 if serializer.is_valid():
                     serializer.save()

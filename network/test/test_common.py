@@ -3,11 +3,13 @@ Test utility functions
 """
 
 import time
+
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
-from orca_nw_lib.gnmi_sub import gnmi_unsubscribe_for_all_devices_in_db
+from orca_nw_lib.gnmi_sub import gnmi_unsubscribe_for_all_devices_in_db, gnmi_subscribe_for_all_devices_in_db
 from django.contrib.auth.models import User
+from orca_nw_lib.gnmi_sub import get_subscription_thread_name, get_running_thread_names
 
 
 class TestORCA(APITestCase):
@@ -75,16 +77,21 @@ class TestORCA(APITestCase):
                     self.assertEqual(response1.status_code, status.HTTP_200_OK)
                 TestORCA.sync_done = True
 
+        gnmi_subscribe_for_all_devices_in_db()  # Subscribe for all devices
+
     @classmethod
     def tearDownClass(cls) -> None:
         super().tearDownClass()
         gnmi_unsubscribe_for_all_devices_in_db()
+        for ip in cls.device_ips:
+            thread_name = get_subscription_thread_name(ip)
+            cls.assertTrue(thread_name not in get_running_thread_names(), f"Thread {thread_name} is still running")
 
     def del_port_chnl_ip(self, request_body):
         for data in (
-            request_body
-            if isinstance(request_body, list)
-            else [request_body] if request_body else []
+                request_body
+                if isinstance(request_body, list)
+                else [request_body] if request_body else []
         ):
             if "lag_name" in data and "mgt_ip" in data:
                 device_ip = data["mgt_ip"]
@@ -114,7 +121,7 @@ class TestORCA(APITestCase):
                 )
 
     def assert_response_status(
-        self, response, expected_status_codes, expected_response_msg=None
+            self, response, expected_status_codes, expected_response_msg=None
     ):
         try:
             self.assertTrue(
@@ -175,9 +182,9 @@ class TestORCA(APITestCase):
             "resource not found",
         )
         for data in (
-            request_body
-            if isinstance(request_body, list)
-            else [request_body] if request_body else []
+                request_body
+                if isinstance(request_body, list)
+                else [request_body] if request_body else []
         ):
             response = self.get_req("device_port_chnl", data)
             self.assert_response_status(response, status.HTTP_204_NO_CONTENT)
@@ -198,9 +205,9 @@ class TestORCA(APITestCase):
 
         """
         for data in (
-            request_body
-            if isinstance(request_body, list)
-            else [request_body] if request_body else []
+                request_body
+                if isinstance(request_body, list)
+                else [request_body] if request_body else []
         ):
             self.assert_response_status(
                 self.put_req("device_port_chnl", data), status.HTTP_200_OK
@@ -219,9 +226,9 @@ class TestORCA(APITestCase):
     def perform_add_port_chnl_mem_eth(self, request_body):
 
         for data in (
-            request_body
-            if isinstance(request_body, list)
-            else [request_body] if request_body else []
+                request_body
+                if isinstance(request_body, list)
+                else [request_body] if request_body else []
         ):
             self.assert_response_status(
                 self.put_req("port_chnl_mem_ethernet", data), status.HTTP_200_OK
@@ -386,8 +393,8 @@ class TestORCA(APITestCase):
         """
         timeout = 2
         retries = 5
-        response=""
-        for i in range(retries+1):
+        response = ""
+        for i in range(retries + 1):
             try:
                 response = req_func(*req_args)
                 for key, value in assert_args.items():
@@ -401,7 +408,7 @@ class TestORCA(APITestCase):
                             )
                         else:
                             self.assertEqual(response.status_code, value)
-                        continue ## Continue with next key
+                        continue  ## Continue with next key
 
                     if response.status_code == status.HTTP_200_OK:
                         print(f"Received: {key}={response.json()[key]}")
@@ -413,9 +420,10 @@ class TestORCA(APITestCase):
                 )
                 time.sleep(timeout)
                 if i == retries:
-                    raise ## If even after retries, assertion still fails, raise the exception
+                    raise  ## If even after retries, assertion still fails, raise the exception
 
-    def assert_response_status_with_retry_and_timeout(self, response, expected_status_codes, expected_response_msg=None):
+    def assert_response_status_with_retry_and_timeout(self, response, expected_status_codes,
+                                                      expected_response_msg=None):
         timeout = 2
         retries = 5
         for i in range(retries + 1):
@@ -426,8 +434,6 @@ class TestORCA(APITestCase):
                 time.sleep(timeout)
                 if i == retries:
                     raise
-
-
 
     def remove_mclag(self, device_ip):
         response = self.del_req("device_mclag_list", {"mgt_ip": device_ip})
@@ -447,9 +453,9 @@ class TestORCA(APITestCase):
         # req = {"mgt_ip": device_ip, "lag_name": lag_name}
         ## Remove all member VLANs before deleting port channel Otherwise, it will give an erros that instance is in use.
         for data in (
-            request_body
-            if isinstance(request_body, list)
-            else [request_body] if request_body else []
+                request_body
+                if isinstance(request_body, list)
+                else [request_body] if request_body else []
         ):
             if "lag_name" in data and "mgt_ip" in data:
                 response = self.get_req("device_port_chnl", data)

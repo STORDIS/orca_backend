@@ -1,5 +1,7 @@
 import json
 
+from django.db import transaction
+from django.forms import model_to_dict
 from django.http import JsonResponse
 from django.urls import resolve
 from rest_framework import status
@@ -19,14 +21,16 @@ class BlockPutMiddleware:
         if request.method == 'PUT':
             ip_next_state = self._get_device_state(request)
             for ip, next_state in ip_next_state.items():
-                state_obj, created = OrcaState.objects.get_or_create(
-                    device_ip=ip,
-                    defaults={"state": str(State.AVAILABLE)},
-                )
+                with transaction.atomic():
+                    state_obj, created = OrcaState.objects.get_or_create(
+                        device_ip=ip,
+                        defaults={"state": str(State.AVAILABLE)},
+                    )
+                    # Check if current state is blocking
+                    current_state = State.get_enum_from_str(state_obj.state)
 
-                # Check if current state is blocking
-                current_state = State.get_enum_from_str(state_obj.state)
                 if current_state != State.AVAILABLE:
+                    print(current_state)
                     return JsonResponse(
                         {"result": current_state.value},
                         status=status.HTTP_409_CONFLICT,
@@ -34,8 +38,12 @@ class BlockPutMiddleware:
 
                 if current_state == State.AVAILABLE:
                     self._update_state(device_ip=ip, state=next_state)
-
-            response = self.get_response(request)
+            try:
+                response = self.get_response(request)
+            except Exception as e:
+                response = JsonResponse(
+                    {"result": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
 
             # Reset state to AVAILABLE after processing
             for ip in ip_next_state.keys():
@@ -88,6 +96,10 @@ class BlockPutMiddleware:
             for i in data:
                 device_ip = i.get("mgt_ip", "")
                 result.update({device_ip: State.FEATURE_DISCOVERY_IN_PROGRESS})
+        elif url_name == "install_image":
+            for i in data:
+                device_ips = i.get("device_ips", "")
+                result.update({i: State.INSTALL_IN_PROGRESS for i in device_ips})
         else:
             for i in data:
                 device_ip = i.get("mgt_ip", "")

@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'log_manager',
     'state_manager',
+    'orca_setup',
+    'django_celery_results',
     'fileserver'
 ]
 

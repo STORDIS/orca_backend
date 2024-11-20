@@ -41,6 +41,18 @@ def put_stub(request, client=None):
 
 @api_view(["PUT"])
 @permission_classes([permissions.AllowAny])
+def put_stub(request, client=None):
+    device_ips = request.data.get("device_ips")
+    for device_ip in device_ips:
+        response = client.get(reverse("orca_state", kwargs={"device_ip": device_ip}), )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json().get("device_ip") == device_ip
+        assert response.json().get("state") == str(State.INSTALL_IN_PROGRESS)
+    return Response({"result": [{"message": "testing", "status": "success"}]}, status=200)
+
+
+@api_view(["PUT"])
+@permission_classes([permissions.AllowAny])
 def feature_discovery_stub(request, client=None):
     device_ip = request.data.get("mgt_ip")
     response = client.get(reverse("orca_state", kwargs={"device_ip": device_ip}), )
@@ -272,7 +284,6 @@ class TestState(TestCommon):
         assert response.status_code == status.HTTP_200_OK
         device_ip = response.json()[0].get("mgt_ip")
 
-
         # add vlan
         vlan = "Vlan6"
         self.del_vlan(
@@ -392,3 +403,23 @@ class TestState(TestCommon):
             {"mgt_ip": req_payload["mgt_ip"], "name": req_payload["name"]},
         )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_install_state(self):
+        device_ips = ["127.0.0.1", "127.0.0.2"]
+        for device_ip in device_ips:
+            response = self.client.get(reverse("orca_state", kwargs={"device_ip": device_ip}), )
+            self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        request = self.factory.put(path=reverse('install_image'), data={
+            "device_ips": ["127.0.0.1", "127.0.0.2"],
+        }, format="json")
+        middleware = BlockPutMiddleware(lambda req: put_stub(req, self.client))
+
+        response = middleware(request)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        for device_ip in device_ips:
+            response = self.client.get(reverse("orca_state", kwargs={"device_ip": device_ip}), )
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.json().get("device_ip"), device_ip)
+            self.assertEqual(response.json().get("state"), str(State.AVAILABLE))
