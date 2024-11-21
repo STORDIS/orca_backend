@@ -12,3 +12,4 @@ orca.log
 models
 *.log
 !**/migrations/__init__.py
+fileserver/media
