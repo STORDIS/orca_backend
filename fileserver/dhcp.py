@@ -21,11 +21,8 @@ def get_dhcp_backup_file(ip, username, password, filename):
     client = create_ssh_client(ip, username, password)
     path = constants.dhcp_path + filename
     with client.open_sftp() as sftp:
-        app_directory = os.path.dirname(os.path.abspath(__file__))
-        local_file_path = os.path.join(app_directory, 'media', "dhcpd.conf")
-        sftp.get(path, local_file_path)
-        file = open(local_file_path, "rb+")
-        return file
+        with sftp.open(path, 'r') as f:
+            return f.read()
 
 
 def get_dhcp_backup_files_list(ip, username, password):
@@ -39,8 +36,7 @@ def get_dhcp_config(ip, username, password):
     with client.open_sftp() as sftp:
         path = f"{constants.dhcp_path}/dhcpd.conf"
         with sftp.open(path, 'r') as f:
-            file = io.BytesIO(f.read())
-        return file
+            return f.read()
 
 
 def put_dhcp_config(ip, username, password, content):
@@ -73,6 +69,6 @@ def put_dhcp_config(ip, username, password, content):
         except Exception as e:
             _logger.error(e)
             raise
-        client.exec_command(f"echo '{json.dumps(content)}' | sudo tee {dhcp_file_path}")
+        client.exec_command(f"echo '{content}' | sudo tee {dhcp_file_path}")
         client.exec_command(f"sudo systemctl restart isc-dhcp-server")
         return {"message": "Config updated successfully"}

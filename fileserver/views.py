@@ -8,6 +8,7 @@ from rest_framework.response import Response
 
 from fileserver.dhcp import get_dhcp_config, put_dhcp_config, get_dhcp_backup_file, get_dhcp_backup_files_list
 from fileserver.models import DHCPServerDetails, DHCPDevices
+from fileserver.ztp import get_ztp_files, add_ztp_file, delete_ztp_file
 from log_manager.decorators import log_request
 from log_manager.logger import get_backend_logger
 
@@ -32,42 +33,40 @@ def host_ztp_files(request):
     result = []
     http_status = True
     if request.method == "GET":
-        app_directory = os.path.dirname(os.path.abspath(__file__))
         filename = request.GET.get("filename", "")
-        path = os.path.join(app_directory, 'media', 'ztp_files', filename)
-        if os.path.exists(path):
-            if filename:
-                return FileResponse(open(path, "rb+"), as_attachment=True, filename=filename)
-            else:
-                return Response(
-                    [file for file in os.listdir(path)], status=status.HTTP_200_OK
-                )
-        else:
+        try:
+            data = get_ztp_files(filename)
+            return Response(data, status=status.HTTP_200_OK)
+        except FileNotFoundError as e:
+            _logger.error("File not found %s", e)
             return Response("File not found", status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            _logger.error("Internal server error %s", e)
+            return Response("Internal server error", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     if request.method == "PUT":
         req_data_list = request.data if isinstance(request.data, list) else [request.data]
         for req_data in req_data_list:
             filename = req_data.get("filename")
             content = req_data.get("content")
-            app_directory = os.path.dirname(os.path.abspath(__file__))
-            path = os.path.join(app_directory, 'media', 'ztp_files', filename)
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, 'w') as f:
-                f.write(content)
-            result.append({"message": f"saved {filename} to ztp files", "status": "success"})
+            try:
+                add_ztp_file(filename, content)
+                result.append({"message": f"saved {filename} to ztp files", "status": "success"})
+            except Exception as e:
+                _logger.error(e)
+                http_status = False
+                result.append({"message": e, "status": "failed"})
     if request.method == "DELETE":
         req_data_list = request.data if isinstance(request.data, list) else [request.data]
         for req_data in req_data_list:
             filename = req_data.get("filename")
-            app_directory = os.path.dirname(os.path.abspath(__file__))
-            file_path = os.path.join(app_directory, 'media', 'ztp_files', filename)
-            if os.path.exists(file_path):
-                os.remove(file_path)
+            try:
+                delete_ztp_file(filename)
                 result.append({"message": f"deleted {filename} from ztp files", "status": "success"})
-            else:
+            except Exception as e:
+                _logger.error(e)
                 http_status = False
-                result.append({"message": f"{filename} not found in ztp files", "status": "failed"})
+                result.append({"message": e, "status": "failed"})
     return Response(
         {"result": result},
         status=status.HTTP_200_OK
@@ -97,8 +96,7 @@ def dhcp_config(request):
             file = get_dhcp_config(
                 ip=device_ip, username=dhcp_creds.username, password=dhcp_creds.password
             )
-            response = FileResponse(file, as_attachment=True, filename="dhcp.conf")
-            return response
+            return Response({"content": file, "filename": "dhcpd.conf"}, status=status.HTTP_200_OK)
         except FileNotFoundError as e:
             return Response({"message": str(e)}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
@@ -106,7 +104,12 @@ def dhcp_config(request):
     if request.method == "PUT":
         req_list = request.data if isinstance(request.data, list) else [request.data]
         for req_data in req_list:
-            dhcp_creds = DHCPServerDetails.objects.filter(device_ip=req_data["mgt_ip"]).first()
+            dhcp_creds = DHCPServerDetails.objects.filter(device_ip=req_data.get("mgt_ip")).first()
+            if not dhcp_creds:
+                return Response(
+                    {"message": "No credentials found for this device"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
             try:
                 put_dhcp_config(
                     ip=req_data["mgt_ip"],
@@ -116,6 +119,8 @@ def dhcp_config(request):
                 )
                 result.append({"message": f"{request.method} request successful", "status": "success"})
             except Exception as e:
+                import traceback
+                print(traceback.format_exc())
                 http_status = False
                 result.append({"message": str(e), "status": "failed"})
         return Response(
@@ -198,7 +203,7 @@ def dhcp_backup(request):
                     password=dhcp_creds.password,
                     filename=filename
                 )
-                return FileResponse(file, as_attachment=True, filename=filename)
+                return Response({"content": file, "filename": filename}, status=status.HTTP_200_OK)
             else:
                 files_list = get_dhcp_backup_files_list(
                     ip=device_ip,
@@ -222,3 +227,8 @@ def get_dhcp_device(request):
         except Exception as e:
             return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     return Response({"message": "File not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+def _get_file_content(path, file_name):
+    with open(path, "r") as f:
+        return f.read()
