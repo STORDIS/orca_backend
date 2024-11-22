@@ -14,7 +14,7 @@ def get_ztp_files(filename):
     if filename:
         return _get_ztp_file_content(ztp_path, filename)
     else:
-        return [f for f in os.listdir(ztp_path)]
+        return [_get_ztp_file_content(ztp_path, f) for f in os.listdir(ztp_path)]
 
 
 def _get_ztp_file_content(path, filename):

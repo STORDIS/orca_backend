@@ -22,13 +22,18 @@ def get_dhcp_backup_file(ip, username, password, filename):
     path = constants.dhcp_path + filename
     with client.open_sftp() as sftp:
         with sftp.open(path, 'r') as f:
-            return f.read()
+            return {"content": f.read(), "filename": filename}
 
 
 def get_dhcp_backup_files_list(ip, username, password):
     client = create_ssh_client(ip, username, password)
+    files = []
     with client.open_sftp() as sftp:
-        return [file for file in sftp.listdir(path=constants.dhcp_path) if file.startswith(constants.dhcp_backup_prefix)]
+        for file in sftp.listdir(path=constants.dhcp_path):
+            if file.startswith(constants.dhcp_backup_prefix):
+                with sftp.open(constants.dhcp_path + file, 'r') as f:
+                    files.append({"content": f.read(), "filename": file})
+    return files
 
 
 def get_dhcp_config(ip, username, password):
@@ -36,7 +41,7 @@ def get_dhcp_config(ip, username, password):
     with client.open_sftp() as sftp:
         path = f"{constants.dhcp_path}/dhcpd.conf"
         with sftp.open(path, 'r') as f:
-            return f.read()
+            return {"content": f.read(), "filename": "dhcpd.conf"}
 
 
 def put_dhcp_config(ip, username, password, content):
