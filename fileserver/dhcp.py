@@ -88,7 +88,7 @@ def put_dhcp_config(ip, username, content):
     _logger.info(f"Updating DHCP configuration on {ip}")
     client = ssh_client_with_private_key(ip, username)
     with client.open_sftp() as sftp:
-        dhcp_file_path = f"{constants.dhcp_path}/dhcpd.conf"
+        dhcp_file_path = f"{constants.dhcp_path}dhcpd.conf"
         backup_files = [
             file for file in sftp.listdir(constants.dhcp_path) if file.startswith(constants.dhcp_backup_prefix)
         ]
