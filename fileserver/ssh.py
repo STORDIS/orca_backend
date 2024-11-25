@@ -21,9 +21,11 @@ def ssh_client_with_username_password(ip, username, password):
         paramiko.client.SSHClient: An SSH client object.
     """
     # Create an SSH client using the username and password
+    _logger.info(f"Connecting to {ip} with username: {username}")
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     client.connect(ip, username=username, password=password)
+    _logger.info(f"Connected to {ip} with username: {username}")
     return client
 
 
@@ -41,6 +43,7 @@ def ssh_copy_id(ip, username, password, public_key):
     Returns:
         None
     """
+    _logger.info(f"Adding public key to authorized_keys on {ip}.")
     client = ssh_client_with_username_password(ip, username, password)
     try:
         # Check if the remote .ssh directory exists, and create it if not
@@ -77,6 +80,7 @@ def ssh_client_with_public_key(ip, username):
     Returns:
         None
     """
+    _logger.info(f"Connecting to {ip} with public key.")
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     local_public_key_path = os.path.expanduser(f"{constants.ssh_key_path}/id_rsa.pub")

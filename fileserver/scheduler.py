@@ -22,12 +22,18 @@ def add_dhcp_leases_scheduler(job_id="dhcp_list", trigger="interval"):
         replace_existing=True,
         max_instances=1,
     )
+    _logger.info("DHCP scheduler job added")
     if not scheduler.running:
         scheduler.start()
+        _logger.info("DHCP scheduler started")
 
 
 def scan_dhcp_leases_file():
+    """
+    Scan the DHCP leases file and update the DHCPDevices table.
+    """
     try:
+        _logger.info("Scanning DHCP leases file.")
         devices = DHCPServerDetails.objects.all()
         discovered_devices = [device.get("mgt_ip") for device in get_device_details() or None]
         app_directory = os.path.dirname(os.path.abspath(__file__))  # Get the path of the current app
@@ -42,7 +48,9 @@ def scan_dhcp_leases_file():
             )
             leases = IscDhcpLeases(destination_path)
             for lease in leases.get():
+                _logger.debug("Lease: %s", lease)
                 if lease.ip not in discovered_devices and "sonic" in lease.hostname:
+                    _logger.info(f"Discovered sonic device: {lease.ip} - {lease.hostname}")
                     DHCPDevices.objects.update_or_create(
                         device_ip=lease.ip,
                         defaults={
@@ -51,11 +59,22 @@ def scan_dhcp_leases_file():
                             'dhcp_ip': device.device_ip
                         }
                     )
+            _logger.info("Scanned DHCP leases file.")
     except Exception as e:
         _logger.error(f"Error in scan_dhcp_leases_file: {e}")
 
 
 def copy_dhcp_file_to_local(ip, username, source_path: str, destination_path: str):
+    """
+    Copy the specified file from the specified source path to the specified destination path.
+
+    Args:
+        ip (str): The IP address of the device.
+        username (str): The username to authenticate with the device.
+        source_path (str): The source path of the file to copy.
+        destination_path (str): The destination path to copy the file to.
+    """
+    _logger.info(f"copying file from {source_path} to {destination_path}")
     client = ssh_client_with_public_key(ip, username)
     with client.open_sftp() as sftp:
         sftp.get(source_path, destination_path)
