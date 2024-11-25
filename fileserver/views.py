@@ -6,7 +6,8 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from fileserver.dhcp import get_dhcp_config, put_dhcp_config, get_dhcp_backup_file, get_dhcp_backup_files_list
+from fileserver.dhcp import get_dhcp_config, put_dhcp_config, get_dhcp_backup_file, get_dhcp_backup_files_list, \
+    update_dhcp_access
 from fileserver.models import DHCPServerDetails, DHCPDevices
 from fileserver.ztp import get_ztp_files, add_ztp_file, delete_ztp_file
 from log_manager.decorators import log_request
@@ -94,7 +95,7 @@ def dhcp_config(request):
             )
         try:
             file = get_dhcp_config(
-                ip=device_ip, username=dhcp_creds.username, password=dhcp_creds.password
+                ip=device_ip, username=dhcp_creds.username
             )
             return Response({"content": file, "filename": "dhcpd.conf"}, status=status.HTTP_200_OK)
         except FileNotFoundError as e:
@@ -114,7 +115,6 @@ def dhcp_config(request):
                 put_dhcp_config(
                     ip=req_data["mgt_ip"],
                     username=dhcp_creds.username,
-                    password=dhcp_creds.password,
                     content=req_data["content"],
                 )
                 result.append({"message": f"{request.method} request successful", "status": "success"})
@@ -132,8 +132,10 @@ def dhcp_config(request):
 @api_view(["GET", "PUT", "DELETE"])
 @log_request
 def dhcp_credentials(request):
+    http_status = True
+    result = []
     if request.method == "GET":
-        device_ip = request.GET.get("mgt_ip")
+        device_ip = request.GET.get("device_ip")
         if device_ip:
             data = DHCPServerDetails.objects.filter(device_ip=device_ip).first()
             details = model_to_dict(data) if data else None
@@ -147,27 +149,23 @@ def dhcp_credentials(request):
 
     if request.method == "PUT":
         req_data = request.data if isinstance(request.data, list) else [request.data]
-        results = []
         for data in req_data:
             try:
-                DHCPServerDetails.objects.update_or_create(
-                    device_ip=data["mgt_ip"], defaults={
-                        "username": data["username"],
-                        "password": data["password"]
-                    }
+                update_dhcp_access(
+                    ip=data["device_ip"],
+                    username=data["username"],
+                    password=data["password"],
                 )
-                results.append({"message": f"{request.method} request successful", "status": "success"})
+                result.append({"message": f"{request.method} request successful", "status": "success"})
             except Exception as e:
-                results.append({"message": str(e), "status": "failed"})
-        return Response(results, status=status.HTTP_200_OK)
-
+                http_status = False
+                result.append({"message": str(e), "status": "failed"})
     if request.method == "DELETE":
         req_data = request.data if isinstance(request.data, list) else [request.data]
-        results = []
         for data in req_data:
-            device_ip = data["mgt_ip"]
+            device_ip = data["device_ip"]
             if not device_ip:
-                _logger.error("Required field device mgt_ip not found.")
+                _logger.error("Required field device_ip not found.")
                 return Response(
                     {"message": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -176,10 +174,13 @@ def dhcp_credentials(request):
             dhcp_obj = DHCPServerDetails.objects.filter(device_ip=device_ip).first()
             if dhcp_obj:
                 dhcp_obj.delete()
-                results.append({"message": f"{request.method} request successful", "status": "success"})
-            else:
-                results.append({"message": f"{request.method} request failed", "status": "failed"})
-        return Response(results, status=status.HTTP_200_OK)
+            result.append({"message": f"{request.method} request successful", "status": "success"})
+    return Response(
+        {"result": result},
+        status=status.HTTP_200_OK
+        if http_status
+        else status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
 
 
 @api_view(["GET"])
@@ -200,7 +201,6 @@ def dhcp_backup(request):
                 file = get_dhcp_backup_file(
                     ip=device_ip,
                     username=dhcp_creds.username,
-                    password=dhcp_creds.password,
                     filename=filename
                 )
                 return Response({"content": file, "filename": filename}, status=status.HTTP_200_OK)
@@ -208,7 +208,6 @@ def dhcp_backup(request):
                 files_list = get_dhcp_backup_files_list(
                     ip=device_ip,
                     username=dhcp_creds.username,
-                    password=dhcp_creds.password
                 )
                 return Response(files_list, status=status.HTTP_200_OK)
         except FileNotFoundError as e:

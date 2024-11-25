@@ -3,7 +3,7 @@ import os
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from fileserver import constants
-from fileserver.dhcp import create_ssh_client
+from fileserver.ssh import ssh_client_with_public_key
 from fileserver.models import DHCPServerDetails, DHCPDevices
 from log_manager.logger import get_backend_logger
 from isc_dhcp_leases import IscDhcpLeases
@@ -37,7 +37,6 @@ def scan_dhcp_leases_file():
             copy_dhcp_file_to_local(
                 ip=device.device_ip,
                 username=device.username,
-                password=device.password,
                 source_path=constants.dhcp_leases_path,
                 destination_path=destination_path
             )
@@ -56,8 +55,8 @@ def scan_dhcp_leases_file():
         _logger.error(f"Error in scan_dhcp_leases_file: {e}")
 
 
-def copy_dhcp_file_to_local(ip, username, password, source_path: str, destination_path: str):
-    client = create_ssh_client(ip, username, password)
+def copy_dhcp_file_to_local(ip, username, source_path: str, destination_path: str):
+    client = ssh_client_with_public_key(ip, username)
     with client.open_sftp() as sftp:
         sftp.get(source_path, destination_path)
         _logger.info(f"file copied from {source_path} to {destination_path}")

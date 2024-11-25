@@ -1,46 +1,41 @@
 import datetime
-import io
-import json
-import os
-import paramiko
-
 from fileserver import constants
+from fileserver.models import DHCPServerDetails
+from fileserver.ssh import create_ssh_key_based_authentication, ssh_client_with_public_key
 from log_manager.logger import get_backend_logger
 
 _logger = get_backend_logger()
 
 
-def create_ssh_client(ip, username, password):
-    client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    client.connect(ip, username=username, password=password)
-    return client
-
-
-def get_dhcp_backup_file(ip, username, password, filename):
-    client = create_ssh_client(ip, username, password)
-    path = constants.dhcp_path + filename
+def get_dhcp_backup_file(ip, username, filename):
+    client = ssh_client_with_public_key(ip, username)
     with client.open_sftp() as sftp:
-        with sftp.open(path, 'r') as f:
-            return f.read()
+        return _get_sftp_file_content(sftp, constants.dhcp_path, filename)
 
 
-def get_dhcp_backup_files_list(ip, username, password):
-    client = create_ssh_client(ip, username, password)
+def get_dhcp_backup_files_list(ip, username):
+    client = ssh_client_with_public_key(ip, username)
     with client.open_sftp() as sftp:
-        return [file for file in sftp.listdir(path=constants.dhcp_path) if file.startswith(constants.dhcp_backup_prefix)]
+        return [
+            _get_sftp_file_content(sftp, path=constants.dhcp_path, filename=file)
+            for file in sftp.listdir(path=constants.dhcp_path)
+            if file.startswith(constants.dhcp_backup_prefix)
+        ]
 
 
-def get_dhcp_config(ip, username, password):
-    client = create_ssh_client(ip, username, password)
+def _get_sftp_file_content(sftp, path, filename):
+    with sftp.open(path + filename, 'r') as f:
+        return {"content": f.read(), "filename": filename}
+
+
+def get_dhcp_config(ip, username):
+    client = ssh_client_with_public_key(ip, username)
     with client.open_sftp() as sftp:
-        path = f"{constants.dhcp_path}/dhcpd.conf"
-        with sftp.open(path, 'r') as f:
-            return f.read()
+        _get_sftp_file_content(sftp, path=constants.dhcp_path, filename="dhcpd.conf")
 
 
-def put_dhcp_config(ip, username, password, content):
-    client = create_ssh_client(ip, username, password)
+def put_dhcp_config(ip, username, content):
+    client = ssh_client_with_public_key(ip, username)
     with client.open_sftp() as sftp:
         dhcp_file_path = f"{constants.dhcp_path}/dhcpd.conf"
         backup_files = [
@@ -72,3 +67,17 @@ def put_dhcp_config(ip, username, password, content):
         client.exec_command(f"echo '{content}' | sudo tee {dhcp_file_path}")
         client.exec_command(f"sudo systemctl restart isc-dhcp-server")
         return {"message": "Config updated successfully"}
+
+
+def update_dhcp_access(ip, username, password):
+    try:
+        create_ssh_key_based_authentication(ip, username, password)
+        DHCPServerDetails.objects.update_or_create(device_ip=ip, defaults={"username": username, "ssh_access": True})
+        _logger.info(f"SSH access enabled on {ip}.")
+    except Exception as e:
+        DHCPServerDetails.objects.update_or_create(device_ip=ip, defaults={"username": username, "ssh_access": False})
+        _logger.error(e)
+        _logger.error(f"Failed to enable SSH access on {ip}.")
+        import traceback
+        print(traceback.format_exc())
+        raise
