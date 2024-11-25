@@ -123,12 +123,14 @@ def put_dhcp_config(ip, username, content):
             _logger.error(e)
             raise
         _logger.info(f"Updating {dhcp_file_path}")
-        client.exec_command(f'echo "{content}" | sudo tee {dhcp_file_path}')
+        stdin, stdout, stderr = client.exec_command(f'echo "{content}" | sudo tee {dhcp_file_path}')
+        output = stdout.read().decode()
+        error = stderr.read().decode()
 
         _logger.info(f"Restarting DHCP server on {ip}")
         client.exec_command(f"sudo systemctl restart isc-dhcp-server")
     client.close()
-    return {"message": "Config updated successfully"}
+    return output, error
 
 
 def update_dhcp_access(ip, username, password):

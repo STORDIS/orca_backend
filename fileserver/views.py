@@ -124,12 +124,18 @@ def dhcp_config(request):
                 )
             try:
                 _logger.info(f"Updating DHCP config for {req_data['mgt_ip']}")
-                put_dhcp_config(
+                output, error = put_dhcp_config(
                     ip=req_data["mgt_ip"],
                     username=dhcp_creds.username,
                     content=req_data["content"],
                 )
-                result.append({"message": f"{request.method} request successful", "status": "success"})
+                if error:
+                    _logger.error(error)
+                    result.append({"message": error, "status": "failed"})
+                    http_status = False
+                else:
+                    _logger.info(output)
+                    result.append({"message": f"{request.method} request successful", "status": "success"})
             except Exception as e:
                 _logger.error("Internal server error %s", e)
                 http_status = False
