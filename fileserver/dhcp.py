@@ -21,7 +21,9 @@ def get_dhcp_backup_file(ip, username, filename):
     """
     client = ssh_client_with_private_key(ip, username)
     with client.open_sftp() as sftp:
-        return _get_sftp_file_content(sftp, constants.dhcp_path, filename)
+        file = _get_sftp_file_content(sftp, constants.dhcp_path, filename)
+    client.close()
+    return file
 
 
 def get_dhcp_backup_files_list(ip, username):
@@ -36,12 +38,12 @@ def get_dhcp_backup_files_list(ip, username):
         list: A list of dictionaries, each containing the content of a backup file and its name.
     """
     client = ssh_client_with_private_key(ip, username)
+    files = []
     with client.open_sftp() as sftp:
-        return [
-            _get_sftp_file_content(sftp, path=constants.dhcp_path, filename=file)
-            for file in sftp.listdir(path=constants.dhcp_path)
-            if file.startswith(constants.dhcp_backup_prefix)
-        ]
+        for f in sftp.listdir(constants.dhcp_path):
+            files.append(_get_sftp_file_content(sftp, constants.dhcp_path, f))
+    client.close()
+    return files
 
 
 def _get_sftp_file_content(sftp, path, filename):
@@ -70,7 +72,9 @@ def get_dhcp_config(ip, username):
     """
     client = ssh_client_with_private_key(ip, username)
     with client.open_sftp() as sftp:
-        return _get_sftp_file_content(sftp, path=constants.dhcp_path, filename="dhcpd.conf")
+        file = _get_sftp_file_content(sftp, path=constants.dhcp_path, filename="dhcpd.conf")
+    client.close()
+    return file
 
 
 def put_dhcp_config(ip, username, content):
@@ -104,7 +108,7 @@ def put_dhcp_config(ip, username, content):
             # Remove the oldest backup files
             for file in backup_files[10:]:
                 _logger.info(f"Removing {file}")
-                sftp.remove(constants.dhcp_path + file)
+                client.exec_command(f"sudo rm {constants.dhcp_path}{file}")
 
         # Create a new backup file
         new_backup_file = f"{constants.dhcp_backup_prefix}{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}"
@@ -123,7 +127,8 @@ def put_dhcp_config(ip, username, content):
 
         _logger.info(f"Restarting DHCP server on {ip}")
         client.exec_command(f"sudo systemctl restart isc-dhcp-server")
-        return {"message": "Config updated successfully"}
+    client.close()
+    return {"message": "Config updated successfully"}
 
 
 def update_dhcp_access(ip, username, password):
@@ -148,3 +153,20 @@ def update_dhcp_access(ip, username, password):
         _logger.error(e)
         _logger.error(f"Failed to enable SSH access on {ip}.")
         raise
+
+
+def delete_dhcp_backup_file(ip, username, file_name: str):
+    """
+    Delete the specified backup file from the DHCP server.
+
+    Args:
+        ip (str): The IP address of the DHCP server.
+        username (str): The username to use for authentication.
+        file_name (str): The name of the backup file to delete.
+
+    Returns:
+        None
+    """
+    client = ssh_client_with_private_key(ip=ip, username=username)
+    client.exec_command(f"sudo rm {constants.dhcp_path}{file_name}")
+    client.close()

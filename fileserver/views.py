@@ -7,7 +7,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from fileserver.dhcp import get_dhcp_config, put_dhcp_config, get_dhcp_backup_file, get_dhcp_backup_files_list, \
-    update_dhcp_access
+    update_dhcp_access, delete_dhcp_backup_file
 from fileserver.models import DHCPServerDetails, DHCPDevices
 from fileserver.ztp import get_ztp_files, add_ztp_file, delete_ztp_file
 from log_manager.decorators import log_request
@@ -220,9 +220,11 @@ def dhcp_auth(request):
     )
 
 
-@api_view(["GET"])
+@api_view(["GET", "DELETE"])
 @log_request
 def dhcp_backup(request):
+    result = []
+    http_status = True
     if request.method == "GET":
         device_ip = request.GET.get("mgt_ip")
         if not device_ip:
@@ -255,6 +257,34 @@ def dhcp_backup(request):
         except Exception as e:
             _logger.error(e)
             return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if request.method == "DELETE":
+        req_data = request.data if isinstance(request.data, list) else [request.data]
+        for req in req_data:
+            device_ip = req.get("mgt_ip")
+            if not device_ip:
+                _logger.error("Required field device mgt_ip not found.")
+                return Response(
+                    {"status": "Required field device mgt_ip not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            _logger.info(f"Deleting DHCP backup files for {device_ip}")
+            try:
+                dhcp_creds = DHCPServerDetails.objects.filter(device_ip=device_ip).first()
+                delete_dhcp_backup_file(
+                    ip=device_ip,
+                    username=dhcp_creds.username,
+                    file_name=req.get("filename", "")
+                )
+                result.append({"message": f"{request.method} request successful", "status": "success"})
+            except Exception as e:
+                _logger.error(e)
+                result.append({"message": str(e), "status": "failed"})
+    return Response(
+        {"result": result},
+        status=status.HTTP_200_OK
+        if http_status
+        else status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
 
 
 @api_view(["GET"])
