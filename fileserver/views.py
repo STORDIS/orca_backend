@@ -87,11 +87,11 @@ def dhcp_config(request):
     result = []
     http_status = True
     if request.method == "GET":
-        device_ip = request.GET.get("mgt_ip")
+        device_ip = request.GET.get("device_ip")
         if not device_ip:
-            _logger.error("Required field mgt_ip not found")
+            _logger.error("Required field device_ip not found")
             return Response(
-                {"message": "Required field mgt_ip not found"},
+                {"message": "Required field device_ip not found"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         dhcp_creds = DHCPServerDetails.objects.filter(device_ip=device_ip).first()
@@ -116,16 +116,16 @@ def dhcp_config(request):
     if request.method == "PUT":
         req_list = request.data if isinstance(request.data, list) else [request.data]
         for req_data in req_list:
-            dhcp_creds = DHCPServerDetails.objects.filter(device_ip=req_data.get("mgt_ip")).first()
+            dhcp_creds = DHCPServerDetails.objects.filter(device_ip=req_data.get("device_ip")).first()
             if not dhcp_creds:
                 return Response(
                     {"message": "No credentials found for this device"},
                     status=status.HTTP_404_NOT_FOUND,
                 )
             try:
-                _logger.info(f"Updating DHCP config for {req_data['mgt_ip']}")
+                _logger.info(f"Updating DHCP config for {req_data['device_ip']}")
                 output, error = put_dhcp_config(
-                    ip=req_data["mgt_ip"],
+                    ip=req_data["device_ip"],
                     username=dhcp_creds.username,
                     content=req_data["content"],
                 )
@@ -152,14 +152,7 @@ def dhcp_auth(request):
     http_status = True
     result = []
     if request.method == "GET":
-        device_ip = request.GET.get("device_ip")
-        if device_ip:
-            _logger.info(f"Getting DHCP Server details for {device_ip}")
-            data = DHCPServerDetails.objects.filter(device_ip=device_ip).first()
-            details = model_to_dict(data) if data else None
-        else:
-            _logger.info("Getting all DHCP Server details")
-            details = DHCPServerDetails.objects.all().values()
+        details = model_to_dict(DHCPServerDetails.objects.all().first())
         return (
             Response(details, status=status.HTTP_200_OK)
             if details
@@ -169,35 +162,32 @@ def dhcp_auth(request):
     if request.method == "PUT":
         req_data = request.data if isinstance(request.data, list) else [request.data]
         for data in req_data:
-            try:
-                _logger.info(f"Updating DHCP credentials for {data['device_ip']}")
-                device_ip = data.get("device_ip")
-                if not device_ip:
-                    _logger.error("Required field device_ip not found.")
-                    return Response(
-                        {"message": "Required field device_ip not found."},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-
-                username = data.get("username")
-                if not username:
-                    _logger.error("Required field username not found.")
-                    return Response(
-                        {"message": "Required field username not found."},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-
-                password = data.get("password")
-                if not password:
-                    _logger.error("Required field password not found.")
-                    return Response(
-                        {"message": "Required field password not found."},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-                _logger.info(f"Updating DHCP Server details for {device_ip}")
-                DHCPServerDetails.objects.update_or_create(
-                    device_ip=device_ip, defaults={"username": username}
+            _logger.info(f"Updating DHCP credentials for {data['device_ip']}")
+            device_ip = data.get("device_ip")
+            if not device_ip:
+                _logger.error("Required field device_ip not found.")
+                return Response(
+                    {"message": "Required field device_ip not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
+
+            username = data.get("username")
+            if not username:
+                _logger.error("Required field username not found.")
+                return Response(
+                    {"message": "Required field username not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            password = data.get("password")
+            if not password:
+                _logger.error("Required field password not found.")
+                return Response(
+                    {"message": "Required field password not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            _logger.info(f"Updating DHCP Server details for {device_ip}")
+            try:
                 update_dhcp_access(device_ip, username, password)
                 result.append({"message": f"{request.method} request successful", "status": "success"})
             except Exception as e:
@@ -210,7 +200,7 @@ def dhcp_auth(request):
             if not device_ip:
                 _logger.error("Required field device_ip not found.")
                 return Response(
-                    {"message": "Required field device mgt_ip not found."},
+                    {"message": "Required field device_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             _logger.info(f"Deleting DHCP Server details for {device_ip}")
@@ -232,11 +222,11 @@ def dhcp_backup(request):
     result = []
     http_status = True
     if request.method == "GET":
-        device_ip = request.GET.get("mgt_ip")
+        device_ip = request.GET.get("device_ip")
         if not device_ip:
-            _logger.error("Required field device mgt_ip not found.")
+            _logger.error("Required field device_ip not found.")
             return Response(
-                {"status": "Required field device mgt_ip not found."},
+                {"status": "Required field device_ip not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         dhcp_creds = DHCPServerDetails.objects.filter(device_ip=device_ip).first()
@@ -266,24 +256,31 @@ def dhcp_backup(request):
     if request.method == "DELETE":
         req_data = request.data if isinstance(request.data, list) else [request.data]
         for req in req_data:
-            device_ip = req.get("mgt_ip")
+            device_ip = req.get("device_ip")
             if not device_ip:
-                _logger.error("Required field device mgt_ip not found.")
+                _logger.error("Required field device_ip not found.")
                 return Response(
-                    {"status": "Required field device mgt_ip not found."},
+                    {"status": "Required field device_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             _logger.info(f"Deleting DHCP backup files for {device_ip}")
             try:
                 dhcp_creds = DHCPServerDetails.objects.filter(device_ip=device_ip).first()
-                delete_dhcp_backup_file(
+                output, error = delete_dhcp_backup_file(
                     ip=device_ip,
                     username=dhcp_creds.username,
                     file_name=req.get("filename", "")
                 )
+                if error:
+                    http_status = False
+                    _logger.error(error)
+                    result.append({"message": error, "status": "failed"})
+                else:
+                    _logger.info(output)
                 result.append({"message": f"{request.method} request successful", "status": "success"})
             except Exception as e:
                 _logger.error(e)
+                http_status = False
                 result.append({"message": str(e), "status": "failed"})
     return Response(
         {"result": result},

@@ -21,9 +21,7 @@ def get_dhcp_backup_file(ip, username, filename):
     """
     client = ssh_client_with_private_key(ip, username)
     with client.open_sftp() as sftp:
-        file = _get_sftp_file_content(sftp, constants.dhcp_path, filename)
-    client.close()
-    return file
+        return _get_sftp_file_content(sftp, constants.dhcp_path, filename)
 
 
 def get_dhcp_backup_files_list(ip, username):
@@ -39,9 +37,11 @@ def get_dhcp_backup_files_list(ip, username):
     """
     client = ssh_client_with_private_key(ip, username)
     files = []
-    with client.open_sftp() as sftp:
-        for f in sftp.listdir(constants.dhcp_path):
+    sftp = client.open_sftp()
+    for f in sftp.listdir(constants.dhcp_path):
+        if f.startswith(constants.dhcp_backup_prefix):
             files.append(_get_sftp_file_content(sftp, constants.dhcp_path, f))
+    sftp.close()
     client.close()
     return files
 
@@ -72,9 +72,7 @@ def get_dhcp_config(ip, username):
     """
     client = ssh_client_with_private_key(ip, username)
     with client.open_sftp() as sftp:
-        file = _get_sftp_file_content(sftp, path=constants.dhcp_path, filename="dhcpd.conf")
-    client.close()
-    return file
+        return _get_sftp_file_content(sftp, path=constants.dhcp_path, filename="dhcpd.conf")
 
 
 def put_dhcp_config(ip, username, content):
@@ -148,13 +146,36 @@ def update_dhcp_access(ip, username, password):
     try:
         _logger.info(f"Enabling SSH access on {ip}.")
         create_ssh_key_based_authentication(ip, username, password)
-        DHCPServerDetails.objects.update_or_create(device_ip=ip, defaults={"username": username, "ssh_access": True})
+        _save_dhcp_service_details_to_db(ip, username, ssh_access=True)
         _logger.info(f"SSH access enabled on {ip}.")
     except Exception as e:
-        DHCPServerDetails.objects.update_or_create(device_ip=ip, defaults={"username": username, "ssh_access": False})
         _logger.error(e)
+        _save_dhcp_service_details_to_db(ip, username, ssh_access=False)
         _logger.error(f"Failed to enable SSH access on {ip}.")
         raise
+
+
+def _save_dhcp_service_details_to_db(ip, username, ssh_access):
+    """
+    Save DHCP server details to the database.
+
+    Args:
+        ip (str): The IP address of the DHCP server.
+        username (str): The username to use for authentication.
+        ssh_access (bool): Whether SSH access is enabled.
+
+    Returns:
+        None
+    """
+
+    # Delete all existing DHCP server details, because we only want one DHCP server.
+    DHCPServerDetails.objects.all().delete()
+
+    # Create a new DHCP server details object
+    dhcp_server_details = DHCPServerDetails(device_ip=ip, username=username, ssh_access=ssh_access)
+    dhcp_server_details.save()
+
+    _logger.info(f"DHCP server details saved to database.")
 
 
 def delete_dhcp_backup_file(ip, username, file_name: str):
@@ -170,5 +191,8 @@ def delete_dhcp_backup_file(ip, username, file_name: str):
         None
     """
     client = ssh_client_with_private_key(ip=ip, username=username)
-    client.exec_command(f"sudo rm {constants.dhcp_path}{file_name}")
+    stdin, stdout, stderr = client.exec_command(f"sudo rm {constants.dhcp_path}{file_name}")
+    output = stdout.read().decode()
+    error = stderr.read().decode()
     client.close()
+    return output, error
