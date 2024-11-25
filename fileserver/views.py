@@ -106,7 +106,7 @@ def dhcp_config(request):
             file = get_dhcp_config(
                 ip=device_ip, username=dhcp_creds.username
             )
-            return Response({"content": file, "filename": "dhcpd.conf"}, status=status.HTTP_200_OK)
+            return Response(file, status=status.HTTP_200_OK)
         except FileNotFoundError as e:
             _logger.error("File not found %s", e)
             return Response({"message": str(e)}, status=status.HTTP_404_NOT_FOUND)
@@ -190,7 +190,7 @@ def dhcp_auth(request):
                     )
                 _logger.info(f"Updating DHCP Server details for {device_ip}")
                 DHCPServerDetails.objects.update_or_create(
-                    device_ip=device_ip, defaults={"username": username, "password": password}
+                    device_ip=device_ip, defaults={"username": username}
                 )
                 update_dhcp_access(device_ip, username, password)
                 result.append({"message": f"{request.method} request successful", "status": "success"})

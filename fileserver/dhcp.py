@@ -53,7 +53,7 @@ def _get_sftp_file_content(sftp, path, filename):
         path (str): The path to the file on the SFTP server.
         filename (str): The name of the file to retrieve.
     """
-    with sftp.open(path + filename, 'r') as f:
+    with sftp.open(f"{path}{filename}", 'r') as f:
         return {"content": f.read(), "filename": filename}
 
 
@@ -70,7 +70,7 @@ def get_dhcp_config(ip, username):
     """
     client = ssh_client_with_private_key(ip, username)
     with client.open_sftp() as sftp:
-        _get_sftp_file_content(sftp, path=constants.dhcp_path, filename="dhcpd.conf")
+        return _get_sftp_file_content(sftp, path=constants.dhcp_path, filename="dhcpd.conf")
 
 
 def put_dhcp_config(ip, username, content):
@@ -106,9 +106,9 @@ def put_dhcp_config(ip, username, content):
                 _logger.info(f"Removing {file}")
                 sftp.remove(constants.dhcp_path + file)
 
-        _logger.info(f"Backing up {dhcp_file_path} to {constants.dhcp_path}")
         # Create a new backup file
         new_backup_file = f"{constants.dhcp_backup_prefix}{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}"
+        _logger.info(f"Backing up {dhcp_file_path} to {new_backup_file}")
         try:
             client.exec_command(
                 f"sudo cp {dhcp_file_path} {constants.dhcp_path}{new_backup_file}"
@@ -120,6 +120,8 @@ def put_dhcp_config(ip, username, content):
             raise
         _logger.info(f"Updating {dhcp_file_path}")
         client.exec_command(f"echo '{content}' | sudo tee {dhcp_file_path}")
+
+        _logger.info(f"Restarting DHCP server on {ip}")
         client.exec_command(f"sudo systemctl restart isc-dhcp-server")
         return {"message": "Config updated successfully"}
 
