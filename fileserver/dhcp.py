@@ -1,7 +1,7 @@
 import datetime
 from fileserver import constants
 from fileserver.models import DHCPServerDetails
-from fileserver.ssh import create_ssh_key_based_authentication, ssh_client_with_public_key
+from fileserver.ssh import create_ssh_key_based_authentication, ssh_client_with_private_key
 from log_manager.logger import get_backend_logger
 
 _logger = get_backend_logger()
@@ -19,7 +19,7 @@ def get_dhcp_backup_file(ip, username, filename):
     Returns:
         dict: A dictionary containing the content of the backup file and its name.
     """
-    client = ssh_client_with_public_key(ip, username)
+    client = ssh_client_with_private_key(ip, username)
     with client.open_sftp() as sftp:
         return _get_sftp_file_content(sftp, constants.dhcp_path, filename)
 
@@ -35,7 +35,7 @@ def get_dhcp_backup_files_list(ip, username):
     Returns:
         list: A list of dictionaries, each containing the content of a backup file and its name.
     """
-    client = ssh_client_with_public_key(ip, username)
+    client = ssh_client_with_private_key(ip, username)
     with client.open_sftp() as sftp:
         return [
             _get_sftp_file_content(sftp, path=constants.dhcp_path, filename=file)
@@ -68,7 +68,7 @@ def get_dhcp_config(ip, username):
     Returns:
         dict: A dictionary containing the content of the DHCP configuration file.
     """
-    client = ssh_client_with_public_key(ip, username)
+    client = ssh_client_with_private_key(ip, username)
     with client.open_sftp() as sftp:
         _get_sftp_file_content(sftp, path=constants.dhcp_path, filename="dhcpd.conf")
 
@@ -86,7 +86,7 @@ def put_dhcp_config(ip, username, content):
         None
     """
     _logger.info(f"Updating DHCP configuration on {ip}")
-    client = ssh_client_with_public_key(ip, username)
+    client = ssh_client_with_private_key(ip, username)
     with client.open_sftp() as sftp:
         dhcp_file_path = f"{constants.dhcp_path}/dhcpd.conf"
         backup_files = [

@@ -3,7 +3,7 @@ import os
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from fileserver import constants
-from fileserver.ssh import ssh_client_with_public_key
+from fileserver.ssh import ssh_client_with_private_key
 from fileserver.models import DHCPServerDetails, DHCPDevices
 from log_manager.logger import get_backend_logger
 from isc_dhcp_leases import IscDhcpLeases
@@ -75,7 +75,7 @@ def copy_dhcp_file_to_local(ip, username, source_path: str, destination_path: st
         destination_path (str): The destination path to copy the file to.
     """
     _logger.info(f"copying file from {source_path} to {destination_path}")
-    client = ssh_client_with_public_key(ip, username)
+    client = ssh_client_with_private_key(ip, username)
     with client.open_sftp() as sftp:
         sftp.get(source_path, destination_path)
         _logger.info(f"file copied from {source_path} to {destination_path}")

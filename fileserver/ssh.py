@@ -69,9 +69,9 @@ def ssh_copy_id(ip, username, password, public_key):
         client.close()
 
 
-def ssh_client_with_public_key(ip, username):
+def ssh_client_with_private_key(ip, username):
     """
-    Create an SSH client using the public key.
+    Create an SSH client using the private key.
 
     Args:
         ip (str): The IP address of the device.
@@ -83,7 +83,7 @@ def ssh_client_with_public_key(ip, username):
     _logger.info(f"Connecting to {ip} with public key.")
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    local_public_key_path = os.path.expanduser(f"{constants.ssh_key_path}/id_rsa.pub")
+    local_public_key_path = os.path.expanduser(f"{constants.ssh_key_path}/id_rsa")
     client.connect(ip, username=username, key_filename=local_public_key_path)
     return client
 
