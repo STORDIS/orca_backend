@@ -104,7 +104,7 @@ def put_dhcp_config(ip, username, content):
             )
 
             # Remove the oldest backup files
-            for file in backup_files[10:]:
+            for file in backup_files[9:]:
                 _logger.info(f"Removing {file}")
                 client.exec_command(f"sudo rm {constants.dhcp_path}{file}")
 
