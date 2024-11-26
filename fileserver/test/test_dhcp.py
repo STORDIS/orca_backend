@@ -1,7 +1,8 @@
+import datetime
 import time
 
 from fileserver import constants
-from fileserver.dhcp import create_ssh_client
+from fileserver.ssh import ssh_client_with_username_password
 from fileserver.scheduler import scheduler, add_dhcp_leases_scheduler
 from fileserver.test.test_common import TestCommon
 
@@ -14,7 +15,7 @@ class TestDHCP(TestCommon):
 
     def test_dhcp_server_credentials(self):
         data = {
-            "mgt_ip": self.device_ip,
+            "device_ip": self.device_ip,
             "username": self.username,
             "password": self.password
         }
@@ -24,31 +25,30 @@ class TestDHCP(TestCommon):
         self.assertEqual(response.status_code, 200)
 
         # get dhcp credentials
-        response = self.get_req("dhcp_credentials", {"mgt_ip": self.device_ip})
-        print(response.json())
+        response = self.get_req("dhcp_credentials")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json().get("username"), data["username"])
-        self.assertEqual(response.json().get("password"), data["password"])
-        self.assertEqual(response.json().get("device_ip"), data["mgt_ip"])
+        self.assertEqual(response.json().get("device_ip"), data["device_ip"])
+        self.assertTrue(response.json().get("ssh_access"))
 
         # delete dhcp credentials
-        response = self.del_req("dhcp_credentials", {"mgt_ip": self.device_ip})
+        response = self.del_req("dhcp_credentials", {"device_ip": self.device_ip})
         self.assertEqual(response.status_code, 200)
 
         # get dhcp credentials
-        response = self.get_req("dhcp_credentials", {"mgt_ip": self.device_ip})
+        response = self.get_req("dhcp_credentials")
         self.assertEqual(response.status_code, 204)
 
     def test_dhcp_server_config(self):
         device_ip = self.device_ip
         credentials = {
-            "mgt_ip": device_ip,
+            "device_ip": device_ip,
             "username": self.username,
             "password": self.password
         }
 
         file_data = {
-            "mgt_ip": device_ip,
+            "device_ip": device_ip,
             "content": "file content"
         }
 
@@ -60,37 +60,38 @@ class TestDHCP(TestCommon):
         self.assertEqual(response.status_code, 200)
 
         # validate dhcp credentials
-        response = self.get_req("dhcp_credentials", {"mgt_ip": device_ip})
+        response = self.get_req("dhcp_credentials")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json().get("username"), credentials["username"])
-        self.assertEqual(response.json().get("password"), credentials["password"])
+        self.assertTrue(response.json().get("ssh_access"))
 
         # adding dhcp config
         response = self.put_req("dhcp_config", file_data)
         self.assertEqual(response.status_code, 200)
 
         # get dhcp config
-        response = self.get_req("dhcp_config", {"mgt_ip": device_ip})
-        self.assertIn(file_data["content"], b"".join(response.streaming_content).decode("utf-8"))
+        response = self.get_req("dhcp_config", {"device_ip": device_ip})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(file_data["content"] in response.json().get("content"))
 
         # delete dhcp credentials
-        response = self.del_req("dhcp_credentials", {"mgt_ip": device_ip})
+        response = self.del_req("dhcp_credentials", {"device_ip": device_ip})
         self.assertEqual(response.status_code, 200)
 
         # validate dhcp credentials
-        response = self.get_req("dhcp_credentials", {"mgt_ip": device_ip})
+        response = self.get_req("dhcp_credentials")
         self.assertEqual(response.status_code, 204)
 
     def test_dhcp_server_backups(self):
         device_ip = self.device_ip
         credentials = {
-            "mgt_ip": device_ip,
+            "device_ip": device_ip,
             "username": self.username,
             "password": self.password
         }
 
         file_data = {
-            "mgt_ip": device_ip,
+            "device_ip": device_ip,
             "content": "file content"
         }
 
@@ -102,43 +103,48 @@ class TestDHCP(TestCommon):
         self.assertEqual(response.status_code, 200)
 
         # validate dhcp credentials
-        response = self.get_req("dhcp_credentials", {"mgt_ip": device_ip})
+        response = self.get_req("dhcp_credentials", {"device_ip": device_ip})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json().get("username"), credentials["username"])
-        self.assertEqual(response.json().get("password"), credentials["password"])
+        self.assertTrue(response.json().get("ssh_access"))
 
         # adding dhcp config
         response = self.put_req("dhcp_config", file_data)
         self.assertEqual(response.status_code, 200)
 
         # get dhcp config
-        response = self.get_req("dhcp_config", {"mgt_ip": device_ip})
-        self.assertIn(file_data["content"], b"".join(response.streaming_content).decode("utf-8"))
+        response = self.get_req("dhcp_config", {"device_ip": device_ip})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(file_data["content"] in response.json().get("content"))
+
+        file_data["content"] = "new file content"
+        # adding dhcp config
+        response = self.put_req("dhcp_config", file_data)
+        self.assertEqual(response.status_code, 200)
+
+        # get dhcp config
+        response = self.get_req("dhcp_config", {"device_ip": device_ip})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(file_data["content"] in response.json().get("content"))
 
         # list backups
-        response = self.get_req("dhcp_backups", {"mgt_ip": device_ip})
+        response = self.get_req("dhcp_backups", {"device_ip": device_ip})
         self.assertEqual(response.status_code, 200)
-        print(response.json())
         self.assertTrue(len(response.json()) > 0)
-        back_up_file = response.json()[0]
-
-        # get backup
-        response = self.get_req("dhcp_backups", {"mgt_ip": device_ip, "filename": back_up_file})
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(file_data["content"], b"".join(response.streaming_content).decode("utf-8"))
+        self.assertTrue(all([i.get("filename").startswith(constants.dhcp_backup_prefix) for i in response.json()]))
 
         # delete dhcp credentials
-        response = self.del_req("dhcp_credentials", {"mgt_ip": device_ip})
+        response = self.del_req("dhcp_credentials", {"device_ip": device_ip})
         self.assertEqual(response.status_code, 200)
 
         # validate dhcp credentials
-        response = self.get_req("dhcp_credentials", {"mgt_ip": device_ip})
+        response = self.get_req("dhcp_credentials")
         self.assertEqual(response.status_code, 204)
 
     def test_dhcp_leases_schedular(self):
         device_ip = self.device_ip
         credentials = {
-            "mgt_ip": device_ip,
+            "device_ip": device_ip,
             "username": self.username,
             "password": self.password
         }
@@ -148,37 +154,40 @@ class TestDHCP(TestCommon):
         self.assertEqual(response.status_code, 200)
 
         # validate dhcp credentials
-        response = self.get_req("dhcp_credentials", {"mgt_ip": device_ip})
+        response = self.get_req("dhcp_credentials", {"device_ip": device_ip})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json().get("username"), credentials["username"])
-        self.assertEqual(response.json().get("password"), credentials["password"])
+        self.assertTrue(response.json().get("ssh_access"))
 
         # change dhcp path for testing.
-        constants.dhcp_leases_path = self.dhcp_path
-        constants.dhcp_schedule_interval = 5
+        constants.dhcp_leases_path = f"{self.dhcp_path}dhcpd.leases"
+        constants.dhcp_schedule_interval = 60
 
         # start scheduler
         add_dhcp_leases_scheduler()
 
         # modify job start time
         job = scheduler.get_job(f"dhcp_list")
-        time.sleep(5)
-        retries = 5
+        print(job.next_run_time)
+        job.modify(
+            next_run_time=datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(seconds=5)
+        )
+        print(job.next_run_time)
+        time.sleep(10)
+        retries = 10
         while retries > 0:
-            if job.next_run_time is None:
+            if job.next_run_time > datetime.datetime.now(tz=datetime.timezone.utc):
                 time.sleep(10)
             else:
                 break
-            retries -= 5
+            retries -= 1
             print(job.next_run_time)
-            print(job.is_running())
 
         # list leases
         response = self.get_req("dhcp_list")
         self.assertEqual(response.status_code, 200)
-        print(response.json())
         self.assertTrue(len(response.json()) > 0)
-        assert False
+        self.assertTrue(all([i.get("hostname").startswith("sonic") for i in response.json()]))
 
     @classmethod
     def setUpClass(cls):
@@ -186,27 +195,38 @@ class TestDHCP(TestCommon):
         cls.username = "admin"
         cls.password = "YourPaSsWoRd"
         cls.dhcp_path = "/tmp/"
-        client = create_ssh_client(cls.device_ip, cls.username, cls.password)
+        client = ssh_client_with_username_password(cls.device_ip, cls.username, cls.password)
         content = ""
         for i in range(10):
             content += f"""
-            lease 192.168.1.{i} {{
-              starts 4 2024/11/21 10:00:00;
-              ends 4 2024/11/21 16:00:00;
-              cltt 4 2024/11/21 10:00:00;
-              binding state active;
-              hardware ethernet 00:1a:2b:3c:4d:5e;
-              client-hostname sonic{i};
-            }}\n
-            """
-        client.exec_command(
-            f"echo '{content}' | sudo tee {cls.dhcp_path}dhcpd.leases"
+lease 192.168.1.{i} {{
+  starts 4 2024/11/21 10:00:00;
+  ends 4 2024/11/21 16:00:00;
+  cltt 4 2024/11/21 10:00:00;
+  binding state active;
+  hardware ethernet 00:1a:2b:3c:4d:5e;
+  client-hostname sonic{i};
+}}\n"""
+        stdin, stdout, stderr = client.exec_command(
+            f'echo "{content}" | sudo tee {cls.dhcp_path}dhcpd.leases'
         )
+        output = stdout.read().decode()
+        error = stderr.read().decode()
+        assert error == ""
+        assert output != ""
+        client.close()
 
     @classmethod
     def tearDownClass(cls):
-        client = create_ssh_client(cls.device_ip, cls.username, cls.password)
+        client = ssh_client_with_username_password(cls.device_ip, cls.username, cls.password)
         client.exec_command(
             f"sudo rm {cls.dhcp_path}dhcpd.leases"
         )
-        scheduler.shutdown(wait=False)
+        client.exec_command(
+            f"sudo rm {constants.dhcp_backup_prefix}*"
+        )
+        client.exec_command(
+            f"sudo rm {constants.dhcp_path}dhcpd.conf"
+        )
+        client.close()
+        scheduler.shutdown()

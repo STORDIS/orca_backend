@@ -152,9 +152,9 @@ def dhcp_auth(request):
     http_status = True
     result = []
     if request.method == "GET":
-        details = model_to_dict(DHCPServerDetails.objects.all().first())
+        details = DHCPServerDetails.objects.all().first()
         return (
-            Response(details, status=status.HTTP_200_OK)
+            Response(model_to_dict(details), status=status.HTTP_200_OK)
             if details
             else Response({}, status=status.HTTP_204_NO_CONTENT)
         )

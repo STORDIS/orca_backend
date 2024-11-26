@@ -16,12 +16,13 @@ class TestZTP(TestCommon):
         # validate ztp file
         response = self.get_req("host_ztp_files", {"filename": "ztp_test.json"})
         self.assertEqual(response.status_code, 200)
-        self.assertIn(data["content"], b"".join(response.streaming_content).decode("utf-8"))
+        self.assertEqual(response.json()["content"], data["content"])
+        self.assertEqual(response.json()["filename"], data["filename"])
 
         # list ztp files
         response = self.get_req("host_ztp_files")
         self.assertEqual(response.status_code, 200)
-        self.assertIn(data["filename"], response.json())
+        self.assertIn(data["filename"], [i["filename"] for i in response.json()])
 
         # delete ztp file
         response = self.del_req("host_ztp_files", {"filename": "ztp_test.json"})

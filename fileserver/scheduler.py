@@ -60,6 +60,9 @@ def scan_dhcp_leases_file():
                         }
                     )
             _logger.info("Scanned DHCP leases file.")
+            # Delete the dhcpd.leases file.
+            if os.path.isfile(destination_path):
+                os.remove(destination_path)
     except Exception as e:
         _logger.error(f"Error in scan_dhcp_leases_file: {e}")
 
