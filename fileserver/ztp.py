@@ -44,7 +44,7 @@ def _get_ztp_file_content(path, filename) -> dict:
         dict: A dictionary containing the content of the specified file and its name.
     """
     with open(os.path.join(path, filename), 'r') as f:
-        return {"content": f.read(), "filename": filename}
+        return {"content": f.read(), "filename": filename, "path": f"files/download/ztp/{filename}"}
 
 
 def add_ztp_file(filename, content):
