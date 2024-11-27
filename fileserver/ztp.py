@@ -71,3 +71,18 @@ def delete_ztp_file(filename):
     ztp_path = get_ztp_path()
     if os.path.exists(os.path.join(ztp_path, filename)):
         os.remove(os.path.join(ztp_path, filename))
+
+
+def rename_ztp_file(old_filename, new_filename):
+    """
+    Rename the specified file in the ztp files.
+
+    Args:
+        old_filename (str): The name of the file to rename.
+        new_filename (str): The new name of the file.
+    """
+    ztp_path = get_ztp_path()
+    if os.path.exists(os.path.join(ztp_path, old_filename)):
+        os.rename(
+            os.path.join(ztp_path, old_filename), os.path.join(ztp_path, new_filename)
+        )

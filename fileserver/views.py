@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from fileserver.dhcp import get_dhcp_config, put_dhcp_config, get_dhcp_backup_file, get_dhcp_backup_files_list, \
     update_dhcp_access, delete_dhcp_backup_file
 from fileserver.models import DHCPServerDetails, DHCPDevices
-from fileserver.ztp import get_ztp_files, add_ztp_file, delete_ztp_file
+from fileserver import ztp
 from log_manager.decorators import log_request
 from log_manager.logger import get_backend_logger
 
@@ -40,7 +40,7 @@ def host_ztp_files(request):
         filename = request.GET.get("filename", "")
         try:
             _logger.info("Getting ztp file: %s", filename)
-            data = get_ztp_files(filename)
+            data = ztp.get_ztp_files(filename)
             return Response(data, status=status.HTTP_200_OK)
         except FileNotFoundError as e:
             _logger.error("File not found %s", e)
@@ -56,7 +56,7 @@ def host_ztp_files(request):
             content = req_data.get("content")
             try:
                 _logger.info("Saving ztp file: %s", filename)
-                add_ztp_file(filename, content)
+                ztp.add_ztp_file(filename, content)
                 result.append({"message": f"saved {filename} to ztp files", "status": "success"})
             except Exception as e:
                 _logger.error(e)
@@ -68,7 +68,7 @@ def host_ztp_files(request):
             filename = req_data.get("filename")
             try:
                 _logger.info("Deleting ztp file: %s", filename)
-                delete_ztp_file(filename)
+                ztp.delete_ztp_file(filename)
                 result.append({"message": f"deleted {filename} from ztp files", "status": "success"})
             except Exception as e:
                 _logger.error(e)
@@ -322,3 +322,40 @@ def get_templates(request):
             _logger.error(e)
             return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+@api_view(["PUT"])
+@log_request
+def rename_ztp_file(request):
+    result = []
+    http_status = True
+    if request.method == "PUT":
+        req_list: list = request.data if isinstance(request.data, list) else [request.data]
+        for req_data in req_list:
+            _logger.info("Renaming ZTP file")
+            old_filename = req_data.get("old_filename")
+            new_filename = req_data.get("new_filename")
+            if not old_filename:
+                _logger.error("Required field filename not found.")
+                return Response(
+                    {"status": "Required field filename not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if not new_filename:
+                _logger.error("Required field new_filename not found.")
+                return Response(
+                    {"status": "Required field new_filename not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                ztp.rename_ztp_file(old_filename, new_filename)
+                result.append({"message": f"{request.method} request successful", "status": "success"})
+            except Exception as e:
+                _logger.error(e)
+                http_status = False
+                result.append({"message": str(e), "status": "failed"})
+    return Response(
+        {"result": result},
+        status=status.HTTP_200_OK
+        if http_status
+        else status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
