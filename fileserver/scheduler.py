@@ -1,3 +1,4 @@
+import atexit
 import os
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -13,16 +14,27 @@ _logger = get_backend_logger()
 scheduler = BackgroundScheduler()
 
 
-def add_dhcp_leases_scheduler(job_id="dhcp_list", trigger="interval"):
-    scheduler.add_job(
-        func=scan_dhcp_leases_file,
-        trigger=trigger,
-        seconds=constants.dhcp_schedule_interval,
-        id=job_id,
-        replace_existing=True,
-        max_instances=1,
-    )
-    _logger.info("DHCP scheduler job added")
+def shutdown_scheduler():
+    if scheduler.running:
+        scheduler.shutdown()
+        _logger.info("DHCP scheduler stopped")
+
+
+atexit.register(shutdown_scheduler)
+
+
+def add_dhcp_leases_scheduler(job_id="dhcp_list", trigger="interval", seconds=60):
+    global scheduler
+    if not scheduler.get_job(job_id):
+        scheduler.add_job(
+            func=scan_dhcp_leases_file,
+            trigger=trigger,
+            seconds=seconds,
+            id=job_id,
+            replace_existing=True,
+            max_instances=1,
+        )
+        _logger.info("DHCP scheduler job added")
     if not scheduler.running:
         scheduler.start()
         _logger.info("DHCP scheduler started")
@@ -50,7 +62,7 @@ def scan_dhcp_leases_file():
             for lease in leases.get():
                 _logger.debug("Lease: %s", lease)
                 if lease.ip not in discovered_devices and "sonic" in lease.hostname:
-                    _logger.info(f"Discovered sonic device: {lease.ip} - {lease.hostname}")
+                    _logger.debug(f"Discovered sonic device: {lease.ip} - {lease.hostname}")
                     DHCPDevices.objects.update_or_create(
                         device_ip=lease.ip,
                         defaults={
@@ -60,7 +72,7 @@ def scan_dhcp_leases_file():
                         }
                     )
             _logger.info("Scanned DHCP leases file.")
-            # Delete the dhcpd.leases file.
+            # Delete the dhcpd.leases local file.
             if os.path.isfile(destination_path):
                 os.remove(destination_path)
     except Exception as e:
@@ -77,8 +89,9 @@ def copy_dhcp_file_to_local(ip, username, source_path: str, destination_path: st
         source_path (str): The source path of the file to copy.
         destination_path (str): The destination path to copy the file to.
     """
-    _logger.info(f"copying file from {source_path} to {destination_path}")
+    _logger.debug(f"copying file from {source_path} to {destination_path}")
     client = ssh_client_with_private_key(ip, username)
     with client.open_sftp() as sftp:
         sftp.get(source_path, destination_path)
-        _logger.info(f"file copied from {source_path} to {destination_path}")
+        _logger.debug(f"file copied from {source_path} to {destination_path}")
+    client.close()

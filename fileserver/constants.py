@@ -1,4 +1,4 @@
-dhcp_schedule_interval = 15 * 60  # minutes * 60
+dhcp_schedule_interval = 15 * 60  # set to 15 minutes in seconds
 dhcp_path = "/etc/dhcp/"
 dhcp_leases_path = "/var/lib/dhcpd/dhcpd.leases"
 dhcp_backup_prefix = "dhcpd.conf.orca."

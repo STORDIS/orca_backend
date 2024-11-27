@@ -3,7 +3,8 @@ import os
 from django.forms import model_to_dict
 from django.http import FileResponse
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from fileserver.dhcp import get_dhcp_config, put_dhcp_config, get_dhcp_backup_file, get_dhcp_backup_files_list, \
@@ -17,7 +18,7 @@ _logger = get_backend_logger()
 
 
 @api_view(["GET"])
-@log_request
+@permission_classes([AllowAny])
 def download_file(request, filename):
     if request.method == "GET":
         _logger.info("Downloading file: %s", filename)

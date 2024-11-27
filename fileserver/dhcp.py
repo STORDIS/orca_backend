@@ -23,7 +23,10 @@ def get_dhcp_backup_file(ip, username, filename):
     """
     client = ssh_client_with_private_key(ip, username)
     with client.open_sftp() as sftp:
-        return get_sftp_file_content(sftp, constants.dhcp_path, filename)
+        file_content = get_sftp_file_content(sftp, constants.dhcp_path, filename)
+
+    client.close()
+    return file_content
 
 
 def get_dhcp_backup_files_list(ip, username):
@@ -43,6 +46,8 @@ def get_dhcp_backup_files_list(ip, username):
     back_files = list_backup_files(sftp, constants.dhcp_path)
     for f in back_files:
         files.append(get_sftp_file_content(sftp, constants.dhcp_path, f))
+
+    client.close()
     return files
 
 
@@ -72,7 +77,9 @@ def get_dhcp_config(ip, username):
     """
     client = ssh_client_with_private_key(ip, username)
     with client.open_sftp() as sftp:
-        return get_sftp_file_content(sftp, path=constants.dhcp_path, filename="dhcpd.conf")
+        file_content = get_sftp_file_content(sftp, path=constants.dhcp_path, filename="dhcpd.conf")
+    client.close()
+    return file_content
 
 
 def update_dhcp_access(ip, username, password):
