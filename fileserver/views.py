@@ -301,3 +301,24 @@ def get_dhcp_device(request):
         except Exception as e:
             _logger.error(e)
             return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(["GET"])
+def get_templates(request):
+    if request.method == "GET":
+        try:
+            _logger.info("Getting templates")
+            app_directory = os.path.dirname(os.path.abspath(__file__))
+            template_directory = os.path.join(app_directory, "media/templates")
+            files = []
+            for file in os.listdir(template_directory):
+                with open(os.path.join(template_directory, file), "r") as f:
+                    files.append({"name": file, "content": f.read()})
+            return Response(files, status=status.HTTP_200_OK) if files else Response(status=status.HTTP_204_NO_CONTENT)
+        except FileNotFoundError as e:
+            _logger.error(e)
+            return Response({"message": str(e)}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            _logger.error(e)
+            return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
