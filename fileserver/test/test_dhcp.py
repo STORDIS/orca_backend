@@ -230,3 +230,48 @@ lease 192.168.1.{i} {{
         )
         client.close()
         scheduler.shutdown()
+
+    def test_dhcp_backup_len(self):
+
+        device_ip = self.device_ip
+        credentials = {
+            "device_ip": device_ip,
+            "username": self.username,
+            "password": self.password
+        }
+
+        file_data = {
+            "device_ip": device_ip,
+            "content": "file content"
+        }
+
+        # change dhcp path for testing.
+        constants.dhcp_path = self.dhcp_path
+
+        # adding dhcp credentials
+        response = self.put_req("dhcp_credentials", credentials)
+        self.assertEqual(response.status_code, 200)
+
+        # validate dhcp credentials
+        response = self.get_req("dhcp_credentials", {"device_ip": device_ip})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json().get("username"), credentials["username"])
+        self.assertTrue(response.json().get("ssh_access"))
+
+        # adding dhcp config
+        response = self.put_req("dhcp_config", file_data)
+        self.assertEqual(response.status_code, 200)
+
+        # get dhcp config
+        response = self.get_req("dhcp_config", {"device_ip": device_ip})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(file_data["content"] in response.json().get("content"))
+
+        # adding config 10 time create 10 backups
+        for i in range(10):
+            response = self.put_req("dhcp_config", file_data)
+            self.assertEqual(response.status_code, 200)
+
+        # get backups
+        response = self.get_req("dhcp_backups", {"device_ip": device_ip})
+
