@@ -49,7 +49,7 @@ class TestDHCP(TestCommon):
 
         file_data = {
             "device_ip": device_ip,
-            "content": "file content"
+            "content": "test_dhcp_server_config"
         }
 
         # change dhcp path for testing.
@@ -92,7 +92,7 @@ class TestDHCP(TestCommon):
 
         file_data = {
             "device_ip": device_ip,
-            "content": "file content"
+            "content": "test_dhcp_server_backups"
         }
 
         # change dhcp path for testing.
@@ -117,7 +117,7 @@ class TestDHCP(TestCommon):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(file_data["content"] in response.json().get("content"))
 
-        file_data["content"] = "new file content"
+        file_data["content"] = "test_dhcp_server_backups 1"
         # adding dhcp config
         response = self.put_req("dhcp_config", file_data)
         self.assertEqual(response.status_code, 200)
@@ -229,7 +229,8 @@ lease 192.168.1.{i} {{
             f"sudo rm {constants.dhcp_path}dhcpd.conf"
         )
         client.close()
-        scheduler.shutdown()
+        if scheduler.running:
+            scheduler.shutdown(wait=False)
 
     def test_dhcp_backup_len(self):
 
@@ -269,9 +270,86 @@ lease 192.168.1.{i} {{
 
         # adding config 10 time create 10 backups
         for i in range(10):
-            response = self.put_req("dhcp_config", file_data)
+            response = self.put_req("dhcp_config", {
+                "device_ip": device_ip,
+                "content": f"file content {i}"
+            })
             self.assertEqual(response.status_code, 200)
 
         # get backups
         response = self.get_req("dhcp_backups", {"device_ip": device_ip})
+        oldest_backup = response.json()[-1]
+
+        self.assertEqual(len(response.json()), 10)
+
+        # adding config again to check if oldest backup is deleted
+        response = self.put_req("dhcp_config", {
+            "device_ip": device_ip,
+            "content": "file content"
+        })
+        self.assertEqual(response.status_code, 200)
+
+        # get backups
+        response = self.get_req("dhcp_backups", {"device_ip": device_ip})
+        self.assertEqual(len(response.json()), 10)
+        self.assertTrue(oldest_backup["filename"] not in [i["filename"] for i in response.json()])
+
+        # delete dhcp credentials
+        response = self.del_req("dhcp_credentials", {"device_ip": device_ip})
+        self.assertEqual(response.status_code, 200)
+
+        # validate dhcp credentials
+        response = self.get_req("dhcp_credentials")
+        self.assertEqual(response.status_code, 204)
+
+    def test_dhcp_check_sum(self):
+        device_ip = self.device_ip
+        credentials = {
+            "device_ip": device_ip,
+            "username": self.username,
+            "password": self.password
+        }
+
+        file_data = {
+            "device_ip": device_ip,
+            "content": "test_dhcp_check_sum"
+        }
+
+        # change dhcp path for testing.
+        constants.dhcp_path = self.dhcp_path
+
+        # adding dhcp credentials
+        response = self.put_req("dhcp_credentials", credentials)
+        self.assertEqual(response.status_code, 200)
+
+        # validate dhcp credentials
+        response = self.get_req("dhcp_credentials", {"device_ip": device_ip})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json().get("username"), credentials["username"])
+        self.assertTrue(response.json().get("ssh_access"))
+
+        # adding dhcp config
+        response = self.put_req("dhcp_config", file_data)
+        self.assertEqual(response.status_code, 200)
+
+        # get dhcp config
+        response = self.get_req("dhcp_config", {"device_ip": device_ip})
+        self.assertEqual(response.status_code, 200)
+
+        # adding same content to check if checksum is same
+        response = self.put_req("dhcp_config", file_data)
+        self.assertEqual(response.status_code, 500)
+        response_body = response.json()
+        self.assertTrue(
+            response_body.get("result")[0]["message"].lower(),
+            "No changes detected in DHCP configuration.".lower()
+        )
+
+        # delete dhcp credentials
+        response = self.del_req("dhcp_credentials", {"device_ip": device_ip})
+        self.assertEqual(response.status_code, 200)
+
+        # validate dhcp credentials
+        response = self.get_req("dhcp_credentials")
+        self.assertEqual(response.status_code, 204)
 
