@@ -137,6 +137,8 @@ def dhcp_config(request):
                     _logger.info(output)
                     result.append({"message": f"{request.method} request successful", "status": "success"})
             except Exception as e:
+                import traceback
+                _logger.error(traceback.format_exc())
                 _logger.error("Internal server error %s", e)
                 http_status = False
                 result.append({"message": str(e), "status": "failed"})

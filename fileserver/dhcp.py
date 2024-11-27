@@ -174,16 +174,18 @@ def put_dhcp_config(ip, username, content):
 
     # verify if there are any changes
     try:
-        current_content = get_sftp_file_content(sftp, path=constants.dhcp_path, filename=dhcp_filename)
+        current_file_details = get_sftp_file_content(sftp, path=constants.dhcp_path, filename=dhcp_filename)
+        current_content = current_file_details["content"].decode("utf-8")
     except FileNotFoundError:
         current_content = ""
 
-    current_checksum = calculate_checksum(current_content["content"])
+    current_checksum = calculate_checksum(current_content)
     new_checksum = calculate_checksum(content)
 
+    # Check if there are any changes
     if current_checksum == new_checksum:
         _logger.info(f"No changes detected in DHCP configuration.")
-        return "No changes detected in DHCP configuration.", ""
+        return "", "No changes detected in DHCP configuration."
 
     _logger.info(f"Updating DHCP configuration on {ip}.")
 
@@ -193,7 +195,9 @@ def put_dhcp_config(ip, username, content):
         backup_old_dhcp_config(client, sftp, path=constants.dhcp_path, filename=dhcp_filename)
 
         # Update the DHCP configuration file
-        output, error = update_dhcp_config(client, path=constants.dhcp_path, content=content)
+        output, error = update_dhcp_config(
+            client=client, path=constants.dhcp_path, filename=dhcp_filename, content=content
+        )
 
         # Restart the DHCP server
         restart_dhcpd(client)
@@ -225,20 +229,21 @@ def restart_dhcpd(client):
     _logger.debug("stderr: " + stderr.read().decode())
 
 
-def update_dhcp_config(client, path, content):
+def update_dhcp_config(client, path, filename, content):
     """
     Update the DHCP configuration file on the DHCP server.
 
     Args:
         client (paramiko.client.SSHClient): An SSH client object.
         path (str): The path to the DHCP configuration file.
+        filename (str): The name of the DHCP configuration file.
         content (str): The content of the DHCP configuration file.
 
     Returns:
         None
     """
     _logger.info(f"Updating DHCP configuration.")
-    stdin, stdout, stderr = client.exec_command(f'echo "{content}" | sudo tee {path}')
+    stdin, stdout, stderr = client.exec_command(f'sudo tee {path}{filename} <<EOF\n{content}\nEOF')
     output = stdout.read().decode()
     error = stderr.read().decode()
     return output, error
