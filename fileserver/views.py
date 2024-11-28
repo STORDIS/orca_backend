@@ -26,11 +26,16 @@ def download_file(request, filepath=None):
         path = os.path.join(app_directory, 'media/download', filepath)
         if os.path.isfile(path):
             return FileResponse(open(path, 'rb'), as_attachment=True, filename=filepath)
-        else:
+        elif os.path.isdir(path):
             return Response(
-                [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))],
+                [{
+                    "filename": f, "path": f"files/download/{filepath}/{f}"
+                } for f in os.listdir(path)
+                    if os.path.isfile(os.path.join(path, f))],
                 status=status.HTTP_200_OK
             )
+        else:
+            return Response("File not found", status=status.HTTP_404_NOT_FOUND)
 
 
 @api_view(["GET", "PUT", "DELETE"])
