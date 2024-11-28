@@ -23,7 +23,7 @@ def download_file(request, filename):
     if request.method == "GET":
         _logger.info("Downloading file: %s", filename)
         app_directory = os.path.dirname(os.path.abspath(__file__))  # Get the path of the current app
-        path = os.path.join(app_directory, 'media', filename)
+        path = os.path.join(app_directory, 'media/download', filename)
         if os.path.exists(path):
             _logger.info("File found: %s", filename)
             return FileResponse(open(path, "rb+"), as_attachment=True, filename=filename)
@@ -312,7 +312,7 @@ def get_templates(request):
         try:
             _logger.info("Getting templates")
             app_directory = os.path.dirname(os.path.abspath(__file__))
-            template_directory = os.path.join(app_directory, "media/templates")
+            template_directory = os.path.join(app_directory, "media/download/templates")
             files = []
             for file in os.listdir(template_directory):
                 with open(os.path.join(template_directory, file), "r") as f:
