@@ -1,5 +1,8 @@
 import datetime
+import os
 import time
+
+import yaml
 
 from fileserver import constants
 from fileserver.ssh import ssh_client_with_username_password
@@ -13,7 +16,8 @@ class TestDHCP(TestCommon):
     password = "YourPaSsWoRd"
     dhcp_path = "/tmp/"
 
-    def test_dhcp_server_credentials(self):
+    def test_adding_dhcp_public_key_to_dhcp_server(self):
+        """ Test adding dhcp public key to dhcp server. """
         data = {
             "device_ip": self.device_ip,
             "username": self.username,
@@ -39,7 +43,8 @@ class TestDHCP(TestCommon):
         response = self.get_req("dhcp_credentials")
         self.assertEqual(response.status_code, 204)
 
-    def test_dhcp_server_config(self):
+    def test_update_dhcpd_conf_file_update(self):
+        """ Test updating dhcpd.conf file. """
         device_ip = self.device_ip
         credentials = {
             "device_ip": device_ip,
@@ -82,7 +87,10 @@ class TestDHCP(TestCommon):
         response = self.get_req("dhcp_credentials")
         self.assertEqual(response.status_code, 204)
 
-    def test_dhcp_server_backups(self):
+    def test_to_check_create_dhcp_backup_after_updating_dhcpd_conf(self):
+        """
+        This test will check if dhcp backup is created after updating dhcp config.
+        """
         device_ip = self.device_ip
         credentials = {
             "device_ip": device_ip,
@@ -141,7 +149,10 @@ class TestDHCP(TestCommon):
         response = self.get_req("dhcp_credentials")
         self.assertEqual(response.status_code, 204)
 
-    def test_dhcp_leases_schedular(self):
+    def test_to_check_dhcp_leases_file_scan_job(self):
+        """
+        Test to check that the DHCP leases file is scanned by the scheduler.
+        """
         device_ip = self.device_ip
         credentials = {
             "device_ip": device_ip,
@@ -168,11 +179,9 @@ class TestDHCP(TestCommon):
 
         # modify job start time
         job = scheduler.get_job(f"dhcp_list")
-        print(job.next_run_time)
         job.modify(
             next_run_time=datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(seconds=5)
         )
-        print(job.next_run_time)
         time.sleep(10)
         retries = 10
         while retries > 0:
@@ -191,10 +200,7 @@ class TestDHCP(TestCommon):
 
     @classmethod
     def setUpClass(cls):
-        cls.device_ip = "10.10.229.124"
-        cls.username = "admin"
-        cls.password = "YourPaSsWoRd"
-        cls.dhcp_path = "/tmp/"
+        cls.load_test_config()
         client = ssh_client_with_username_password(cls.device_ip, cls.username, cls.password)
         content = ""
         for i in range(10):
@@ -232,7 +238,11 @@ lease 192.168.1.{i} {{
         if scheduler.running:
             scheduler.shutdown(wait=False)
 
-    def test_dhcp_backup_len(self):
+    def test_dhcpd_backup_file_rotation(self):
+        """
+        Test case for backup file rotation.
+        This test case checks 10 backup files are created, old ones are deleted.
+        """
 
         device_ip = self.device_ip
         credentials = {
@@ -302,7 +312,10 @@ lease 192.168.1.{i} {{
         response = self.get_req("dhcp_credentials")
         self.assertEqual(response.status_code, 204)
 
-    def test_dhcp_check_sum(self):
+    def test_dhcpd_conf_checksum_exists(self):
+        """
+        Test to validate dhcpd.conf checksum exists
+        """
         device_ip = self.device_ip
         credentials = {
             "device_ip": device_ip,
@@ -352,4 +365,18 @@ lease 192.168.1.{i} {{
         # validate dhcp credentials
         response = self.get_req("dhcp_credentials")
         self.assertEqual(response.status_code, 204)
+
+    @classmethod
+    def load_test_config(cls):
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        config_file_path = os.path.join(dir_path, 'test_dhcp_config.yaml')
+        with open(config_file_path, "r") as stream:
+            try:
+                config = yaml.safe_load(stream)
+                cls.device_ip = config["device_ip"]
+                cls.username = config["username"]
+                cls.password = config["password"]
+                cls.dhcp_path = config.get("test_folder", "/tmp/")
+            except yaml.YAMLError as exc:
+                print(exc)
 

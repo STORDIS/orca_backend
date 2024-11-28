@@ -29,7 +29,11 @@ def get_ztp_files(filename=None) -> list | dict:
     if filename:
         return _get_ztp_file_content(ztp_path, filename)
     else:
-        return [_get_ztp_file_content(ztp_path, f) for f in os.listdir(ztp_path)]
+        return [
+            _get_ztp_file_content(ztp_path, f)
+            for f in os.listdir(ztp_path)
+            if os.path.isfile(os.path.join(ztp_path, f))
+        ]
 
 
 def _get_ztp_file_content(path, filename) -> dict:

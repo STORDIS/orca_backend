@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from fileserver.dhcp import get_dhcp_config, put_dhcp_config, get_dhcp_backup_file, get_dhcp_backup_files_list, \
     update_dhcp_access, delete_dhcp_backup_file
 from fileserver.models import DHCPServerDetails, DHCPDevices
-from fileserver import ztp
+from fileserver import ztp, constants
 from log_manager.decorators import log_request
 from log_manager.logger import get_backend_logger
 
@@ -19,17 +19,18 @@ _logger = get_backend_logger()
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-def download_file(request, filename):
+def download_file(request, filepath=None):
     if request.method == "GET":
-        _logger.info("Downloading file: %s", filename)
+        _logger.info("Downloading file: %s", filepath)
         app_directory = os.path.dirname(os.path.abspath(__file__))  # Get the path of the current app
-        path = os.path.join(app_directory, 'media/download', filename)
-        if os.path.exists(path):
-            _logger.info("File found: %s", filename)
-            return FileResponse(open(path, "rb+"), as_attachment=True, filename=filename)
+        path = os.path.join(app_directory, 'media/download', filepath)
+        if os.path.isfile(path):
+            return FileResponse(open(path, 'rb'), as_attachment=True, filename=filepath)
         else:
-            _logger.error("File not found: %s", filename)
-            return Response("File not found", status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))],
+                status=status.HTTP_200_OK
+            )
 
 
 @api_view(["GET", "PUT", "DELETE"])
@@ -312,7 +313,7 @@ def get_templates(request):
         try:
             _logger.info("Getting templates")
             app_directory = os.path.dirname(os.path.abspath(__file__))
-            template_directory = os.path.join(app_directory, "media/download/templates")
+            template_directory = os.path.join(app_directory, constants.templates_path)
             files = []
             for file in os.listdir(template_directory):
                 with open(os.path.join(template_directory, file), "r") as f:
