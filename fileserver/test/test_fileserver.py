@@ -15,12 +15,12 @@ class TestFileServer(TestCommon):
     @classmethod
     def setUpClass(cls):
         app_directory = os.path.dirname(os.path.abspath(__file__))  # Get the path of the current app
-        path = os.path.join(app_directory, '../media', cls.test_file_name)
+        path = os.path.join(app_directory, '../media/download', cls.test_file_name)
         with open(path, "w") as f:
             f.write(cls.test_file_content)
 
     @classmethod
     def tearDownClass(cls):
         app_directory = os.path.dirname(os.path.abspath(__file__))  # Get the path of the current app
-        path = os.path.join(app_directory, '../media', cls.test_file_name)
+        path = os.path.join(app_directory, '../media/download', cls.test_file_name)
         os.remove(path)
