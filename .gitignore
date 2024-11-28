@@ -13,4 +13,4 @@ models
 *.log
 !**/migrations/__init__.py
 fileserver/media/*
-!fileserver/media/download/templates
+!fileserver/media/templates
