@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'state_manager',
     'orca_setup',
     'django_celery_results',
+    'fileserver'
 ]
 
 #check if orcask module is installed 
