@@ -190,7 +190,6 @@ class TestDHCP(TestCommon):
             else:
                 break
             retries -= 1
-            print(job.next_run_time)
 
         # list leases
         response = self.get_req("dhcp_list")

@@ -58,7 +58,6 @@ class TestZTP(TestCommon):
         response = self.put_req(
             "rename_ztp_file", {"old_filename": "ztp_test.json", "new_filename": "ztp_test_renamed.json"}
         )
-        print(response.json())
         self.assertEqual(response.status_code, 200)
 
         # validate ztp file
