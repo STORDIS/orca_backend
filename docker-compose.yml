@@ -1,11 +1,17 @@
 services:
   orca_backend:
-      build: .
-      depends_on:
-        neo4j:
-          condition: service_healthy
-      environment:
-          neo4j_url: <neo4j_host_ip> # It by default converted to bolt://neo4j_host_ip:7687
+    volumes:
+      - .:/orca_backend
+    restart: unless-stopped
+    build: .
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    environment:
+      neo4j_url: neo4j
+      CELERY_BROKER_URL: redis://redis:6379/0
+    ports:
+      - "8000:8000"
 
   neo4j:
     image: neo4j:latest
@@ -15,24 +21,26 @@ services:
     environment:
       - NEO4J_AUTH=neo4j/password  # Replace with your desired username/password
     healthcheck:
-      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "password", "--cipher", "bolt",  "-c", "RETURN 1"]
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "password", "RETURN 1"]
       interval: 5s
-      timeout: 2s
+      timeout: 10s
       retries: 5
-  
+
   redis:
     image: redis:latest
     ports:
-      - "6379:6379"
+      - "6378:6379"
 
   celery:
     restart: unless-stopped
     build: .
     command: poetry run celery -A orca_backend worker --loglevel=info --pool=prefork --concurrency=1
     volumes:
-      - .:/code
+      - .:/orca_backend
     depends_on:
       - neo4j
       - redis
-
-## TODO celery container, and check if orca_backend container needs to be started separately.
+      - orca_backend
+    environment:
+      neo4j_url: neo4j
+      CELERY_BROKER_URL: redis://redis:6379/0
