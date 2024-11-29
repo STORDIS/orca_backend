@@ -16,7 +16,7 @@ RUN test -d ORCASK \
 RUN rm -rf /root/.cache/pypoetry
 
 EXPOSE 8000
-CMD python3 manage.py makemigrations log_manager && \
+CMD python3 manage.py makemigrations network orca_setup state_manager log_manager fileserver && \
     python3 manage.py migrate && \
     export DJANGO_SUPERUSER_PASSWORD=admin && \
     python manage.py createsuperuser --username=admin --email=admin@example.com --noinput || true && \

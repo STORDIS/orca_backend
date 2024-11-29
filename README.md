@@ -20,14 +20,33 @@
 
 </p>
 
+## Installing docker compose plugin
+
+Install docker compose plugin using below steps
+
+```sh 
+DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
+
+mkdir -p $DOCKER_CONFIG/cli-plugins
+
+curl -SL https://github.com/docker/compose/releases/download/v2.30.3/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+
+chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+```
+
+To check that docker compose plugin successfully installed by running below command
+
+```shell
+docker compose version
+```
+
 # ORCA Backend
 
 ORCA Backend is a REST API server written using Django framework to access orca_nw_lib functionalities. It is a backend service that can be used by applications to interact with SONiC Network and devices.
 
 - [ORCA Backend](#orca-backend)
-  - [Quick Start in 2 simple steps](#quick-start-in-2-simple-steps)
-    - [Step-1 - Run Neo4j docker container](#step-1---run-neo4j-docker-container)
-    - [Step-2 - Run orca\_backend docker container](#step-2---run-orca_backend-docker-container)
+  - [Quick Start ORCA Backend](#quick-start-orca-backend)
+    
   - [Running orca\_backend from source](#running-orca_backend-from-source)
     - [Step-1 - Install ORCA Backend dependencies](#step-1---install-orca-backend-dependencies)
     - [Step-2(optional) - Configuration](#step-2optional---configuration)
@@ -42,29 +61,19 @@ ORCA Backend is a REST API server written using Django framework to access orca_
   - [To execute tests](#to-execute-tests)
   - [To Run GitHub Actions Locally](#to-run-github-actions-locally)
 
-## Quick Start in 2 simple steps
+## Quick Start ORCA Backend
 
-ORCA Backend can be started easily by just running 2 docker containers, as follows :
-
-### Step-1 - Run Neo4j docker container
-
-One of the dependencies for ORCA backend orca_nw_lib uses neo4j to store the network topology. To install neo4j easiest is to run Neo4j Docker image in container with the following command :
+ORCA Backend can be started easily by just running below command :
 
 ```sh
-docker run --name orca_neo4j -p7474:7474 -p7687:7687 -d --env NEO4J_AUTH=neo4j/password neo4j:latest
+git clone https://github.com/STORDIS/orca_backend.git
+
+cd orca_backend
+
+docker compose up -d
 ```
 
-To check that neo4j has successfully started, open https://<server_ip>:7474 with credentials neo4j/password to browse the database.  
-
-### Step-2 - Run orca_backend docker container
-
-Use following command to run orca_backend
-
-```sh
-docker run --name orca_backend -p 8000:8000 -e neo4j_url="<server_ip>" -d stordis/orca_backend:latest
-```
-
-> **_NOTE:_**  Replace `"<server_ip>"` with neo4j server ip.
+To check that neo4j has successfully started, open https://<server_ip>:7474 with credentials neo4j/password to browse the database.
 
 Container runs on 0.0.0.0:8000 by default. To verify that container has successfully started, try to access http://<server_ip>:8000/admin/ and log in with default user/password- admin/admin which is by default created.
 
@@ -72,125 +81,6 @@ Thats it, If thats enough, rest of the steps below can be skipped and directly p
 
 > **_NOTE:_** Several settings have default values if not overriden by environment variables. For more details refer [Configuration](#configuration) section below.
 
-## Running orca_backend from source
-
-### Step-1 - Install ORCA Backend dependencies
-
-ORCA backend uses poetry for installing all required dependencies. Poetry can be installed using the following command :
-
-```sh
-      pip install poetry
-```
-
-To install all dependencies of ORCA backend use the following command :
-
-```sh
-      git clone https://github.com/STORDIS/orca_backend.git
-      cd orca_backend
-      poetry install
-      poetry shell
-```
-
-> **_Troubleshoot:_**   if _"poetry install"_ stuck for long, perform cleanup as follows:
-      `poetry env remove --all` \
-      `poetry cache clear --all .`
-      `rm -rf $(poetry config cache-dir)/artifacts`
-If issue not resolved, check poetry output in verbose mode as follows :\
-      `poetry -vvv install` \
-In the output if install process is stuck at _"[keyring.backend] Loading macOS"_ try setting :\
-       `export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring`
-
-### Step-2(optional) - Configuration
-
-Device and DB access configurations of orca_backend is configured in [ORCA Network Library Config File](https://github.com/STORDIS/orca_nw_lib/blob/main/orca_nw_lib/orca_nw_lib.yml). All the config parameters defined in this file can simply be overridden by environment variables with the same name as defined in the config file.
-Example -
-
- ```sh
-    export discover_networks="10.10.229.50"
-    export device_username=admin
-    export device_password=YourPaSsWoRd
- ```
-
-Similarly, when starting orca_backend container, use it like:
-
-```shell
-  docker run -d --name orca_backend \
-    -p 8000:8000 \
-    -e discover_networks="10.10.229.50" \
-    -e device_username="admin" \
-    -e device_password="YourPaSsWoRd" \
-    -e neo4j_url="<server_ip>" \
-    stordis/orca_backend:latest
-```
-
-> **_NOTE:_**  Replace `"<server_ip>"` with neo4j server ip.
-
-[ORCA Network Library Config File](https://github.com/STORDIS/orca_nw_lib/blob/main/orca_nw_lib/orca_nw_lib.yml) is actually the part of one of the dependencies of orca_backend, and the file is installed under site_packages/orca_nw_lib/ directory of python environment being used.
-
-### Step-3 - Make Migrations
-
-Needed for log_manager do following :
-
-```sh
-      python manage.py makemigrations log_manager
-      python manage.py migrate
-```
-
-### Step-4 - Create Django User
-
-Create Django user as follows :
-
-```sh
-      cd orca_backend
-      python manage.py createsuperuser
-```
-
-The user created here can be used to login to server via orca_ui, or making rest calls using postman etc.
-
-### Step-5 - Finally, Run ORCA Backend
-
-orca_backend runs like normal django server as follows:
-
-```sh
-      python manage.py runserver
-```
-
-To verify that django server has successfully started, try accessing (replace localhost with your server address) - <http://localhost:8000/> , Here all the Rest endpoint should be listed. Or to perform admin tasks access- <http://localhost:8000/admin/>.
-
-### Next
-
-[Install ORCA UI](https://github.com/STORDIS/orca_ui)
-
-## Build and install orca_backend docker image from source
-
-Docker image of orca_backend can be created and container cane started as follows:
-
-### Create docker image
-
-First create the docker image as follows:
-
-```sh
-    cd orca_backend
-    docker build -t orca_backend .
-```
-
-If docker image is to be transferred to other machine to run there, first save the image, transfer to desired machine and load there as follows:
-
-```sh
-    docker save -o orca_backend.tar.gz orca_backend:latest
-    scp orca_backend.tar.gz <user_name>@host:<path to copy the image>
-    ssh <user_name>@host
-    cd <path to copy the image>
-    docker load -i orca_backend.tar.gz
-```
-
-Docker container can be started as follows:
-
-```sh
-  docker run--name orca_backend -p 8000:8000 -e neo4j_url="<server_ip>" -d orca_backend 
-```
-
->**_Note_** - Above command will also create a default django super user with username/password - admin/admin consider changing password afterwards at <http://localhost:8000/admin/> (replace localhost with orca_backend server address)
 
 ## APIs and ORCA UI
 
