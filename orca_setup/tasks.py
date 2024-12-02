@@ -14,7 +14,7 @@ _logger = get_backend_logger()
 multiprocessing.set_start_method('spawn', force=True)
 
 
-@shared_task(track_started=True, trail=True, acks_late=True)
+@shared_task(track_started=True, trail=True, acks_late=True, store_chain_results=True, read_chain_results=False)
 def install_task(device_ips, image_url, **kwargs):
     """
     Installs an image on a list of devices.
@@ -38,10 +38,6 @@ def install_task(device_ips, image_url, **kwargs):
         except Exception as err:
             install_responses[device_ip] = {"error": err}
             _logger.error("Failed to install image on device %s. Error: %s", device_ip, err)
-        finally:
-            if kwargs.get("discover_also", False):
-                _logger.info("Triggering discovery on %s", device_ip)
-                discovery_task.apply_async(device_ips=[device_ip])
     return install_responses
 
 
@@ -87,7 +83,7 @@ def discovery_task(device_ips, **kwargs):
     return result
 
 
-@shared_task(track_started=True, trail=True, acks_late=True)
+@shared_task(track_started=True, trail=True, acks_late=True, store_chain_results=True, read_chain_results=False)
 def scan_network_task(device_ips: list, **kwargs):
     """
     Scans the network of a device.
@@ -159,11 +155,10 @@ def create_tasks(device_ips, **kwargs):
     if ips_to_install:
         discover_also = kwargs.get("discover_also", False)
         install_also = kwargs.get("install_also", False)
-        print(discover_also, install_also)
         if discover_also and install_also:
             task_chain = chain(
-                install_task.s(device_ips=ips_to_install, **kwargs),
-                discovery_task.s(),
+                install_task.si(device_ips=ips_to_install, **kwargs),
+                discovery_task.si(device_ips=ips_to_install, **kwargs),
             )()
         elif install_also:
             task = install_task.apply_async(kwargs={**kwargs, "device_ips": ips_to_install})
