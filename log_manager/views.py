@@ -84,7 +84,10 @@ def get_celery_tasks_data() -> list:
     task_results = TaskResult.objects.all()
     result_data = []
     for result in task_results:
-        task_kwargs = ast.literal_eval(result.task_kwargs.strip('\"')) if result.task_kwargs else {}
+        try:
+            task_kwargs = ast.literal_eval(result.task_kwargs.strip('\"')) if result.task_kwargs else {}
+        except ValueError:
+            task_kwargs = {"result": result.task_kwargs}
         http_path = task_kwargs.pop("http_path", "")
         result_data.append(
             {

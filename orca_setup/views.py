@@ -8,6 +8,7 @@ from rest_framework.response import Response
 
 from log_manager.logger import get_backend_logger
 from orca_backend.celery import cancel_task
+from orca_setup.tasks import discovery_task, create_tasks
 
 _logger = get_backend_logger()
 
@@ -74,3 +75,26 @@ def _modify_celery_results(result):
         "http_path": http_path,
         "task_id": result.task_id,
     }
+
+
+@api_view(["PUT"])
+def discover(request):
+    """
+    This function is an API view that handles the HTTP PUT request for the 'discover' endpoint.
+    """
+    result = []
+    if request.method == "PUT":
+        req_data_list = (
+            request.data if isinstance(request.data, list) else [request.data]
+        )
+        for req_data in req_data_list:
+            addresses = req_data.get("address") if isinstance(req_data.get("address"), list) else [
+                req_data.get("address")]
+            create_tasks(device_ips=addresses, http_path=request.path, discover_also=True, install_also=False)
+            result.append({"message": f"{request.method}: request successful", "status": "success"})
+        if not result:
+            # Because orca_nw_lib returns report for errors in discovery.
+            _logger.info("Discovery is successful.")
+        else:
+            _logger.error("Discovery is partially successful or failed.")
+        return Response({"result": result}, status=status.HTTP_200_OK)
