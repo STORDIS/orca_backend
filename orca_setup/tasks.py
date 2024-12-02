@@ -14,7 +14,7 @@ _logger = get_backend_logger()
 multiprocessing.set_start_method('spawn', force=True)
 
 
-@shared_task(track_started=True, trail=True, acks_late=True, store_chain_results=True, read_chain_results=False)
+@shared_task(track_started=True, trail=True, acks_late=True)
 def install_task(device_ips, image_url, **kwargs):
     """
     Installs an image on a list of devices.
@@ -83,7 +83,7 @@ def discovery_task(device_ips, **kwargs):
     return result
 
 
-@shared_task(track_started=True, trail=True, acks_late=True, store_chain_results=True, read_chain_results=False)
+@shared_task(track_started=True, trail=True, acks_late=True)
 def scan_network_task(device_ips: list, **kwargs):
     """
     Scans the network of a device.
@@ -160,6 +160,7 @@ def create_tasks(device_ips, **kwargs):
                 install_task.si(device_ips=ips_to_install, **kwargs),
                 discovery_task.si(device_ips=ips_to_install, **kwargs),
             )()
+            print(task_chain.id)
         elif install_also:
             task = install_task.apply_async(kwargs={**kwargs, "device_ips": ips_to_install})
             task_details["install_task_id"] = task.task_id

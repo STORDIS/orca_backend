@@ -67,6 +67,7 @@ def delete_logs(request: Request, **kwargs):
     """
     try:
         Logs.objects.all().delete()
+        delete_celery_tasks_data()
         return Response({"message": "deleted successfully."}, status=status.HTTP_200_OK)
     except Exception as e:
         print(str(e))
@@ -103,3 +104,10 @@ def get_celery_tasks_data() -> list:
             }
         )
     return result_data
+
+
+def delete_celery_tasks_data() -> None:
+    """
+    function to delete celery tasks data from database
+    """
+    TaskResult.objects.all().delete()
