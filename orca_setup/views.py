@@ -88,13 +88,19 @@ def discover(request):
             request.data if isinstance(request.data, list) else [request.data]
         )
         for req_data in req_data_list:
-            addresses = req_data.get("address") if isinstance(req_data.get("address"), list) else [
-                req_data.get("address")]
-            create_tasks(device_ips=addresses, http_path=request.path, discover_also=True, install_also=False)
-            result.append({"message": f"{request.method}: request successful", "status": "success"})
-        if not result:
-            # Because orca_nw_lib returns report for errors in discovery.
-            _logger.info("Discovery is successful.")
-        else:
-            _logger.error("Discovery is partially successful or failed.")
+            try:
+                addresses = req_data.get("address") if isinstance(req_data.get("address"), list) else [
+                    req_data.get("address")]
+                task_details = create_tasks(
+                    device_ips=addresses,
+                    http_path=request.path,
+                    discover_also=True,
+                    install_also=False,
+                    discover_from_config=req_data.get("discover_from_config", False)
+                )
+                result.append({"message": f"{request.method}: request successful", "status": "success", **task_details})
+            except Exception as e:
+                result.append({"message": f"{request.method}: request failed with error: {e}", "status": "failed"})
+                import traceback
+                print(traceback.format_exc())
         return Response({"result": result}, status=status.HTTP_200_OK)

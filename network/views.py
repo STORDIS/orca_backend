@@ -95,10 +95,8 @@ def discover(request):
                     add_msg_to_list(result, get_success_msg(request))
             addresses = req_data.get("address") if isinstance(req_data.get("address"), list) else [
                 req_data.get("address")]
-            for addr in addresses or []:
-                if addr and trigger_discovery(addr):
-                    add_msg_to_list(result, get_success_msg(request))
-                    _logger.info("Discovered device: %s", addr)
+            if addresses:
+                trigger_discovery(device_ips=addresses)
 
         if not result:
             # Because orca_nw_lib returns report for errors in discovery.

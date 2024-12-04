@@ -27,5 +27,6 @@ def cancel_task(task_id):
 
 @signals.worker_init.connect
 def on_worker_init(sender, **kwargs):
+    print("worker init")
     from orca_nw_lib.gnmi_util import close_all_stubs
     close_all_stubs()

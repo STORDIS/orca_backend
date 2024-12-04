@@ -3,7 +3,7 @@ import datetime
 import json
 import traceback
 
-from celery.result import AsyncResult
+from celery import states
 from django.core.paginator import Paginator, EmptyPage
 from django_celery_results.models import TaskResult
 from rest_framework import status
@@ -11,6 +11,7 @@ from rest_framework.decorators import api_view
 from rest_framework.request import Request
 from rest_framework.response import Response
 from log_manager.models import Logs
+from orca_backend.celery import cancel_task
 
 
 # Create your views here.
@@ -110,4 +111,11 @@ def delete_celery_tasks_data() -> None:
     """
     function to delete celery tasks data from database
     """
-    TaskResult.objects.all().delete()
+    tasks = TaskResult.objects.exclude(status=states.STARTED)
+    for i in tasks:
+        # cancel task if not started
+        if i.status == states.PENDING:
+            cancel_task(i.task_id)
+
+    # delete all task
+    tasks.delete()

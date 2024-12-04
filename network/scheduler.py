@@ -67,7 +67,7 @@ def scheduled_discovery(device_ip: str):
         )
         if obj.state == str(State.AVAILABLE):
             OrcaState.update_state(device_ip, State.SCHEDULED_DISCOVERY_IN_PROGRESS)
-            trigger_discovery(device_ip)
+            trigger_discovery(device_ips=[device_ip])
     except Exception as e:
         _logger.error(f"Failed to schedule discovery on device {device_ip}, Reason: {e}")
     finally:

@@ -72,11 +72,14 @@ def discovery_task(device_ips, **kwargs):
     """
     result = []
     try:
-        for ip in device_ips or []:
-            if ip and trigger_discovery(ip):
-                result.append({"message": f"success", "details": {"device_ip": ip}})
-            else:
-                result.append({"message": "failed", "details": f"Failed to discover device {ip}"})
+        _logger.info("Staring discovery task.")
+        if kwargs.get("discover_from_config", False):
+            from orca_nw_lib.discovery import discover_device_from_config
+            if discover_device_from_config():
+                result.append({"message": "success", "details": "Discovery successful."})
+        print(device_ips)
+        trigger_discovery(device_ips=device_ips)
+        result.append({"message": "success", "details": "Discovery successful."})
     except Exception as err:
         result.append({"message": "failed", "details": str(err)})
         _logger.error("Failed to discover devices. Error: %s", err)
@@ -160,7 +163,6 @@ def create_tasks(device_ips, **kwargs):
                 install_task.si(device_ips=ips_to_install, **kwargs),
                 discovery_task.si(device_ips=ips_to_install, **kwargs),
             )()
-            print(task_chain.id)
         elif install_also:
             task = install_task.apply_async(kwargs={**kwargs, "device_ips": ips_to_install})
             task_details["install_task_id"] = task.task_id
