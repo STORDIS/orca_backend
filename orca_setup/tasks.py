@@ -71,13 +71,16 @@ def discovery_task(device_ips, **kwargs):
         device_ips (list): A list of device IPs.
     """
     result = []
-    try:
-        _logger.info("Staring discovery task.")
-        if kwargs.get("discover_from_config", False):
-            from orca_nw_lib.discovery import discover_device_from_config
+    _logger.info("Staring discovery task.")
+    if kwargs.get("discover_from_config", False):
+        from orca_nw_lib.discovery import discover_device_from_config
+        try:
             if discover_device_from_config():
-                result.append({"message": "success", "details": "Discovery successful."})
-        print(device_ips)
+                result.append({"message": "success", "details": "Discovery from config successful."})
+        except Exception as err:
+            result.append({"message": "failed", "details": str(err)})
+            _logger.error("Failed to discover devices from config. Error: %s", err)
+    try:
         trigger_discovery(device_ips=device_ips)
         result.append({"message": "success", "details": "Discovery successful."})
     except Exception as err:
