@@ -78,7 +78,7 @@ def discovery_task(device_ips, **kwargs):
             if discover_device_from_config():
                 result.append({"message": "success", "details": "Discovery from config successful."})
         except Exception as err:
-            result.append({"message": "failed", "details": str(err)})
+            result.append({"message": "failed", "details": "Discovery from config failed."})
             _logger.error("Failed to discover devices from config. Error: %s", err)
     try:
         trigger_discovery(device_ips=device_ips)
