@@ -1,7 +1,6 @@
 import ast
 import datetime
 import json
-import traceback
 
 from celery import states
 from django.core.paginator import Paginator, EmptyPage
@@ -10,11 +9,13 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.request import Request
 from rest_framework.response import Response
+
+from log_manager.logger import get_backend_logger
 from log_manager.models import Logs
 from orca_backend.celery import cancel_task
 
+_logger = get_backend_logger()
 
-# Create your views here.
 
 @api_view(['get'])
 def get_logs(request: Request, **kwargs):
@@ -46,11 +47,10 @@ def get_logs(request: Request, **kwargs):
         )
         return Response(final_result, status=status.HTTP_200_OK)
     except EmptyPage as e:
-        print(str(e))
+        _logger.error("EmptyPage Error: ", e)
         return Response({"message": str(e)}, status=status.HTTP_204_NO_CONTENT)
     except Exception as e:
-        print(str(e))
-        print(traceback.format_exc())
+        _logger.error("Error: ", e)
         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -67,12 +67,24 @@ def delete_logs(request: Request, **kwargs):
     - If fails returns a JSON response with 500 status.
     """
     try:
-        Logs.objects.all().delete()
-        delete_celery_tasks_data()
+        data = request.data
+        log_ids = data.get("log_ids", [])
+        task_ids = data.get("task_ids", [])
+
+        if log_ids:
+            _logger.debug("Deleting logs for given ids: %s", log_ids)
+            Logs.objects.filter(id__in=log_ids).delete()
+        if task_ids:
+            _logger.debug("Deleting celery tasks: %s", task_ids)
+            delete_celery_tasks_data(task_ids)
+
+        if not log_ids and not task_ids:
+            _logger.info("Deleting all logs")
+            Logs.objects.all().delete()
+            delete_celery_tasks_data()
         return Response({"message": "deleted successfully."}, status=status.HTTP_200_OK)
     except Exception as e:
-        print(str(e))
-        print(traceback.format_exc())
+        _logger.error("Error: ", e)
         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -107,11 +119,18 @@ def get_celery_tasks_data() -> list:
     return result_data
 
 
-def delete_celery_tasks_data() -> None:
+def delete_celery_tasks_data(task_ids: list = None) -> None:
     """
     function to delete celery tasks data from database
+
+    Parameters:
+        - task_ids: list of task ids
+    Returns:
+        - None
     """
     tasks = TaskResult.objects.exclude(status=states.STARTED)
+    if task_ids:
+        tasks = tasks.filter(task_id__in=task_ids)
     for i in tasks:
         # cancel task if not started
         if i.status == states.PENDING:
