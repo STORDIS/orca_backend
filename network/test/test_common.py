@@ -29,9 +29,7 @@ class TestORCA(APITestCase):
         response = self.get_req("device")
         ## If not devices discovered yet, discover them first.
         if not response.data:
-            response = self.put_req("discover", {"discover_from_config": True})
-            if not response or response.get("result") == "Fail":
-                self.fail("Failed to discover devices")
+            self.discover(req_json={"discover_from_config": True})
 
         response = self.get_req("device")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -557,3 +555,31 @@ class TestORCA(APITestCase):
             {"mgt_ip": req_payload["mgt_ip"], "name": req_payload["name"]},
         )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def discover(self, req_json, retries=10, timeout=10):
+        with self.settings(
+                CELERY_TASK_ALWAYS_EAGER=True,
+                CELERY_TASK_EAGER_PROPAGATES_EXCEPTIONS=True,
+                CELERY_TASK_STORE_EAGER_RESULT=True
+        ):
+            response = self.put_req("discover", req_json=req_json)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            discovery_task_id = response.data["result"][0]["discovery_task_id"]
+            task_status = ""
+            while task_status.lower() == "started":
+                response = self.get_req("celery_task", {"task_id": discovery_task_id})
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+                task_status = response.json()["status"]
+                if retries == 0:
+                    break
+                else:
+                    retries -= 1
+                time.sleep(timeout)
+
+            response = self.get_req("device")
+
+            response = self.get_req("celery_task", {"task_id": discovery_task_id})
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.json()["status"].lower(), "success")
+

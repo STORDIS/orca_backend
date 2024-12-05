@@ -1,11 +1,9 @@
 import json
 
-from django.db import transaction
-from django.forms import model_to_dict
 from django.http import JsonResponse
 from django.urls import resolve
 from rest_framework import status
-from state_manager.models import OrcaState, State
+from state_manager.models import ORCABusyState, State
 
 
 class BlockPutMiddleware:
@@ -21,23 +19,14 @@ class BlockPutMiddleware:
         if request.method == 'PUT':
             ip_next_state = self._get_device_state(request)
             for ip, next_state in ip_next_state.items():
-                with transaction.atomic():
-                    state_obj, created = OrcaState.objects.get_or_create(
-                        device_ip=ip,
-                        defaults={"state": str(State.AVAILABLE)},
-                    )
-                    # Check if current state is blocking
-                    current_state = State.get_enum_from_str(state_obj.state)
-
-                if current_state != State.AVAILABLE:
-                    print(current_state)
+                state_obj = ORCABusyState.objects.filter(device_ip=ip).first()
+                if state_obj:
                     return JsonResponse(
-                        {"result": current_state.value},
+                        {"result": State.get_enum_from_str(state_obj.state).value},
                         status=status.HTTP_409_CONFLICT,
                     )
 
-                if current_state == State.AVAILABLE:
-                    self._update_state(device_ip=ip, state=next_state)
+                self._update_state(device_ip=ip, state=next_state)
             try:
                 response = self.get_response(request)
             except Exception as e:
@@ -47,8 +36,7 @@ class BlockPutMiddleware:
 
             # Reset state to AVAILABLE after processing
             for ip in ip_next_state.keys():
-                self._update_state(device_ip=ip, state=State.AVAILABLE)
-
+                ORCABusyState.objects.filter(device_ip=ip).delete()
         else:
             # Continue processing the request if not PUT
             response = self.get_response(request)
@@ -67,7 +55,7 @@ class BlockPutMiddleware:
         Returns:
             None
         """
-        OrcaState.update_state(
+        ORCABusyState.update_state(
             device_ip=device_ip,
             state=str(state),
         )

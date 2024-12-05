@@ -1,10 +1,5 @@
 """ View for network. """
 import datetime
-
-from celery.result import AsyncResult
-from django_celery_results.models import TaskResult
-
-from orca_backend.celery import cancel_task
 from django.forms import model_to_dict
 from rest_framework.response import Response
 from rest_framework import status
@@ -18,7 +13,7 @@ from orca_nw_lib.discovery import trigger_discovery, discover_nw_features
 from log_manager.decorators import log_request
 from log_manager.logger import get_backend_logger
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg
-from state_manager.models import OrcaState
+from state_manager.models import ORCABusyState
 
 _logger = get_backend_logger()
 
@@ -260,15 +255,10 @@ def remove_schedular_and_state(device_ip: str):
         remove_scheduler(device_ip)
 
         # Removing state
-        OrcaState.objects.filter(device_ip=device_ip).delete()
+        ORCABusyState.objects.filter(device_ip=device_ip).delete()
     else:
         # Removing all schedular of all devices
-        schedule_objs = ReDiscoveryConfig.objects.all()
-        for i in schedule_objs:
-            i.delete()
-            remove_scheduler(device_ip)
+        schedule_objs = ReDiscoveryConfig.objects.all().delete()
 
         # Removing all state of all devices
-        state_objs = OrcaState.objects.all()
-        for i in state_objs:
-            i.delete()
+        state_objs = ORCABusyState.objects.all().delete()

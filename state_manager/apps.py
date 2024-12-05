@@ -8,5 +8,5 @@ class StateManagerConfig(AppConfig):
 
     def ready(self):
         if 'runserver' in sys.argv:
-            from state_manager.models import OrcaState
-            OrcaState.objects.all().delete()
+            from state_manager.models import ORCABusyState
+            ORCABusyState.objects.all().delete()
