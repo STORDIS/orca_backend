@@ -30,7 +30,6 @@ def install_task(device_ips, image_url, **kwargs):
             response = install_image_on_device(
                 device_ip=device_ip,
                 image_url=image_url,
-                discover_also=kwargs.get("discover_also", False),
                 username=kwargs.get("username", None),
                 password=kwargs.get("password", None),
             )
