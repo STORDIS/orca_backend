@@ -46,6 +46,9 @@ def scan_dhcp_leases_file():
     """
     try:
         _logger.info("Scanning DHCP leases file.")
+        # delete all DHCP devices before scanning
+        DHCPDevices.objects.all().delete()
+
         devices = DHCPServerDetails.objects.all()
         discovered_devices = [device.get("mgt_ip") for device in get_device_details() or None]
         app_directory = os.path.dirname(os.path.abspath(__file__))  # Get the path of the current app
@@ -68,7 +71,6 @@ def scan_dhcp_leases_file():
                         defaults={
                             'hostname': lease.hostname,
                             'mac_address': lease.ethernet,
-                            'dhcp_ip': device.device_ip
                         }
                     )
             _logger.info("Scanned DHCP leases file.")

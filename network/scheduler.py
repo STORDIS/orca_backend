@@ -3,7 +3,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from log_manager.logger import get_backend_logger
 from orca_nw_lib.discovery import trigger_discovery
 from network.models import ReDiscoveryConfig
-from state_manager.models import OrcaState, State
+from state_manager.models import ORCABusyState, State
 
 _logger = get_backend_logger()
 scheduler = BackgroundScheduler()
@@ -59,19 +59,14 @@ def scheduled_discovery(device_ip: str):
         None
     """
     try:
-        obj, created = OrcaState.objects.get_or_create(
-            device_ip=device_ip, defaults={
-                "state": str(State.AVAILABLE),
-                "last_updated_time": datetime.datetime.now(datetime.timezone.utc)
-            }
-        )
-        if obj.state == str(State.AVAILABLE):
-            OrcaState.update_state(device_ip, State.SCHEDULED_DISCOVERY_IN_PROGRESS)
-            trigger_discovery(device_ip)
+        state_obj = ORCABusyState.objects.filter(device_ip=device_ip).first()
+        if state_obj is None:
+            ORCABusyState.update_state(device_ip, State.SCHEDULED_DISCOVERY_IN_PROGRESS)
+            trigger_discovery(device_ips=[device_ip])
     except Exception as e:
         _logger.error(f"Failed to schedule discovery on device {device_ip}, Reason: {e}")
     finally:
-        OrcaState.update_state(device_ip, State.AVAILABLE)
+        ORCABusyState.objects.filter(device_ip=device_ip).delete()
         rediscovery_obj = ReDiscoveryConfig.objects.filter(device_ip=device_ip).first()
         if rediscovery_obj:
             rediscovery_obj.last_discovered = datetime.datetime.now(tz=datetime.timezone.utc)

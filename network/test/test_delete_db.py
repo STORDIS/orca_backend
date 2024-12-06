@@ -42,9 +42,7 @@ class TestDelete(TestORCA):
         self.assertEqual(count_after_delete, count_before_delete - 1)
 
         # re discovering the deleted device
-        request_body = {"address": device_ips[0], "discover_from_config": False}
-        response = self.put_req("discover", request_body)
-        self.assertTrue(response.status_code == status.HTTP_200_OK)
+        self.discover(req_json={"address": device_ips[0], "discover_from_config": False}, retries=5, timeout=60)
 
         # get discover device after  re discovering
         response = self.get_req("device")

@@ -4,7 +4,7 @@ from enum import Enum
 from django.db import models
 
 
-class OrcaState(models.Model):
+class ORCABusyState(models.Model):
     device_ip = models.CharField(max_length=64, primary_key=True)
     state = models.CharField(max_length=64)
     last_updated_time = models.DateTimeField(null=True)
@@ -13,14 +13,16 @@ class OrcaState(models.Model):
 
     @staticmethod
     def update_state(device_ip, state):
-        state_obj = OrcaState.objects.get(device_ip=device_ip)
-        state_obj.state = str(state)
-        state_obj.last_updated_time = datetime.datetime.now(datetime.timezone.utc)
-        state_obj.save()
+        _, created = ORCABusyState.objects.update_or_create(
+            device_ip=device_ip,
+            defaults={
+                "state": str(state),
+                "last_updated_time": datetime.datetime.now(datetime.timezone.utc)
+            }
+        )
 
 
 class State(Enum):
-    AVAILABLE = "Available"
     DISCOVERY_IN_PROGRESS = "Discovery in progress"
     FEATURE_DISCOVERY_IN_PROGRESS = "Feature discovery in progress"
     SCHEDULED_DISCOVERY_IN_PROGRESS = "Scheduled discovery in progress"
