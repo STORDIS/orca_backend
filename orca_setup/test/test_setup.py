@@ -28,6 +28,7 @@ class TestSetup(TestCommon):
         request_body = {
             "image_url": img_url,
             "discover_also": True,
+            "install_also": True,
             "device_ips": [device_ip]
         }
 
@@ -42,8 +43,7 @@ class TestSetup(TestCommon):
         response = self.put_req("install_image", req_json=request_body)
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
         response_body = response.json()
-        results = response_body["result"][0]
-        install_task_id = results["install_task_id"]
+        install_task_id = response_body["result"][0]["task_id"]
         self.assertIsNotNone(install_task_id)
 
         task_status = ""
@@ -102,6 +102,7 @@ class TestSetup(TestCommon):
         request_body = {
             "image_url": self.sonic_img_details.get("url"),
             "discover_also": True,
+            "install_also": True,
             "device_ips": [device_ip]
         }
 
@@ -109,7 +110,7 @@ class TestSetup(TestCommon):
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
         response_body = response.json()
         result = response_body["result"][0]
-        install_task_id = result["install_task_id"]
+        install_task_id = result["task_id"]
         self.assertIsNotNone(install_task_id)
 
         task_status = ""

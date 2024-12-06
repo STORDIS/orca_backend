@@ -13,7 +13,7 @@ from rest_framework.response import Response
 
 from network.scheduler import scheduler
 from state_manager.middleware import BlockPutMiddleware
-from state_manager.models import State, OrcaState
+from state_manager.models import State, ORCABusyState
 from state_manager.test.test_common import TestCommon
 
 
@@ -41,7 +41,7 @@ def put_stub(request, client=None):
 
 @api_view(["PUT"])
 @permission_classes([permissions.AllowAny])
-def put_stub(request, client=None):
+def install_stub(request, client=None):
     device_ips = request.data.get("device_ips")
     for device_ip in device_ips:
         response = client.get(reverse("orca_state", kwargs={"device_ip": device_ip}), )
@@ -65,7 +65,7 @@ def feature_discovery_stub(request, client=None):
 class TestState(TestCommon):
 
     def tearDown(self):
-        OrcaState.objects.all().delete()
+        ORCABusyState.objects.all().delete()
 
     @classmethod
     def tearDownClass(cls):
@@ -82,9 +82,7 @@ class TestState(TestCommon):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response = self.client.get(reverse("orca_state", kwargs={"device_ip": "127.0.0.1"}), )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.json().get("device_ip"), "127.0.0.1")
-        self.assertEqual(response.json().get("state"), str(State.AVAILABLE))
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_feature_discovery_state(self):
         response = self.client.get(reverse("orca_state", kwargs={"device_ip": "127.0.0.1"}), )
@@ -96,9 +94,7 @@ class TestState(TestCommon):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response = self.client.get(reverse("orca_state", kwargs={"device_ip": "127.0.0.1"}), )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.json().get("device_ip"), "127.0.0.1")
-        self.assertEqual(response.json().get("state"), str(State.AVAILABLE))
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_config_state(self):
         response = self.client.get(reverse("orca_state", kwargs={"device_ip": "127.0.0.1"}), )
@@ -106,14 +102,11 @@ class TestState(TestCommon):
 
         request = self.factory.put(path=reverse('device_interface_list'), data={"mgt_ip": "127.0.0.1"}, format="json")
         middleware = BlockPutMiddleware(lambda req: put_stub(req, self.client))
-
         response = middleware(request)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response = self.client.get(reverse("orca_state", kwargs={"device_ip": "127.0.0.1"}), )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.json().get("device_ip"), "127.0.0.1")
-        self.assertEqual(response.json().get("state"), str(State.AVAILABLE))
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     @pytest.mark.django_db
     def test_schedule_discovery_state(self):
@@ -178,10 +171,10 @@ class TestState(TestCommon):
         state = response.json().get("state")
 
         # wait for scheduled discovery to complete
-        while state != str(State.AVAILABLE):
+        while state:
             response = self.client.get(reverse("orca_state", kwargs={"device_ip": device_ip}), )
-            state = response.json().get("state")
-            print("state", state)
+            if response.status_code == status.HTTP_204_NO_CONTENT:
+                break
             time.sleep(5)
 
         response = self.client.delete(reverse("discover_scheduler"), {"mgt_ip": device_ip})
@@ -251,9 +244,10 @@ class TestState(TestCommon):
         response = self.client.get(reverse("orca_state", kwargs={"device_ip": device_ip}), )
         state = response.json().get("state")
         # wait for scheduled discovery to complete
-        while state != str(State.AVAILABLE):
+        while state:
             response = self.client.get(reverse("orca_state", kwargs={"device_ip": device_ip}), )
-            state = response.json().get("state")
+            if response.status_code == status.HTTP_204_NO_CONTENT:
+                break
             time.sleep(5)
 
         # checking device
@@ -349,9 +343,10 @@ class TestState(TestCommon):
         state = response.json().get("state")
         self.assertEqual(state, str(State.SCHEDULED_DISCOVERY_IN_PROGRESS))
         # wait for scheduled discovery to complete
-        while state != str(State.AVAILABLE):
+        while state:
             response = self.client.get(reverse("orca_state", kwargs={"device_ip": device_ip}), )
-            state = response.json().get("state")
+            if response.status_code == status.HTTP_204_NO_CONTENT:
+                break
             time.sleep(5)
 
         response = self.client.get(
@@ -413,13 +408,11 @@ class TestState(TestCommon):
         request = self.factory.put(path=reverse('install_image'), data={
             "device_ips": ["127.0.0.1", "127.0.0.2"],
         }, format="json")
-        middleware = BlockPutMiddleware(lambda req: put_stub(req, self.client))
+        middleware = BlockPutMiddleware(lambda req: install_stub(req, self.client))
 
         response = middleware(request)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         for device_ip in device_ips:
             response = self.client.get(reverse("orca_state", kwargs={"device_ip": device_ip}), )
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            self.assertEqual(response.json().get("device_ip"), device_ip)
-            self.assertEqual(response.json().get("state"), str(State.AVAILABLE))
+            self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)

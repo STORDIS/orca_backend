@@ -165,6 +165,7 @@ def create_tasks(device_ips, **kwargs):
             install_task.si(device_ips=ips_to_install, **kwargs),
             discovery_task.si(device_ips=ips_to_install, **kwargs),
         )()
+        task_details["task_id"] = task_chain.id
     elif install_also and len(ips_to_install):
         task = install_task.apply_async(kwargs={**kwargs, "device_ips": ips_to_install})
         task_details["install_task_id"] = task.task_id

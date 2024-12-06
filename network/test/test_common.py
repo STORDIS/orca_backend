@@ -390,7 +390,7 @@ class TestORCA(APITestCase):
             **assert_args: The arguments to pass to assert_func. t.e. assert status code and response.
         """
         timeout = 2
-        retries = 5
+        retries = 10
         response = ""
         for i in range(retries + 1):
             try:
