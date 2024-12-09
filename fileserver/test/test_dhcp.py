@@ -379,3 +379,57 @@ lease 192.168.1.{i} {{
             except yaml.YAMLError as exc:
                 print(exc)
 
+    def test_dhcp_with_invalid_ip(self):
+        device_ip = "lasmxasmxs"  # invalid ip
+        credentials = {
+            "device_ip": device_ip,
+            "username": self.username,
+            "password": self.password
+        }
+        response = self.put_req("dhcp_credentials", credentials)
+        self.assertEqual(response.status_code, 400)
+
+    def test_dhcp_access_already_exists(self):
+        device_ip = self.device_ip
+        credentials = {
+            "device_ip": device_ip,
+            "username": self.username,
+            "password": self.password
+        }
+        response = self.put_req("dhcp_credentials", credentials)
+        self.assertEqual(response.status_code, 200)
+
+        response = self.get_req("dhcp_credentials", {"device_ip": device_ip})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json().get("username"), credentials["username"])
+        self.assertTrue(response.json().get("ssh_access"))
+
+        # checking ssh access with dummy ip
+        credentials["device_ip"] = "127.0.0.1"
+        response = self.put_req("dhcp_credentials", credentials)
+        self.assertEqual(response.status_code, 500)  # failed to add credentials but saved ip to db
+
+        response = self.get_req("dhcp_credentials", {"device_ip": device_ip})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json().get("username"), credentials["username"])
+        self.assertFalse(response.json().get("ssh_access"))
+
+        # switching back to valid ip using only username
+        credentials = {
+            "device_ip": device_ip,
+            "username": self.username
+        }
+        response = self.put_req("dhcp_credentials", credentials)
+        self.assertEqual(response.status_code, 200)
+
+        response = self.get_req("dhcp_credentials", {"device_ip": device_ip})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json().get("username"), credentials["username"])
+        self.assertTrue(response.json().get("ssh_access"))
+
+        # delete dhcp credentials
+        response = self.del_req("dhcp_credentials", {"device_ip": device_ip})
+        self.assertEqual(response.status_code, 200)
+
+        response = self.get_req("dhcp_credentials", {"device_ip": device_ip})
+        self.assertEqual(response.status_code, 204)

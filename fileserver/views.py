@@ -1,3 +1,4 @@
+import ipaddress
 import os
 
 from django.forms import model_to_dict
@@ -187,15 +188,12 @@ def dhcp_auth(request):
                     {"message": "Required field username not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-
-            password = data.get("password")
-            if not password:
-                _logger.error("Required field password not found.")
-                return Response(
-                    {"message": "Required field password not found."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            _logger.info(f"Updating DHCP Server details for {device_ip}")
+            password = data.get("password", None)
+            try:
+                ipaddress.ip_address(device_ip)
+            except Exception as e:
+                _logger.error(e)
+                return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             try:
                 update_dhcp_access(device_ip, username, password)
                 result.append({"message": f"{request.method} request successful", "status": "success"})

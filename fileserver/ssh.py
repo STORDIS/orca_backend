@@ -134,3 +134,24 @@ def generate_ssh_key_pair(key_name="id_rsa", passphrase=None):
     with open(public_key_path, "w") as public_key_file:
         public_key_file.write(f"{key.get_name()} {key.get_base64()}\n")
     _logger.info(f"SSH key pair generated for {key_name}.")
+
+
+def is_ssh_key_based_authentication_enabled(ip, username):
+    """
+    Check if SSH key-based authentication is enabled on the specified device.
+
+    Args:
+        ip (str): The IP address of the device.
+        username (str): The username to use for SSH authentication.
+
+    Returns:
+        bool: True if SSH key-based authentication is enabled, False otherwise.
+    """
+    try:
+        _logger.info(f"Checking if SSH key-based authentication is enabled on {ip}.")
+        client = ssh_client_with_private_key(ip, username)
+        client.close()
+        return True
+    except Exception as e:
+        _logger.error(f"Failed to enable SSH access on {ip}: {e}")
+        return False
