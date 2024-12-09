@@ -96,11 +96,13 @@ def update_dhcp_access(ip, username, password):
         None
     """
     try:
+        # Check if SSH access is already enabled
         _logger.info(f"Enabling SSH access on {ip}.")
         if is_ssh_key_based_authentication_enabled(ip, username):
             _logger.info(f"SSH access already enabled on {ip}.")
             _save_dhcp_service_details_to_db(ip, username, ssh_access=True)
         else:
+            # Enable SSH access
             create_ssh_key_based_authentication(ip, username, password)
             _save_dhcp_service_details_to_db(ip, username, ssh_access=True)
             _logger.info(f"SSH access enabled on {ip}.")
