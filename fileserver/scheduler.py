@@ -32,7 +32,7 @@ def add_dhcp_leases_scheduler(job_id="dhcp_list", trigger="interval", seconds=60
             seconds=seconds,
             id=job_id,
             replace_existing=True,
-            max_instances=1,
+            max_instances=2,
         )
         _logger.info("DHCP scheduler job added")
     if not scheduler.running:

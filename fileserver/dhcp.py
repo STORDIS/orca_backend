@@ -3,7 +3,8 @@ import hashlib
 
 from fileserver import constants
 from fileserver.models import DHCPServerDetails
-from fileserver.ssh import create_ssh_key_based_authentication, ssh_client_with_private_key
+from fileserver.ssh import create_ssh_key_based_authentication, ssh_client_with_private_key, \
+    is_ssh_key_based_authentication_enabled
 from log_manager.logger import get_backend_logger
 
 _logger = get_backend_logger()
@@ -96,9 +97,13 @@ def update_dhcp_access(ip, username, password):
     """
     try:
         _logger.info(f"Enabling SSH access on {ip}.")
-        create_ssh_key_based_authentication(ip, username, password)
-        _save_dhcp_service_details_to_db(ip, username, ssh_access=True)
-        _logger.info(f"SSH access enabled on {ip}.")
+        if is_ssh_key_based_authentication_enabled(ip, username):
+            _logger.info(f"SSH access already enabled on {ip}.")
+            _save_dhcp_service_details_to_db(ip, username, ssh_access=True)
+        else:
+            create_ssh_key_based_authentication(ip, username, password)
+            _save_dhcp_service_details_to_db(ip, username, ssh_access=True)
+            _logger.info(f"SSH access enabled on {ip}.")
     except Exception as e:
         _logger.error(e)
         _save_dhcp_service_details_to_db(ip, username, ssh_access=False)
