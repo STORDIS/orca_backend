@@ -1554,3 +1554,37 @@ class TestBGP(TestORCA):
         # removing bgp global of device 1
         for i in bgp_request_body:
             self.perform_delete_bgp_global(i)
+
+    def test_bgp_error_when_duplicate_created(self):
+        device_ip = list(self.device_ips.keys())[0]
+        request_body = {
+            "mgt_ip": device_ip,
+            "vrf_name": "default",
+            "local_asn": 64500,
+            "router_id": "10.10.10.10",
+        }
+
+        # adding bgp global
+        self.perform_add_bgp_global(request_body)
+
+        # update
+        request_body["local_asn"] = 64501
+        response = self.put_req("bgp_global", request_body)
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # new data
+
+        request_body = {
+            "mgt_ip": device_ip,
+            "vrf_name": "default",
+            "local_asn": 64502,
+            "router_id": "10.10.10.11",
+        }
+        response = self.put_req("bgp_global", request_body)
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # cleanup
+        self.perform_delete_bgp_global({
+            "mgt_ip": device_ip,
+            "vrf_name": "default",
+        })
