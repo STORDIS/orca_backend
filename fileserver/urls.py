@@ -8,6 +8,6 @@ urlpatterns = [
     path("dhcp/credentials", views.dhcp_auth, name="dhcp_credentials"),
     path("dhcp/config", views.dhcp_config, name="dhcp_config"),
     path("dhcp/backups", views.dhcp_backup, name="dhcp_backups"),
-    path("dhcp/list", views.get_dhcp_device, name="dhcp_list"),
+    path("dhcp/scan", views.scan_dhcp_leases, name="dhcp_scan"),
     path("templates", views.get_templates, name="templates"),
 ]

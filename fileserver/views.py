@@ -10,8 +10,9 @@ from rest_framework.response import Response
 
 from fileserver.dhcp import get_dhcp_config, put_dhcp_config, get_dhcp_backup_file, get_dhcp_backup_files_list, \
     update_dhcp_access, delete_dhcp_backup_file
-from fileserver.models import DHCPServerDetails, DHCPDevices
+from fileserver.models import DHCPServerDetails
 from fileserver import ztp, constants
+from fileserver.tasks import scan_dhcp_leases_task
 from log_manager.decorators import log_request
 from log_manager.logger import get_backend_logger
 
@@ -296,20 +297,6 @@ def dhcp_backup(request):
         else status.HTTP_500_INTERNAL_SERVER_ERROR,
     )
 
-
-@api_view(["GET"])
-@log_request
-def get_dhcp_device(request):
-    if request.method == "GET":
-        try:
-            _logger.info("Getting DHCP devices")
-            result = DHCPDevices.objects.all().values()
-            return Response(result, status=status.HTTP_200_OK)
-        except Exception as e:
-            _logger.error(e)
-            return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
 @api_view(["GET"])
 def get_templates(request):
     if request.method == "GET":
@@ -360,6 +347,28 @@ def rename_ztp_file(request):
                 _logger.error(e)
                 http_status = False
                 result.append({"message": str(e), "status": "failed"})
+    return Response(
+        {"result": result},
+        status=status.HTTP_200_OK
+        if http_status
+        else status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
+
+
+@api_view(["PUT"])
+def scan_dhcp_leases(request):
+    result = []
+    http_status = True
+    if request.method == "PUT":
+        try:
+            task = scan_dhcp_leases_task.apply_async()
+            result.append({
+                "task_id": task.task_id, "message": f"{request.method} request successful", "status": "success"
+            })
+        except Exception as e:
+            _logger.error(e)
+            http_status = False
+            result.append({"message": str(e), "status": "failed"})
     return Response(
         {"result": result},
         status=status.HTTP_200_OK

@@ -6,7 +6,6 @@ import yaml
 
 from fileserver import constants
 from fileserver.ssh import ssh_client_with_username_password
-from fileserver.scheduler import scheduler, add_dhcp_leases_scheduler
 from fileserver.test.test_common import TestCommon
 
 
@@ -172,29 +171,7 @@ class TestDHCP(TestCommon):
 
         # change dhcp path for testing.
         constants.dhcp_leases_path = f"{self.dhcp_path}dhcpd.leases"
-        constants.dhcp_schedule_interval = 60
 
-        # start scheduler
-        add_dhcp_leases_scheduler()
-
-        # modify job start time
-        job = scheduler.get_job(f"dhcp_list")
-        job.modify(
-            next_run_time=datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(seconds=5)
-        )
-        time.sleep(10)
-        retries = 10
-        while retries > 0:
-            if job.next_run_time > datetime.datetime.now(tz=datetime.timezone.utc):
-                time.sleep(10)
-            else:
-                break
-            retries -= 1
-
-        # list leases
-        response = self.get_req("dhcp_list")
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(len(response.json()) > 0)
         self.assertTrue(all([i.get("hostname").startswith("sonic") for i in response.json()]))
 
     @classmethod
@@ -234,8 +211,6 @@ lease 192.168.1.{i} {{
             f"sudo rm {constants.dhcp_path}dhcpd.conf"
         )
         client.close()
-        if scheduler.running:
-            scheduler.shutdown(wait=False)
 
     def test_dhcpd_backup_file_rotation(self):
         """
