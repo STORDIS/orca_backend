@@ -13,7 +13,7 @@ from orca_nw_lib.device_gnmi import get_device_details_from_device
 _logger = get_backend_logger()
 
 @shared_task(track_started=True, trail=True, acks_late=True)
-def scan_dhcp_leases_task():
+def scan_dhcp_leases_task(**kwargs):
     """
     Scan the DHCP leases file and update the DHCPDevices table.
     """
@@ -24,7 +24,8 @@ def scan_dhcp_leases_task():
     devices = DHCPServerDetails.objects.all()
     if not len(devices):
         return {"message": "failed", "details": "No DHCP devices found"}
-    discovered_devices = [device.get("mgt_ip") for device in get_device_details() or None]
+    devices_in_db = get_device_details()
+    discovered_devices = [device.get("mgt_ip") for device in (devices_in_db if devices_in_db else [])]
     app_directory = os.path.dirname(os.path.abspath(__file__))  # Get the path of the current app
     destination_path = os.path.join(app_directory, 'media/dhcp/dhcpd.leases')
     os.makedirs(os.path.dirname(destination_path), exist_ok=True)
@@ -45,13 +46,16 @@ def scan_dhcp_leases_task():
                     scanned_devices.append(device_details)
                 except Exception as e:
                     _logger.error(f"Failed to get device details for {lease.ip}: {e}")
-                    continue
+                    scanned_devices.append({
+                        "mgt_ip": lease.ip,
+                        "mac": lease.ethernet,
+                    })
         _logger.info("Scanned DHCP leases file.")
 
         # Delete the dhcpd.leases local file.
         if os.path.isfile(destination_path):
             os.remove(destination_path)
-    return scanned_devices
+    return {"sonic_devices": scanned_devices}
 
 
 def copy_dhcp_file_to_local(ip, username, source_path: str, destination_path: str):

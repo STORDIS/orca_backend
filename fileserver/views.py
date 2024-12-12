@@ -361,7 +361,9 @@ def scan_dhcp_leases(request):
     http_status = True
     if request.method == "PUT":
         try:
-            task = scan_dhcp_leases_task.apply_async()
+            task = scan_dhcp_leases_task.apply_async(kwargs={
+                **request.data, "http_path": request.path
+            })
             result.append({
                 "task_id": task.task_id, "message": f"{request.method} request successful", "status": "success"
             })
