@@ -9,7 +9,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from fileserver.dhcp import get_dhcp_config, put_dhcp_config, get_dhcp_backup_file, get_dhcp_backup_files_list, \
-    update_dhcp_access, delete_dhcp_backup_file
+    update_dhcp_access, delete_dhcp_backup_file, get_dhcp_auth_details
 from fileserver.models import DHCPServerDetails
 from fileserver import ztp, constants
 from fileserver.tasks import scan_dhcp_leases_task
@@ -163,7 +163,7 @@ def dhcp_auth(request):
     http_status = True
     result = []
     if request.method == "GET":
-        details = DHCPServerDetails.objects.all().first()
+        details = get_dhcp_auth_details()
         return (
             Response(model_to_dict(details), status=status.HTTP_200_OK)
             if details

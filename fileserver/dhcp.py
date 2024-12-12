@@ -316,3 +316,16 @@ def list_backup_files(sftp, path):
         reverse=True,
     )
     return backup_files
+
+
+def get_dhcp_auth_details():
+    details = DHCPServerDetails.objects.all().first()
+    try:
+        client = ssh_client_with_private_key(ip=details.device_ip, username=details.username)
+        client.close()
+        return details
+    except  Exception as e:
+        details.ssh_access = False
+        details.save()
+        _logger.error(e)
+        return details
