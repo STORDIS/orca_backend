@@ -43,6 +43,7 @@ def scan_dhcp_leases_task(**kwargs):
                 _logger.debug(f"Discovered sonic device: {lease.ip} - {lease.hostname}")
                 try:
                     device_details = get_device_details_from_device(device_ip=lease.ip)
+                    device_details["mgt_ip"] = lease.ip
                     scanned_devices.append(device_details)
                 except Exception as e:
                     _logger.error(f"Failed to get device details for {lease.ip}: {e}")
