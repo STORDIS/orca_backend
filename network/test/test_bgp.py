@@ -2,7 +2,6 @@
 This module contains tests for the BGP API.
 """
 
-import unittest
 from rest_framework import status
 
 from network.test.test_common import TestORCA
