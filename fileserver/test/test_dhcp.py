@@ -3,10 +3,11 @@ import os
 import time
 
 import yaml
+from celery.result import AsyncResult
+from rest_framework import status
 
 from fileserver import constants
 from fileserver.ssh import ssh_client_with_username_password
-from fileserver.scheduler import scheduler, add_dhcp_leases_scheduler
 from fileserver.test.test_common import TestCommon
 
 
@@ -149,7 +150,7 @@ class TestDHCP(TestCommon):
         response = self.get_req("dhcp_credentials")
         self.assertEqual(response.status_code, 204)
 
-    def test_to_check_dhcp_leases_file_scan_job(self):
+    def test_to_check_dhcp_leases_file_task(self):
         """
         Test to check that the DHCP leases file is scanned by the scheduler.
         """
@@ -172,30 +173,41 @@ class TestDHCP(TestCommon):
 
         # change dhcp path for testing.
         constants.dhcp_leases_path = f"{self.dhcp_path}dhcpd.leases"
-        constants.dhcp_schedule_interval = 60
 
-        # start scheduler
-        add_dhcp_leases_scheduler()
+        with self.settings(
+                CELERY_TASK_ALWAYS_EAGER=True,
+                CELERY_TASK_EAGER_PROPAGATES_EXCEPTIONS=True,
+                CELERY_TASK_STORE_EAGER_RESULT=True
+        ):
+            response = self.put_req("dhcp_scan", {"mgt_ip": device_ip})
+            self.assertEqual(response.status_code, 200)
+            task_id = response.json()["result"][0]["task_id"]
+            self.assertIsNotNone(task_id)
 
-        # modify job start time
-        job = scheduler.get_job(f"dhcp_list")
-        job.modify(
-            next_run_time=datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(seconds=5)
-        )
-        time.sleep(10)
-        retries = 10
-        while retries > 0:
-            if job.next_run_time > datetime.datetime.now(tz=datetime.timezone.utc):
+            task_status = ""
+            max_retry = 10
+            while (task_status.lower() == "started") or (task_status.lower() == "pending"):
+                response = self.get_req("celery_task", {"task_id": task_id})
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+                task_status = response.json()["status"]
+                print(f"{task_status=}")
+                if max_retry == 0:
+                    break
+                else:
+                    max_retry -= 1
                 time.sleep(10)
-            else:
-                break
-            retries -= 1
 
-        # list leases
-        response = self.get_req("dhcp_list")
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(len(response.json()) > 0)
-        self.assertTrue(all([i.get("hostname").startswith("sonic") for i in response.json()]))
+            response = self.get_req("celery_task", {"task_id": task_id})
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.json()["status"].lower(), "success")
+
+            # using async result because celery not storing test results.
+            result = AsyncResult(task_id)
+            self.assertEqual(result.status, "SUCCESS")
+            ips = [f'192.168.1.{i}' for i in range(10)]
+            for i in result.result.get("sonic_devices"):
+                self.assertIn(i.get("mgt_ip"), ips)
+
 
     @classmethod
     def setUpClass(cls):
@@ -234,8 +246,6 @@ lease 192.168.1.{i} {{
             f"sudo rm {constants.dhcp_path}dhcpd.conf"
         )
         client.close()
-        if scheduler.running:
-            scheduler.shutdown(wait=False)
 
     def test_dhcpd_backup_file_rotation(self):
         """
