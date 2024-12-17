@@ -147,28 +147,32 @@ def create_tasks(device_ips, **kwargs):
     """
     ips_to_scan = []
     ips_to_install = []
+    ips_to_discover  = []
+    discover_also = kwargs.get("discover_also", False)
+    install_also = kwargs.get("install_also", False)
     for device_ip in device_ips:
         network = ipaddress.ip_network(device_ip, strict=False)
         if network.prefixlen == 32:
-            ips_to_install.append(device_ip)
+            if install_also:
+                ips_to_install.append(device_ip)
+            if discover_also:
+                ips_to_discover.append(device_ip)            
         else:
             ips_to_scan.append(device_ip)
     task_details = {}
     if ips_to_scan:
         task = scan_network_task.apply_async(kwargs={**kwargs, "device_ips": ips_to_scan})
         task_details["scan_task_id"] = task.task_id
-    discover_also = kwargs.get("discover_also", False)
-    install_also = kwargs.get("install_also", False)
     if (discover_also and install_also) and len(ips_to_install):
         task_chain = chain(
             install_task.si(device_ips=ips_to_install, **kwargs),
-            discovery_task.si(device_ips=ips_to_install, **kwargs),
+            discovery_task.si(device_ips=ips_to_discover, **kwargs),
         )()
         task_details["task_id"] = task_chain.id
-    elif install_also and len(ips_to_install):
+    if ips_to_install:
         task = install_task.apply_async(kwargs={**kwargs, "device_ips": ips_to_install})
         task_details["install_task_id"] = task.task_id
-    elif discover_also and len(ips_to_scan) == 0:
+    if ips_to_discover:
         task = discovery_task.apply_async(kwargs={**kwargs, "device_ips": ips_to_install})
         task_details["discovery_task_id"] = task.task_id
     return task_details
