@@ -325,7 +325,8 @@ def get_dhcp_auth_details():
         client.close()
         return details
     except  Exception as e:
-        details.ssh_access = False
+        if details:
+            details.ssh_access = False
         details.save()
         _logger.error(e)
         return details
