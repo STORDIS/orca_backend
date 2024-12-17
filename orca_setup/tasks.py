@@ -163,16 +163,16 @@ def create_tasks(device_ips, **kwargs):
     if ips_to_scan:
         task = scan_network_task.apply_async(kwargs={**kwargs, "device_ips": ips_to_scan})
         task_details["scan_task_id"] = task.task_id
-    if (discover_also and install_also) and len(ips_to_install):
+    if (discover_also and install_also):
         task_chain = chain(
             install_task.si(device_ips=ips_to_install, **kwargs),
             discovery_task.si(device_ips=ips_to_discover, **kwargs),
         )()
         task_details["task_id"] = task_chain.id
-    if ips_to_install:
+    if ips_to_install and (not discover_also and install_also):
         task = install_task.apply_async(kwargs={**kwargs, "device_ips": ips_to_install})
         task_details["install_task_id"] = task.task_id
-    if ips_to_discover:
+    if ips_to_discover and (discover_also and not install_also):
         task = discovery_task.apply_async(kwargs={**kwargs, "device_ips": ips_to_install})
         task_details["discovery_task_id"] = task.task_id
     return task_details
