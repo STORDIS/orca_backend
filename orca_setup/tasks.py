@@ -173,6 +173,6 @@ def create_tasks(device_ips, **kwargs):
         task = install_task.apply_async(kwargs={**kwargs, "device_ips": ips_to_install})
         task_details["install_task_id"] = task.task_id
     if ips_to_discover and (discover_also and not install_also):
-        task = discovery_task.apply_async(kwargs={**kwargs, "device_ips": ips_to_install})
+        task = discovery_task.apply_async(kwargs={**kwargs, "device_ips": ips_to_discover})
         task_details["discovery_task_id"] = task.task_id
     return task_details
