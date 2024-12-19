@@ -163,7 +163,7 @@ def create_tasks(device_ips, **kwargs):
     if ips_to_scan:
         task = scan_network_task.apply_async(kwargs={**kwargs, "device_ips": ips_to_scan})
         task_details["scan_task_id"] = task.task_id
-    if (discover_also and install_also):
+    if (discover_also and install_also) and ips_to_install:
         task_chain = chain(
             install_task.si(device_ips=ips_to_install, **kwargs),
             discovery_task.si(device_ips=ips_to_discover, **kwargs),
@@ -173,6 +173,9 @@ def create_tasks(device_ips, **kwargs):
         task = install_task.apply_async(kwargs={**kwargs, "device_ips": ips_to_install})
         task_details["install_task_id"] = task.task_id
     if ips_to_discover and (discover_also and not install_also):
+        task = discovery_task.apply_async(kwargs={**kwargs, "device_ips": ips_to_discover})
+        task_details["discovery_task_id"] = task.task_id
+    elif kwargs.get("discover_from_config"):
         task = discovery_task.apply_async(kwargs={**kwargs, "device_ips": ips_to_discover})
         task_details["discovery_task_id"] = task.task_id
     return task_details
