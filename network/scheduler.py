@@ -1,7 +1,7 @@
 import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from log_manager.logger import get_backend_logger
-from orca_nw_lib.discovery import trigger_discovery
+from orca_nw_lib.discovery import discover_device
 from network.models import ReDiscoveryConfig
 from state_manager.models import ORCABusyState, State
 
@@ -62,7 +62,7 @@ def scheduled_discovery(device_ip: str):
         state_obj = ORCABusyState.objects.filter(device_ip=device_ip).first()
         if state_obj is None:
             ORCABusyState.update_state(device_ip, State.SCHEDULED_DISCOVERY_IN_PROGRESS)
-            trigger_discovery(device_ips=[device_ip])
+            discover_device(device_ips=[device_ip])
     except Exception as e:
         _logger.error(f"Failed to schedule discovery on device {device_ip}, Reason: {e}")
     finally:

@@ -2,7 +2,7 @@ import ipaddress
 
 from celery import signals, shared_task, states, chain
 from django_celery_results.models import TaskResult
-from orca_nw_lib.discovery import trigger_discovery
+from orca_nw_lib.discovery import discover_device
 
 from log_manager.logger import get_backend_logger
 from orca_nw_lib.setup import switch_image_on_device, install_image_on_device, scan_networks
@@ -80,7 +80,7 @@ def discovery_task(device_ips, **kwargs):
             result.append({"message": "failed", "details": f"Failed to discover devices from config. Error: {err}"})
             _logger.error("Failed to discover devices from config. Error: %s", err)
     try:
-        trigger_discovery(device_ips=device_ips)
+        discover_device(device_ips=device_ips)
         result.append({"message": "success", "details": "Discovery successful."})
     except Exception as err:
         result.append({"message": "failed", "details": str(err)})

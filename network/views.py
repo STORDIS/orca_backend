@@ -9,7 +9,7 @@ from network.models import ReDiscoveryConfig
 from network.scheduler import add_scheduler, remove_scheduler
 from orca_nw_lib.common import DiscoveryFeature
 from orca_nw_lib.device import get_device_details
-from orca_nw_lib.discovery import trigger_discovery, discover_nw_features
+from orca_nw_lib.discovery import discover_device, discover_nw_features
 from log_manager.decorators import log_request
 from log_manager.logger import get_backend_logger
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg
@@ -91,7 +91,7 @@ def discover(request):
             addresses = req_data.get("address") if isinstance(req_data.get("address"), list) else [
                 req_data.get("address")]
             if addresses:
-                trigger_discovery(device_ips=addresses)
+                discover_device(device_ips=addresses)
 
         if not result:
             # Because orca_nw_lib returns report for errors in discovery.
