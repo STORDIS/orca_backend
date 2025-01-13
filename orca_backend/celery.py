@@ -27,6 +27,15 @@ def cancel_task(task_id):
 
 @signals.worker_init.connect
 def on_worker_init(sender, **kwargs):
-    print("worker init")
     from orca_nw_lib.gnmi_util import close_all_stubs
     close_all_stubs()
+
+
+@signals.worker_ready.connect
+def on_worker_ready(sender, **kwargs):
+    from django_celery_results.models import TaskResult, states
+    results = TaskResult.objects.filter(status=str(states.STARTED))
+    for i in results:
+        cancel_task(i.task_id)
+        i.status = "INTERRUPTED"
+        i.save()
