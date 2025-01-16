@@ -20,6 +20,29 @@
 
 </p>
 
+# ORCA Backend
+
+ORCA Backend is a REST API server written using Django framework to access orca_nw_lib functionalities. It is a backend service that can be used by applications to interact with SONiC Network and devices.
+
+- [ORCA Backend](#orca-backend)
+  - [Installing docker compose plugin](#installing-docker-compose-plugin)
+  - [Quick Start ORCA Backend](#quick-start-orca-backend)
+    
+  - [Running orca\_backend from source](#running-orca_backend-from-source)
+    - [Step-1 - Install ORCA Backend dependencies](#step-1---install-orca-backend-dependencies)
+    - [Step-2(optional) - Configuration](#step-2optional---configuration)
+    - [Step-3 - Make Migrations](#step-3---make-migrations)
+    - [Step-4 - Create Django User](#step-4---create-django-user)
+    - [Step-5 - Finally, Run ORCA Backend](#step-5---finally-run-orca-backend)
+    - [Next](#next)
+  - [Build and install orca\_backend docker image from source](#build-and-install-orca_backend-docker-image-from-source)
+    - [Create docker image](#create-docker-image)
+  - [APIs and ORCA UI](#apis-and-orca-ui)
+    - [Steps to Use APIs](#steps-to-use-apis)
+  - [To execute tests](#to-execute-tests)
+  - [To Run GitHub Actions Locally](#to-run-github-actions-locally)
+
+
 ## Installing docker compose plugin
 
 Install docker compose plugin using below steps
@@ -39,27 +62,6 @@ To check that docker compose plugin successfully installed by running below comm
 ```shell
 docker compose version
 ```
-
-# ORCA Backend
-
-ORCA Backend is a REST API server written using Django framework to access orca_nw_lib functionalities. It is a backend service that can be used by applications to interact with SONiC Network and devices.
-
-- [ORCA Backend](#orca-backend)
-  - [Quick Start ORCA Backend](#quick-start-orca-backend)
-    
-  - [Running orca\_backend from source](#running-orca_backend-from-source)
-    - [Step-1 - Install ORCA Backend dependencies](#step-1---install-orca-backend-dependencies)
-    - [Step-2(optional) - Configuration](#step-2optional---configuration)
-    - [Step-3 - Make Migrations](#step-3---make-migrations)
-    - [Step-4 - Create Django User](#step-4---create-django-user)
-    - [Step-5 - Finally, Run ORCA Backend](#step-5---finally-run-orca-backend)
-    - [Next](#next)
-  - [Build and install orca\_backend docker image from source](#build-and-install-orca_backend-docker-image-from-source)
-    - [Create docker image](#create-docker-image)
-  - [APIs and ORCA UI](#apis-and-orca-ui)
-    - [Steps to Use APIs](#steps-to-use-apis)
-  - [To execute tests](#to-execute-tests)
-  - [To Run GitHub Actions Locally](#to-run-github-actions-locally)
 
 ## Quick Start ORCA Backend
 
