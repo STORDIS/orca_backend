@@ -15,11 +15,6 @@ RUN test -d ORCASK \
     || echo "There is no ORCASK app in orca_backend, Skipping installation of dependencies of ORCASK."
 RUN rm -rf /root/.cache/pypoetry
 
-USER root
-
-RUN touch ./orca_nw_lib_logging.yml
-RUN touch ./orca_nw_lib.yml
-
 EXPOSE 8000
 CMD cp -n /usr/local/lib/python3.10/site-packages/orca_nw_lib/orca_nw_lib_logging.yml ./orca_nw_lib_logging.yml && \
     cp -n /usr/local/lib/python3.10/site-packages/orca_nw_lib/orca_nw_lib.yml ./orca_nw_lib.yml && \
