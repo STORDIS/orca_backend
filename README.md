@@ -20,40 +20,33 @@
 
 </p>
 
+
 # ORCA Backend
 
 ORCA Backend is a REST API server written using Django framework to access orca_nw_lib functionalities. It is a backend service that can be used by applications to interact with SONiC Network and devices.
 
 - [ORCA Backend](#orca-backend)
-  - [Installing docker compose plugin](#installing-docker-compose-plugin)
-  - [Quick Start ORCA Backend](#quick-start-orca-backend)
-    
-  - [Running orca\_backend from source](#running-orca_backend-from-source)
-    - [Step-1 - Install ORCA Backend dependencies](#step-1---install-orca-backend-dependencies)
-    - [Step-2(optional) - Configuration](#step-2optional---configuration)
-    - [Step-3 - Make Migrations](#step-3---make-migrations)
-    - [Step-4 - Create Django User](#step-4---create-django-user)
-    - [Step-5 - Finally, Run ORCA Backend](#step-5---finally-run-orca-backend)
-    - [Next](#next)
-  - [Build and install orca\_backend docker image from source](#build-and-install-orca_backend-docker-image-from-source)
-    - [Create docker image](#create-docker-image)
+  - [Quick Start orca\_backend](#quick-start-orca_backend)
+    - [Installing docker compose plugin](#installing-docker-compose-plugin)
+    - [Quick Start ORCA Backend](#quick-start-orca-backend)
   - [APIs and ORCA UI](#apis-and-orca-ui)
     - [Steps to Use APIs](#steps-to-use-apis)
   - [To execute tests](#to-execute-tests)
   - [To Run GitHub Actions Locally](#to-run-github-actions-locally)
 
 
-## Installing docker compose plugin
+## Quick Start orca_backend
+
+orca_backend can be quickly started using docker compose in 2 steps.
+
+### Installing docker compose plugin
 
 Install docker compose plugin using below steps
 
 ```sh 
 DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
-
 mkdir -p $DOCKER_CONFIG/cli-plugins
-
 curl -SL https://github.com/docker/compose/releases/download/v2.30.3/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
-
 chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
 ```
 
@@ -63,15 +56,15 @@ To check that docker compose plugin successfully installed by running below comm
 docker compose version
 ```
 
-## Quick Start ORCA Backend
+
+
+### Quick Start ORCA Backend
 
 ORCA Backend can be started easily by just running below command :
 
 ```sh
 git clone https://github.com/STORDIS/orca_backend.git
-
 cd orca_backend
-
 docker compose up -d
 ```
 
@@ -82,6 +75,8 @@ Container runs on 0.0.0.0:8000 by default. To verify that container has successf
 Thats it, If thats enough, rest of the steps below can be skipped and directly proceed with quick start of [orca_ui](https://github.com/STORDIS/orca_ui), which again is as simple as running a docker container and there discover your topology. Else, refer below for more details about build and installation of ORCA backend.
 
 > **_NOTE:_** Several settings have default values if not overriden by environment variables. For more details refer [Configuration](#configuration) section below.
+
+> **_Note for release:_** While using a specific version of orca_backend, it is recommended to use the same version of orca_ui.
 
 
 ## APIs and ORCA UI
