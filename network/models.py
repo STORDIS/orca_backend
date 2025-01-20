@@ -34,5 +34,5 @@ class IPAvailability(models.Model):
     @staticmethod
     def delete_if_not_used(ip):
         data = IPAvailability.objects.filter(ip=ip).first()
-        if not data.used_in:
+        if data and not data.used_in:
             data.delete()
