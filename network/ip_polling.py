@@ -40,7 +40,7 @@ def ip_range(request):
                 print(traceback.format_exc())
                 _logger.error(e)
                 http_status = False
-                add_msg_to_list(result, get_failure_msg(e))
+                add_msg_to_list(result, get_failure_msg(e, request))
                 
     if request.method == "DELETE":
         for req_data in req_data_list:
@@ -54,7 +54,7 @@ def ip_range(request):
             except Exception as e:
                 _logger.error(e)
                 http_status = False
-                add_msg_to_list(result, get_failure_msg(e))
+                add_msg_to_list(result, get_failure_msg(e, request))
     return Response(
         {"result": result},
         status=(status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR),
@@ -98,7 +98,7 @@ def ip_availability(request):
             except Exception as e:
                 _logger.error(e)
                 http_status = False
-                add_msg_to_list(result, get_failure_msg(e))
+                add_msg_to_list(result, get_failure_msg(e, request))
     if request.method == "DELETE":
         for req_data in req_data_list:
             try:
@@ -116,7 +116,7 @@ def ip_availability(request):
             except Exception as e:
                 _logger.error(e)
                 http_status = False
-                add_msg_to_list(result, get_failure_msg(e))
+                add_msg_to_list(result, get_failure_msg(e, request))
     return Response(
         {"result": result},
         status=(status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR),
