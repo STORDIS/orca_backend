@@ -2,9 +2,11 @@
 
 from django.urls import re_path, path
 
-from . import views, stp_vlan, stp_port, vlan, interface, port_chnl, mclag, bgp, port_group, stp
+from . import views, stp_vlan, stp_port, vlan, interface, port_chnl, mclag, bgp, port_group, stp, ip_polling
 
 urlpatterns = [
+    path("ip/range", ip_polling.ip_range, name="ip_range"),
+    path("ip/availability", ip_polling.ip_availability, name="ip_availability"),
     path("stp", stp.stp_global_config, name="stp_config"),
     path("stp_delete_disabled_vlans", stp.delete_disabled_vlans, name="stp_delete_disabled_vlans"),
     path("stp_port", stp_port.stp_port_config, name="stp_port"),
