@@ -30,7 +30,7 @@ def ip_range(request):
         for req_data in req_data_list:
             try:
                 ip_range = req_data.get("range")
-                IPRange.objects.create(range=ip_range)
+                IPRange.objects.update_or_create(range=ip_range)
                 ips_in_range = get_ips_in_range(ip_range)
                 for ip in ips_in_range:
                     IPAvailability.create_if_not_exist(ip)
