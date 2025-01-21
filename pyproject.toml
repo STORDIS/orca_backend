@@ -17,3 +17,4 @@ redis = "^5.0.4"
 django-celery-results="2.5.1"
 isc-dhcp-leases = "^0.10.0"
 orca-nw-lib = "*"
+pytest-django = "^4.9.0" ## This plugin allows pytest to understand Django settings and run your Django tests correctly in cli and in VSCode Tests view.
