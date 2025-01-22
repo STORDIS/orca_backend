@@ -23,17 +23,14 @@ def ip_range(request):
         return (
             Response([model_to_dict(ip_range) for ip_range in data], status=status.HTTP_200_OK)
             if data
-            else Response({}, status=status.HTTP_204_NO_CONTENT)
+            else Response(status=status.HTTP_204_NO_CONTENT)
         )
     req_data_list = request.data if isinstance(request.data, list) else [request.data]
     if request.method == "PUT":
         for req_data in req_data_list:
             try:
                 ip_range = req_data.get("range")
-                IPRange.objects.update_or_create(range=ip_range)
-                ips_in_range = get_ips_in_range(ip_range)
-                for ip in ips_in_range:
-                    IPAvailability.create_if_not_exist(ip)
+                IPRange.add_ip_range(range=ip_range)
                 add_msg_to_list(result, get_success_msg(request))
             except Exception as e:
                 import traceback
@@ -46,10 +43,7 @@ def ip_range(request):
         for req_data in req_data_list:
             try:
                 ip_range = req_data.get("range")
-                IPRange.objects.filter(range=ip_range).delete()
-                ips_in_range = get_ips_in_range(ip_range)
-                for ip in ips_in_range:
-                    IPAvailability.delete_if_not_used(ip=ip)
+                IPRange.delete_ip_range(ip_range)
                 add_msg_to_list(result, get_success_msg(request))
             except Exception as e:
                 _logger.error(e)
@@ -67,10 +61,23 @@ def ip_availability(request):
     result = []
     http_status = True
     if request.method == "GET":
-        data = IPAvailability.objects.filter(used_in__isnull=True)
+        range = request.GET.get("range")
+        if range is None:
+            ip_availability_list = IPAvailability.objects.all()
+        else:
+            ip_range = IPRange.objects.get(range=range)
+            ip_availability_list = IPAvailability.objects.filter(range=ip_range)
+        for ip in ip_availability_list:
+            result.append(
+                {
+                    "ip": ip.ip, 
+                    "used_in": ip.used_in,
+                    "range": [ip_range.range for ip_range in ip.range.all()]
+                }
+            )
         return (
-            Response([model_to_dict(ip_range) for ip_range in data], status=status.HTTP_200_OK)
-            if data
+            Response(result, status=status.HTTP_200_OK)
+            if result
             else Response({}, status=status.HTTP_204_NO_CONTENT)
         )
     req_data_list = request.data if isinstance(request.data, list) else [request.data]
@@ -123,15 +130,18 @@ def ip_availability(request):
     )
     
 
-def get_ips_in_range(ip_range):
-    if "/" in ip_range:
-        return [str(ip) for ip in ipaddress.ip_network(ip_range, strict=True)]
-    elif "-" in ip_range:
-        ip_split =  ip_range.split("-")
-        start = ip_split[0].strip()
-        end = ip_split[1].strip()
-        start_int = int(ipaddress.ip_address(start).packed.hex(), 16)
-        end_int = int(ipaddress.ip_address(end).packed.hex(), 16)
-        return [str(ipaddress.ip_address(ip)) for ip in range(start_int, end_int)]
-    else:
-        raise Exception("Invalid IP Range")
+@api_view(["GET"])
+@log_request
+def get_available_ip(request):
+    if request.method == "GET":
+        try:
+            range = request.GET.get("range")
+            if range is None:
+                ips_available_list = IPAvailability.objects.filter(used_in__isnull=True)
+            else:
+                ip_range = IPRange.objects.get(range=range)
+                ips_available_list = IPAvailability.objects.filter(range=ip_range, used_in__isnull=True)
+            return Response([ip.ip for ip in ips_available_list], status=status.HTTP_200_OK)
+        except Exception as e:
+            _logger.error(e)
+            return Response({"status": "Internal server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
