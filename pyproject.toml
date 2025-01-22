@@ -7,18 +7,14 @@ authors = ["kamal bhatt <kamal.bhatt@stordis.com>"]
 package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.12"
 Django = "^4.2.8"
 djangorestframework = "^3.14.0"
 django-cors-headers = "^3.14.0"
-pytest = "^7.3.2"
-pytest-django = "^4.7.0"
 APScheduler = "^3.10.4"
-orca-nw-lib = "*" # Use latest version of orca_nw_lib from PyPI
-packaging = "^23.2"# Because of langchain dependencies in ORCASK, packaging should not be greater than 23.y.z.
-setuptools = "65.5.1"# Fixing the version otherwise poetry install tries to update the setuptools, and the update fails in GitHub Actions, Issue is specific to GitHub Actions only, but when running locally the update works.
 celery = "^5.4.0"
 redis = "^5.0.4"
 django-celery-results="2.5.1"
-paramiko = "^3.5.0"
 isc-dhcp-leases = "^0.10.0"
+orca-nw-lib = "*"
+pytest-django = "^4.9.0" ## This plugin allows pytest to understand Django settings and run your Django tests correctly in cli and in VSCode Tests view.
