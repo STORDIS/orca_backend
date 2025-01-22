@@ -68,6 +68,7 @@ def device_interfaces_list(request):
                     {"status": "Required field name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+            ip_with_prefix = req_data.get("ip_with_prefix")
             try:
                 config_interface(
                     device_ip=device_ip,
@@ -104,9 +105,11 @@ def device_interfaces_list(request):
                         )
                     ),
                     adv_speeds=req_data.get("adv_speeds"),
-                    ip_with_prefix=req_data.get("ip_address"),
+                    ip_with_prefix=ip_with_prefix,
                     secondary=req_data.get("secondary", False),
                 )
+                if ip_with_prefix:
+                    pass
                 add_msg_to_list(result, get_success_msg(request))
                 http_status = http_status and True
                 _logger.info("Interface %s config updated successfully.", req_data.get("name"))
