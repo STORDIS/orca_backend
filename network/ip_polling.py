@@ -61,11 +61,10 @@ def ip_availability(request):
     result = []
     http_status = True
     if request.method == "GET":
-        range = request.GET.get("range")
-        if range is None:
+        ip_range = request.GET.get("range")
+        if ip_range is None:
             ip_availability_list = IPAvailability.objects.all()
         else:
-            ip_range = IPRange.objects.get(range=range)
             ip_availability_list = IPAvailability.objects.filter(range=ip_range)
         for ip in ip_availability_list:
             result.append(

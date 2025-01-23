@@ -70,7 +70,7 @@ def device_interfaces_list(request):
                     {"status": "Required field name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            ip_with_prefix = req_data.get("ip_with_prefix")
+            ip_with_prefix = req_data.get("ip_address")
             try:
                 config_interface(
                     device_ip=device_ip,
