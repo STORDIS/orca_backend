@@ -23,7 +23,7 @@ def ip_range(request):
         return (
             Response([model_to_dict(ip_range) for ip_range in data], status=status.HTTP_200_OK)
             if data
-            else Response(status=status.HTTP_204_NO_CONTENT)
+            else Response({}, status=status.HTTP_204_NO_CONTENT)
         )
     req_data_list = request.data if isinstance(request.data, list) else [request.data]
     if request.method == "PUT":

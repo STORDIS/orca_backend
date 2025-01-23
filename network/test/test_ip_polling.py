@@ -1,4 +1,4 @@
-from orca_backend.network.test.test_common import TestORCA
+from network.test.test_common import TestORCA
 from rest_framework import status
 
 class TestIpPolling(TestORCA):
@@ -21,7 +21,7 @@ class TestIpPolling(TestORCA):
         
         # validate ip range deleted
         response = self.get_req("ip_range")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertNotIn(ip_range, [i["range"] for i in response.data])
         
         
@@ -38,23 +38,8 @@ class TestIpPolling(TestORCA):
         self.assertIn(ip_range, [i["range"] for i in response.data])
         
         # validating ip availability
-        response = self.get_req("ip_availability")
+        response = self.get_req("all_ips", {"range": ip_range})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        for i in range(10):
-            self.assertIn(f"127.0.0.{i}", [i["ip"] for i in response.data])
+        print(response.json())
         
-        # delete ip range
-        response = self.del_req("ip_range", {"range": ip_range})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        
-        # validate ip range deleted
-        response = self.get_req("ip_range")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertNotIn(ip_range, [i["range"] for i in response.data])
-        
-        # validating ip availability
-        response = self.get_req("ip_availability")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        for i in range(10):
-            self.assertNotIn(f"127.0.0.{i}", [i["ip"] for i in response.data])
-            
+        assert False
