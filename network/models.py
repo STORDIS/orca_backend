@@ -66,7 +66,7 @@ class IPAvailability(models.Model):
         """
         ip = ipaddress.ip_network(ip, strict=False)
         try:
-            ip_availability = IPAvailability.objects.get(ip=str(ip.address))
+            ip_availability = IPAvailability.objects.get(ip=str(ip.network_address))
             ip_availability.used_in = used_in
             ip_availability.save()
         except IPAvailability.DoesNotExist:

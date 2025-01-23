@@ -107,7 +107,7 @@ class TestIpPolling(TestORCA):
         
         
     def test_ip_usage(self):
-        ip_range = "127.0.0.0 - 127.0.0.10"
+        ip_range = "10.10.10.0 - 10.10.10.10"
         
         # adding ip range
         response = self.put_req("ip_range", {"range": ip_range})
@@ -122,7 +122,7 @@ class TestIpPolling(TestORCA):
         # adding ip to interface
         device_ip = list(self.device_ips.keys())[0]
         ether_name = self.device_ips[device_ip]["interfaces"][0]
-        ip = "127.0.0.4"
+        ip = "10.10.10.4"
         prefix_len = 24
         response = self.get_req(
             "device_interface_list", {"mgt_ip": device_ip, "name": ether_name}
