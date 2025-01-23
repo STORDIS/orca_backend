@@ -278,6 +278,8 @@ def remove_port_channel_ip_address(request):
             _logger.info("Removed port channel IP address: %s", ip_addr)
             if ip_addr:
                 IPAvailability.add_ip_usage(ip=ip_addr, used_in=None)
+            else:
+                IPAvailability.objects.filter(used_in=chnl_name).update(used_in=None)
         except Exception as err:
             add_msg_to_list(result, get_failure_msg(err, request))
             http_status = http_status and False

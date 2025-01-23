@@ -315,6 +315,7 @@ def interface_subinterface_config(request):
                     {"status": "Required field device interface name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+            ip_address = req_data.get("ip_address", "")
             try:
                 del_ip_from_intf(
                     device_ip=device_ip,
@@ -322,7 +323,10 @@ def interface_subinterface_config(request):
                     ip_address=req_data.get("ip_address", ""),
                     secondary=req_data.get("secondary", False),
                 )
-                IPAvailability.add_ip_usage(ip=req_data.get("ip_address"), used_in=None)
+                if ip_address:
+                    IPAvailability.add_ip_usage(ip=ip_address, used_in=None)
+                else:
+                    IPAvailability.objects.filter(used_in=if_name).update(used_in=None)
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Interface %s ip deleted successfully.", if_name)
             except Exception as err:

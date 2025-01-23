@@ -179,12 +179,16 @@ def remove_vlan_ip_address(request):
                 {"status": "Required field device vlan_name not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        ip_address = req_data.get("ip_address", None)
         try:
             remove_ip_from_vlan(
                 device_ip,
                 vlan_name,
             )
-            IPAvailability.add_ip_usage(ip=req_data.get("ip_address"), used_in=None)
+            if ip_address:
+                IPAvailability.add_ip_usage(ip=ip_address, used_in=None)
+            else:
+                IPAvailability.objects.filter(used_in=vlan_name).update(used_in=None)
             add_msg_to_list(result, get_success_msg(request))
             _logger.info("Successfully removed IP address from VLAN: %s", vlan_name)
         except Exception as err:

@@ -55,7 +55,7 @@ def ip_range(request):
     )
     
     
-@api_view(["PUT", "GET", "DELETE"])
+@api_view(["GET"])
 @log_request
 def ip_availability(request):
     result = []
