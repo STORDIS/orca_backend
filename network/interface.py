@@ -322,6 +322,7 @@ def interface_subinterface_config(request):
                     ip_address=req_data.get("ip_address", ""),
                     secondary=req_data.get("secondary", False),
                 )
+                IPAvailability.add_ip_usage(ip=req_data.get("ip_address"), used_in=None)
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Interface %s ip deleted successfully.", if_name)
             except Exception as err:

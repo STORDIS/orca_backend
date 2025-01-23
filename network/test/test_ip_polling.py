@@ -143,12 +143,13 @@ class TestIpPolling(TestORCA):
 
         # verifying the ip_address value
         response = self.get_req("subinterface", {"mgt_ip": device_ip, "name": ether_name})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_body = response.json()
         if isinstance(response_body, list):
             self.assertTrue(any([i["ip_address"] == ip for i in response_body]))
         else:
             self.assertEqual(response_body["ip_address"], ip)
-            
+        
         # validating ip availability
         response = self.get_req("available_ips")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
