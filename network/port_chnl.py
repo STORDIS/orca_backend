@@ -18,7 +18,7 @@ from log_manager.decorators import log_request
 from log_manager.logger import get_backend_logger
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg
 from orca_nw_lib.port_chnl import add_port_chnl_vlan_members
-
+from network.models import IPAvailability
 
 _logger = get_backend_logger()
 
@@ -87,6 +87,7 @@ def device_port_chnl_list(request):
                     {"status": "Required field device lag_name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+            ip_with_prefix = req_data.get("ip_address", None)
             try:
                 add_port_chnl(
                     device_ip,
@@ -103,8 +104,10 @@ def device_port_chnl_list(request):
                     description=req_data.get("description", None),
                     fallback=req_data.get("fallback", None),
                     graceful_shutdown_mode=req_data.get("graceful_shutdown_mode", None),
-                    ip_addr_with_prefix=req_data.get("ip_address", None),
+                    ip_addr_with_prefix=ip_with_prefix,
                 )
+                if ip_with_prefix:
+                    IPAvailability.add_ip_usage(ip_with_prefix, req_data.get("lag_name"))
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Added port channel: %s", req_data.get("lag_name"))
             except Exception as err:
@@ -273,6 +276,8 @@ def remove_port_channel_ip_address(request):
             remove_port_chnl_ip(device_ip, chnl_name, ip_addr)
             add_msg_to_list(result, get_success_msg(request))
             _logger.info("Removed port channel IP address: %s", ip_addr)
+            if ip_addr:
+                IPAvailability.add_ip_usage(ip=ip_addr, used_in=None)
         except Exception as err:
             add_msg_to_list(result, get_failure_msg(err, request))
             http_status = http_status and False

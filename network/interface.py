@@ -15,6 +15,8 @@ from orca_nw_lib.common import Speed, PortFec, IFMode
 from log_manager.decorators import log_request
 from log_manager.logger import get_backend_logger
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg
+from network.models import IPAvailability
+from orca_nw_lib.utils import validate_and_get_ip_prefix
 
 _logger = get_backend_logger()
 
@@ -109,7 +111,7 @@ def device_interfaces_list(request):
                     secondary=req_data.get("secondary", False),
                 )
                 if ip_with_prefix:
-                    pass
+                    IPAvailability.add_ip_usage(ip=ip_with_prefix, used_in=req_data.get("name"))
                 add_msg_to_list(result, get_success_msg(request))
                 http_status = http_status and True
                 _logger.info("Interface %s config updated successfully.", req_data.get("name"))
@@ -287,6 +289,8 @@ def interface_subinterface_config(request):
                     ip_with_prefix=ip_address,
                     secondary=req_data.get("secondary", False),
                 )
+                if ip_address:
+                    IPAvailability.add_ip_usage(ip=ip_address, used_in=if_name)
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Interface %s ip configured successfully.", if_name)
             except Exception as err:

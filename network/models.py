@@ -52,6 +52,25 @@ class IPAvailability(models.Model):
     def delete_ip_without_range():
         ip_availability = IPAvailability.objects.filter(used_in__isnull=True, range__isnull=True)
         ip_availability.delete()
+        
+    @staticmethod
+    def add_ip_usage(ip: str, used_in: str):
+        """
+        Add IP usage information.
+        
+        Args:
+            - ip (str): The IP address to add usage information for.
+            - used_in (str): The name of the device using the IP.
+        Returns:
+            None
+        """
+        ip = ipaddress.ip_network(ip, strict=False)
+        try:
+            ip_availability = IPAvailability.objects.get(ip=str(ip.address))
+            ip_availability.used_in = used_in
+            ip_availability.save()
+        except IPAvailability.DoesNotExist:
+            raise ValidationError(f"IP {ip} does not exist.")
 
 
 def get_ips_in_range(ip_range: str):
@@ -72,5 +91,3 @@ def get_ips_in_range(ip_range: str):
         ]
     else:
         raise ValidationError("Invalid IP range format. Please use CIDR or hyphenated format.")
-    
-    

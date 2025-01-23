@@ -20,6 +20,7 @@ from network.util import (
     get_failure_msg,
     get_success_msg,
 )
+from network.models import IPAvailability
 
 
 _logger = get_backend_logger()
@@ -86,7 +87,7 @@ def vlan_config(request):
                 ## Update members dictionary with tagging mode Enum
                 for mem_if, tagging_mode in mem.items():
                     members[mem_if] = IFMode.get_enum_from_str(tagging_mode)
-
+            ip_addr_with_prefix = req_data.get("ip_address", None)
             try:
                 config_vlan(
                     device_ip,
@@ -94,7 +95,7 @@ def vlan_config(request):
                     enabled=req_data.get("enabled", None),
                     descr=req_data.get("description", None),
                     mtu=req_data.get("mtu", None),
-                    ip_addr_with_prefix=req_data.get("ip_address", None),
+                    ip_addr_with_prefix=ip_addr_with_prefix,
                     autostate=(
                         auto_st
                         if (
@@ -107,6 +108,8 @@ def vlan_config(request):
                     anycast_addr=req_data.get("sag_ip_address", None),
                     mem_ifs=members if members else None,
                 )
+                if ip_addr_with_prefix:
+                    IPAvailability.add_ip_usage(ip_addr_with_prefix, vlan_name)
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Successfully configured VLAN: %s", vlan_name)
             except Exception as err:
@@ -181,6 +184,7 @@ def remove_vlan_ip_address(request):
                 device_ip,
                 vlan_name,
             )
+            IPAvailability.add_ip_usage(ip=req_data.get("ip_address"), used_in=None)
             add_msg_to_list(result, get_success_msg(request))
             _logger.info("Successfully removed IP address from VLAN: %s", vlan_name)
         except Exception as err:
@@ -193,6 +197,7 @@ def remove_vlan_ip_address(request):
                 try:
                     remove_anycast_ip_from_vlan(device_ip, vlan_name, sag_ip)
                     add_msg_to_list(result, get_success_msg(request))
+                    IPAvailability.add_ip_usage(ip=sag_ip, used_in=None)
                     _logger.info("Successfully removed anycast IP address from VLAN: %s", vlan_name)
                 except Exception as err:
                     add_msg_to_list(result, get_failure_msg(err, request))
