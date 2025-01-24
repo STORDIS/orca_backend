@@ -144,6 +144,7 @@ def vlan_config(request):
                                 vlan_name,
                                 mem_if,
                             )
+                            IPAvailability.remove_usage_by_device_ip_and_used_in(device_ip, vlan_name)
                             add_msg_to_list(result, get_success_msg(request))
                             _logger.info("Successfully deleted VLAN member: %s", mem_if)
                         except Exception as err:
