@@ -107,7 +107,8 @@ class IPAvailability(models.Model):
         IPAvailability.objects.filter(
             device_ip=device_ip, used_in=used_in
         ).update(device_ip=None, used_in=None)
-
+        
+        IPAvailability.delete_ip_without_range()
 
 def get_ips_in_range(ip_range: str):
     """
@@ -120,9 +121,13 @@ def get_ips_in_range(ip_range: str):
     """
     if "/" in ip_range:
         # Handle CIDR notation (e.g., "192.168.1.0/24")
-        return [
-            str(ip) for ip in ipaddress.ip_network(ip_range, strict=True)
-        ]
+        ip_network = ipaddress.ip_network(ip_range, strict=True)
+        if ip_network.prefixlen >= 24 and ip_network.prefixlen <= 32:
+            return [
+                str(ip) for ip in ip_network
+            ]
+        else:
+            raise ValidationError("Invalid IP range format.")
     elif "-" in ip_range:
         # Handle hyphenated range (e.g., "192.168.1.1-.168.1.10")
         start_ip, end_ip = ip_range.split("-")
