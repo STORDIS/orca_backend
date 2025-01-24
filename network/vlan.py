@@ -88,6 +88,7 @@ def vlan_config(request):
                 for mem_if, tagging_mode in mem.items():
                     members[mem_if] = IFMode.get_enum_from_str(tagging_mode)
             ip_addr_with_prefix = req_data.get("ip_address", None)
+            anycast_ip_addr_with_prefix = req_data.get("sag_ip_address", None)
             try:
                 config_vlan(
                     device_ip,
@@ -110,6 +111,9 @@ def vlan_config(request):
                 )
                 if ip_addr_with_prefix:
                     IPAvailability.add_ip_usage(ip=ip_addr_with_prefix, device_ip=device_ip, used_in=vlan_name)
+                if anycast_ip_addr_with_prefix:
+                    for ip in anycast_ip_addr_with_prefix:
+                        IPAvailability.add_ip_usage(ip=ip, device_ip=device_ip, used_in=vlan_name)
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Successfully configured VLAN: %s", vlan_name)
             except Exception as err:
