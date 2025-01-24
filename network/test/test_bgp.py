@@ -1025,16 +1025,16 @@ class TestBGP(TestORCA):
         ether_name = self.device_ips[device_ip]["interfaces"][0]
         ip = "10.10.100.1"
         prefix_len = 31
+        ip_range = "10.10.100.0 - 10.10.100.10"
         
         # adding ip range
         response = self.put_req("ip_range", {"range": "10.10.100.0 - 10.10.100.10"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
-        # validating ip availability
-        response = self.get_req("all_ips", {"range": "10.10.100.0 - 10.10.100.10"})
+        # validate ip range added
+        response = self.get_req("ip_range")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        for i in response.json():
-            self.assertIn(f"10.10.100.0 - 10.10.100.10", i["range"])
+        self.assertIn(ip_range, [i["range"] for i in response.data])
         
         response = self.get_req(
             "device_interface_list", {"mgt_ip": device_ip, "name": ether_name}
@@ -1126,12 +1126,13 @@ class TestBGP(TestORCA):
         self.perform_delete_bgp_global(request_body)
         
         # deleting ip range
-        response = self.del_req("ip_range", {"range": "10.10.100.0 - 10.10.100.10"})
+        response = self.del_req("ip_range", {"range": ip_range})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
-        # validating ip range deleted
-        response = self.del_req("ip_range", {"range": "10.10.100.0 - 10.10.100.10"})
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        # validate ip range deleted
+        response = self.get_req("ip_range")
+        self.assertIn(response.status_code, [status.HTTP_204_NO_CONTENT, status.HTTP_200_OK])
+        self.assertNotIn(ip_range, [i["range"] for i in response.data])
 
     def test_bgp_neighbors_remote_bgp(self):
         devices = list(self.device_ips.keys())
@@ -1269,16 +1270,16 @@ class TestBGP(TestORCA):
         neighbor_ip_1 = "1.1.1.1"
         ether_name = self.device_ips[device_ip_1]["interfaces"][0]
         prefix_len = 31
+        ip_range = "1.1.1.0 - 1.1.1.10"
         
         # adding ip range
-        response = self.put_req("ip_range", {"range": "1.1.1.0 - 1.1.1.10"})
+        response = self.put_req("ip_range", {"range": ip_range})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
-        # validating ip availability
-        response = self.get_req("all_ips", {"range": "1.1.1.0 - 1.1.1.10"})
+        # validate ip range added
+        response = self.get_req("ip_range")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        for i in response.json():   
-            self.assertIn(f"10.10.100.0 - 10.10.100.10", i["range"])
+        self.assertIn(ip_range, [i["range"] for i in response.data])
         
         response = self.get_req(
             "device_interface_list", {"mgt_ip": device_ip_2, "name": ether_name}
@@ -1586,12 +1587,13 @@ class TestBGP(TestORCA):
             
         
         # deleting ip range
-        response = self.del_req("ip_range", {"range": "1.1.1.0 - 1.1.1.10"})
+        response = self.del_req("ip_range", {"range": ip_range})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
-        # validating ip range deleted
-        response = self.del_req("ip_range", {"range": "1.1.1.0 - 1.1.1.10"})
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        # validate ip range deleted
+        response = self.get_req("ip_range")
+        self.assertIn(response.status_code, [status.HTTP_204_NO_CONTENT, status.HTTP_200_OK])
+        self.assertNotIn(ip_range, [i["range"] for i in response.data])
 
     def test_bgp_error_when_duplicate_created(self):
         device_ip = list(self.device_ips.keys())[0]

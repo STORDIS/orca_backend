@@ -523,7 +523,19 @@ class TestInterface(TestORCA):
         device_ip = list(self.device_ips.keys())[0]
         ether_name = self.device_ips[device_ip]["interfaces"][0]
         ip = "10.10.100.1"
-        prefix_len = 24
+        prefix_len = 31
+        
+        ip_range_1 = "10.10.100.0 - 10.10.100.10"
+        
+        # adding ip range
+        response = self.put_req("ip_range", {"range": ip_range_1})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # validate ip range added
+        response = self.get_req("ip_range")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(ip_range_1, [i["range"] for i in response.data])
+        
         response = self.get_req(
             "device_interface_list", {"mgt_ip": device_ip, "name": ether_name}
         )
@@ -550,7 +562,18 @@ class TestInterface(TestORCA):
         else:
             self.assertEqual(response_body["ip_address"], ip)
 
-        # updating the ip_address with new url
+        ip_range_2 = "10.10.121.5 - 10.10.121.15"
+        
+        # adding ip range
+        response = self.put_req("ip_range", {"range": ip_range_2})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # validate ip range added
+        response = self.get_req("ip_range")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(ip_range_2, [i["range"] for i in response.data])
+        
+        # updating the ip_address with new url 
         ip = "10.10.121.11"
         request_body["ip_address"] = f"{ip}/{prefix_len}"
 
@@ -577,12 +600,37 @@ class TestInterface(TestORCA):
         # verifying the ip_address deletion
         response = self.get_req("subinterface", {"mgt_ip": device_ip, "name": ether_name})
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        
+        # removing the ip range
+        response = self.del_req("ip_range", {"range": ip_range_1})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # removing the ip range
+        response = self.del_req("ip_range", {"range": ip_range_2})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # validate ip range deleted
+        response = self.get_req("ip_range")
+        self.assertIn(response.status_code, [status.HTTP_204_NO_CONTENT, status.HTTP_200_OK])
+        self.assertNotIn(ip_range_1, [i["range"] for i in response.data])
+        self.assertNotIn(ip_range_1, [i["range"] for i in response.data])
+        
 
     def test_secondary_ip(self):
         device_ip = list(self.device_ips.keys())[0]
         ether_name = self.device_ips[device_ip]["interfaces"][0]
         ip = "10.10.100.1"
         prefix_len = 24
+        
+        # adding ip range
+        ip_range = "10.10.100.0 - 10.10.100.10"
+        response = self.put_req("ip_range", {"range": ip_range})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # validate ip range added
+        response = self.get_req("ip_range")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(ip_range, [i["range"] for i in response.data])
 
         # adding primary ip first then secondary
         request_body = {
@@ -641,10 +689,31 @@ class TestInterface(TestORCA):
         # verifying the ip_address deletion
         response = self.get_req("subinterface", {"mgt_ip": device_ip, "name": ether_name})
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        
+        # removing the ip range
+        response = self.del_req("ip_range", {"range": ip_range})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # validate ip range deleted
+        response = self.get_req("ip_range")
+        self.assertIn(response.status_code, [status.HTTP_204_NO_CONTENT, status.HTTP_200_OK])
+        self.assertNotIn(ip_range, [i["range"] for i in response.data])
 
     def test_ip_address_deletion(self):
         device_ip = list(self.device_ips.keys())[0]
         ether_name = self.device_ips[device_ip]["interfaces"][0]
+        
+        ip_range = "10.10.100.0 - 10.10.100.10"
+        
+        # adding ip range
+        response = self.put_req("ip_range", {"range": ip_range})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # validate ip range added
+        response = self.get_req("ip_range")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(ip_range, [i["range"] for i in response.data])
+        
         ip_1 = "10.10.100.1"
         ip_2 = "10.10.100.2"
         prefix_len = 24
@@ -716,3 +785,12 @@ class TestInterface(TestORCA):
         # verifying the ip_address deletion
         response = self.get_req("subinterface", {"mgt_ip": device_ip, "name": ether_name})
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        
+        # delete ip range
+        response = self.del_req("ip_range", {"range": ip_range})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # validate ip range deleted
+        response = self.get_req("ip_range")
+        self.assertIn(response.status_code, [status.HTTP_204_NO_CONTENT, status.HTTP_200_OK])
+        self.assertNotIn(ip_range, [i["range"] for i in response.data])
