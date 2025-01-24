@@ -107,6 +107,12 @@ def device_port_chnl_list(request):
                     ip_addr_with_prefix=ip_with_prefix,
                 )
                 if ip_with_prefix:
+                    # removing ip usage for the port channel if already exists
+                    IPAvailability.remove_usage_by_device_ip_and_used_in(
+                        device_ip=device_ip, used_in=req_data.get("lag_name")
+                    )
+                    
+                    # adding ip usage
                     IPAvailability.add_ip_usage(
                         ip=ip_with_prefix, device_ip=device_ip, used_in=req_data.get("lag_name")
                     )
@@ -281,9 +287,7 @@ def remove_port_channel_ip_address(request):
             if ip_addr:
                 IPAvailability.add_ip_usage(ip=ip_addr, device_ip=None, used_in=None)
             else:
-                IPAvailability.objects.filter(
-                    device_ip=device_ip, used_in=chnl_name
-                ).update(used_in=None, device_ip=None)
+                IPAvailability.remove_usage_by_device_ip_and_used_in(device_ip, chnl_name)
         except Exception as err:
             add_msg_to_list(result, get_failure_msg(err, request))
             http_status = http_status and False

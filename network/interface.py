@@ -16,7 +16,6 @@ from log_manager.decorators import log_request
 from log_manager.logger import get_backend_logger
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg
 from network.models import IPAvailability
-from orca_nw_lib.utils import validate_and_get_ip_prefix
 
 _logger = get_backend_logger()
 
@@ -63,8 +62,8 @@ def device_interfaces_list(request):
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-
-            if not req_data.get("name"):
+            name = req_data.get("name")
+            if not name:
                 _logger.error("Required field name not found.")
                 return Response(
                     {"status": "Required field name not found."},
@@ -74,7 +73,7 @@ def device_interfaces_list(request):
             try:
                 config_interface(
                     device_ip=device_ip,
-                    if_name=req_data.get("name"),
+                    if_name=name,
                     enable=(
                         True
                         if str(req_data.get("enabled")).lower() == "true"
@@ -110,8 +109,22 @@ def device_interfaces_list(request):
                     ip_with_prefix=ip_with_prefix,
                     secondary=req_data.get("secondary", False),
                 )
+                # checking if ip with given interface is already in use.
+                # if it in use the get data from neo4j and update it.
+                # else add new ip usage.
                 if ip_with_prefix:
-                    IPAvailability.add_ip_usage(ip=ip_with_prefix, device_ip=device_ip, used_in=req_data.get("name"))
+                    if IPAvailability.objects.filter(used_in=name, device_ip=device_ip).exists():
+                        IPAvailability.remove_usage_by_device_ip_and_used_in(
+                            device_ip=device_ip, used_in=name
+                        )
+                        sub_intfc = get_subinterfaces(device_ip, name)
+                        for i in sub_intfc:
+                            IPAvailability.add_ip_usage(
+                                ip=i.get("ip_address"), device_ip=device_ip, used_in=name
+                            )
+                    else: 
+                    # add new ip usage
+                        IPAvailability.add_ip_usage(ip=ip_with_prefix, device_ip=device_ip, used_in=name)
                 add_msg_to_list(result, get_success_msg(request))
                 http_status = http_status and True
                 _logger.info("Interface %s config updated successfully.", req_data.get("name"))
@@ -289,8 +302,22 @@ def interface_subinterface_config(request):
                     ip_with_prefix=ip_address,
                     secondary=req_data.get("secondary", False),
                 )
+                # checking if ip with given interface is already in use.
+                # if it in use the get data from neo4j and update it.
+                # else add new ip usage.
                 if ip_address:
-                    IPAvailability.add_ip_usage(ip=ip_address, device_ip=device_ip, used_in=if_name)
+                    if IPAvailability.objects.filter(used_in=if_name, device_ip=device_ip).exists():
+                        IPAvailability.remove_usage_by_device_ip_and_used_in(
+                            device_ip=device_ip, used_in=if_name
+                        )
+                        sub_intfc = get_subinterfaces(device_ip, if_name)
+                        for i in sub_intfc:
+                            IPAvailability.add_ip_usage(
+                                ip=i.get("ip_address"), device_ip=device_ip, used_in=if_name
+                            )
+                    else: 
+                    # add new ip usage
+                        IPAvailability.add_ip_usage(ip=ip_address, device_ip=device_ip, used_in=if_name)
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Interface %s ip configured successfully.", if_name)
             except Exception as err:
@@ -326,9 +353,7 @@ def interface_subinterface_config(request):
                 if ip_address:
                     IPAvailability.add_ip_usage(ip=ip_address, device_ip=None, used_in=None)
                 else:
-                    IPAvailability.objects.filter(
-                        device_ip=device_ip, used_in=if_name
-                    ).update(used_in=None, device_ip=None)
+                    IPAvailability.remove_usage_by_device_ip_and_used_in(device_ip, if_name)
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Interface %s ip deleted successfully.", if_name)
             except Exception as err:
