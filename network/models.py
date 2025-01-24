@@ -17,7 +17,14 @@ class IPRange(models.Model):
 
     @staticmethod
     def delete_ip_range(range: str):
-        """Delete the given IP range."""
+        """
+        Delete the given IP range.
+        
+        Args:
+            - range (str): The IP range to delete.
+        Returns:
+            None
+        """
         try:
             ip_range = IPRange.objects.get(range=range)
             ip_range.delete()
@@ -29,7 +36,14 @@ class IPRange(models.Model):
 
     @staticmethod
     def add_ip_range(range: str):
-        """Add a new IP range and associate the IPs with IPAvailability."""
+        """
+        Add a new IP range and associate the IPs with IPAvailability.
+        
+        Args:
+            - range (str): The IP range to add.
+        Returns:
+            IPRange: The created IP range.
+        """
         
         ips_to_add = get_ips_in_range(range)
         ip_range, _ = IPRange.objects.get_or_create(range=range)
@@ -51,6 +65,12 @@ class IPAvailability(models.Model):
     
     @staticmethod
     def delete_ip_without_range():
+        """
+        Delete IPAvailability objects without a range.
+        
+        Returns:
+            None
+        """
         ip_availability = IPAvailability.objects.filter(used_in__isnull=True, range__isnull=True)
         ip_availability.delete()
         
@@ -75,7 +95,14 @@ class IPAvailability(models.Model):
 
 
 def get_ips_in_range(ip_range: str):
-    """Generate a list of IPs in the provided range (supports CIDR and hyphenated ranges)."""
+    """
+    Generate a list of IPs in the provided range (supports CIDR and hyphenated ranges).
+    
+    Args:
+        - ip_range (str): The IP range to generate IPs for.
+    Returns:
+        list: A list of IP addresses in the range.
+    """
     if "/" in ip_range:
         # Handle CIDR notation (e.g., "192.168.1.0/24")
         return [

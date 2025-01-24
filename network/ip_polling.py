@@ -16,6 +16,10 @@ _logger = get_backend_logger()
 @api_view(["PUT", "GET", "DELETE"])
 @log_request
 def ip_range(request):
+    """ 
+    Create, Get, Delete IP address range from the IPRange table. 
+    Adds IP addresses to the IPAvailability table.
+    """
     result = []
     http_status = True
     if request.method == "GET":
@@ -58,6 +62,7 @@ def ip_range(request):
 @api_view(["GET"])
 @log_request
 def ip_availability(request):
+    """ Get All IP address from the IPAvailability table. """
     result = []
     http_status = True
     if request.method == "GET":
@@ -89,6 +94,7 @@ def ip_availability(request):
 @api_view(["GET"])
 @log_request
 def get_available_ip(request):
+    """ Get available IP address from the IPAvailability table. """
     if request.method == "GET":
         try:
             range = request.GET.get("range")
