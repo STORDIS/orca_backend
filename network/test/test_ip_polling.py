@@ -73,6 +73,7 @@ class TestIpPolling(TestORCA):
         
         # validating ip availability
         response = self.get_req("all_ips", {"range": ip_range1})
+        range1_ips = [i["ip"] for i in response.json()]
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         for i in response.json():
             self.assertIn(ip_range1, i["range"])
@@ -82,7 +83,11 @@ class TestIpPolling(TestORCA):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         for i in response.json():
             self.assertIn(ip_range2, i["range"])
-        
+    
+        # validating ip a
+        response = self.get_req("all_ips")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(set(range1_ips + range2_ips)), len([i["ip"] for i in response.json()]))
         
         # delete ip range 1
         response = self.del_req("ip_range", {"range": ip_range1})
@@ -98,11 +103,12 @@ class TestIpPolling(TestORCA):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT) 
         
         # validating no ips of range 2 are not deleted
-        response = self.get_req("all_ips", {"range": ip_range1})
+        response = self.get_req("all_ips", {"range": ip_range2})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual()
+        self.assertEqual(len(range2_ips), len([i["ip"] for i in response.json()]))
         for i in response.json():
             self.assertIn(ip_range2, i["range"])
+        
         
         
         
