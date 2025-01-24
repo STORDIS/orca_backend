@@ -111,7 +111,7 @@ def device_interfaces_list(request):
                     secondary=req_data.get("secondary", False),
                 )
                 if ip_with_prefix:
-                    IPAvailability.add_ip_usage(ip=ip_with_prefix, used_in=req_data.get("name"))
+                    IPAvailability.add_ip_usage(ip=ip_with_prefix, device_ip=device_ip, used_in=req_data.get("name"))
                 add_msg_to_list(result, get_success_msg(request))
                 http_status = http_status and True
                 _logger.info("Interface %s config updated successfully.", req_data.get("name"))
@@ -290,7 +290,7 @@ def interface_subinterface_config(request):
                     secondary=req_data.get("secondary", False),
                 )
                 if ip_address:
-                    IPAvailability.add_ip_usage(ip=ip_address, used_in=if_name)
+                    IPAvailability.add_ip_usage(ip=ip_address, device_ip=device_ip, used_in=if_name)
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Interface %s ip configured successfully.", if_name)
             except Exception as err:
@@ -324,9 +324,11 @@ def interface_subinterface_config(request):
                     secondary=req_data.get("secondary", False),
                 )
                 if ip_address:
-                    IPAvailability.add_ip_usage(ip=ip_address, used_in=None)
+                    IPAvailability.add_ip_usage(ip=ip_address, device_ip=None, used_in=None)
                 else:
-                    IPAvailability.objects.filter(used_in=if_name).update(used_in=None)
+                    IPAvailability.objects.filter(
+                        device_ip=device_ip, used_in=if_name
+                    ).update(used_in=None, device_ip=None)
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Interface %s ip deleted successfully.", if_name)
             except Exception as err:

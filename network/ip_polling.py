@@ -71,6 +71,7 @@ def ip_availability(request):
                 {
                     "ip": ip.ip, 
                     "used_in": ip.used_in,
+                    "device_ip": ip.device_ip,
                     "range": [ip_range.range for ip_range in ip.range.all()]
                 }
             )
@@ -79,50 +80,6 @@ def ip_availability(request):
             if result
             else Response({}, status=status.HTTP_204_NO_CONTENT)
         )
-    req_data_list = request.data if isinstance(request.data, list) else [request.data]
-    if request.method == "PUT":
-        for req_data in req_data_list:
-            try:
-                ip = req_data.get("ip")
-                used_in = req_data.get("used_in")
-                if ip is None:
-                    _logger.error("Required field ip not found")
-                    return Response(
-                        {"status": "Required field ip not found"},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-                if used_in is None:
-                    _logger.error("Required field used_in not found")
-                    return Response(
-                        {"status": "Required field used_in not found"},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-                item=IPAvailability.objects.get(ip=ip)
-                item.used_in = used_in
-                item.save()
-                add_msg_to_list(result, get_success_msg(request))
-            except Exception as e:
-                _logger.error(e)
-                http_status = False
-                add_msg_to_list(result, get_failure_msg(e, request))
-    if request.method == "DELETE":
-        for req_data in req_data_list:
-            try:
-                ip = req_data.get("ip")
-                if ip is None:
-                    _logger.error("Required field ip not found")
-                    return Response(
-                        {"status": "Required field ip not found"},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-                item=IPAvailability.objects.get(ip=ip)
-                item.used_in = None
-                item.save()
-                add_msg_to_list(result, get_success_msg(request))
-            except Exception as e:
-                _logger.error(e)
-                http_status = False
-                add_msg_to_list(result, get_failure_msg(e, request))
     return Response(
         {"result": result},
         status=(status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR),

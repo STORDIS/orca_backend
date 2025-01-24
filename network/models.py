@@ -45,6 +45,7 @@ class IPRange(models.Model):
 class IPAvailability(models.Model):
     ip = models.CharField(max_length=64, primary_key=True)
     used_in = models.CharField(max_length=64, null=True)
+    device_ip = models.CharField(max_length=64, null=True)
     updated_at = models.DateTimeField(auto_now=True)
     range = models.ManyToManyField(IPRange)
     
@@ -54,7 +55,7 @@ class IPAvailability(models.Model):
         ip_availability.delete()
         
     @staticmethod
-    def add_ip_usage(ip: str, used_in: str):
+    def add_ip_usage(ip: str, device_ip: str, used_in: str):
         """
         Add IP usage information.
         
@@ -67,6 +68,7 @@ class IPAvailability(models.Model):
         try:
             ip_availability = IPAvailability.objects.get(ip=ip.split("/")[0])
             ip_availability.used_in = used_in
+            ip_availability.device_ip = device_ip
             ip_availability.save()
         except IPAvailability.DoesNotExist:
             raise ValidationError(f"IP {ip} does not exist.")

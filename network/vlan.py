@@ -109,7 +109,7 @@ def vlan_config(request):
                     mem_ifs=members if members else None,
                 )
                 if ip_addr_with_prefix:
-                    IPAvailability.add_ip_usage(ip_addr_with_prefix, vlan_name)
+                    IPAvailability.add_ip_usage(ip=ip_addr_with_prefix, device_ip=device_ip, used_in=vlan_name)
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Successfully configured VLAN: %s", vlan_name)
             except Exception as err:
@@ -186,9 +186,11 @@ def remove_vlan_ip_address(request):
                 vlan_name,
             )
             if ip_address:
-                IPAvailability.add_ip_usage(ip=ip_address, used_in=None)
+                IPAvailability.add_ip_usage(ip=ip_address, device_ip=None, used_in=None)
             else:
-                IPAvailability.objects.filter(used_in=vlan_name).update(used_in=None)
+                IPAvailability.objects.filter(
+                    used_in=vlan_name, device_ip=device_ip
+                ).update(used_in=None, device_ip=None)
             add_msg_to_list(result, get_success_msg(request))
             _logger.info("Successfully removed IP address from VLAN: %s", vlan_name)
         except Exception as err:
@@ -201,7 +203,13 @@ def remove_vlan_ip_address(request):
                 try:
                     remove_anycast_ip_from_vlan(device_ip, vlan_name, sag_ip)
                     add_msg_to_list(result, get_success_msg(request))
-                    IPAvailability.add_ip_usage(ip=sag_ip, used_in=None)
+                    if ip_address:
+                        IPAvailability.add_ip_usage(ip=ip_address, device_ip=None, used_in=None)
+                    else:
+                        IPAvailability.objects.filter(
+                            used_in=vlan_name, device_ip=device_ip
+                        ).update(used_in=None, device_ip=None)
+                    add_msg_to_list(result, get_success_msg(request))
                     _logger.info("Successfully removed anycast IP address from VLAN: %s", vlan_name)
                 except Exception as err:
                     add_msg_to_list(result, get_failure_msg(err, request))
