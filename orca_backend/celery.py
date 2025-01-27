@@ -22,6 +22,12 @@ def debug_task(self):
 
 
 def cancel_task(task_id):
+    """ 
+    This function is used to cancel a task in Celery.
+    
+    Args:
+        task_id: The ID of the task to be cancelled.
+    """
     app.control.revoke(task_id, terminate=True, signal="SIGKILL")
 
 
@@ -33,6 +39,14 @@ def on_worker_init(sender, **kwargs):
 
 @signals.worker_ready.connect
 def on_worker_ready(sender, **kwargs):
+    """
+    This function is called when a worker is ready to process tasks.
+    It revokes all tasks with status "started" and sets their status to "interrupted" when server is restarted.
+    
+    Args:
+        sender: The sender of the signal.
+        **kwargs: Additional keyword arguments.
+    """
     from django_celery_results.models import TaskResult, states
     results = TaskResult.objects.filter(status=str(states.STARTED))
     for i in results:
