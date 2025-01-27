@@ -1,4 +1,5 @@
 """ Interface view. """
+import ipaddress
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -70,6 +71,15 @@ def device_interfaces_list(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             ip_with_prefix = req_data.get("ip_address")
+            if ip_with_prefix:
+                try:
+                    ipaddress.ip_network(ip_with_prefix, strict=False)
+                except Exception as e:
+                    _logger.error(f"Invalid IP address: {ip_with_prefix}")
+                    return Response(
+                        {"status": str(e)},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
             try:
                 config_interface(
                     device_ip=device_ip,
@@ -295,6 +305,15 @@ def interface_subinterface_config(request):
                     {"status": "Required field device interface name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+            if ip_address:
+                try:
+                    ipaddress.ip_network(ip_address, strict=False)
+                except Exception as e:
+                    _logger.error(f"Invalid IP address: {ip_address}")
+                    return Response(
+                        {"status": str(e)},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
             try:
                 config_interface(
                     device_ip=device_ip,

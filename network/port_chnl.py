@@ -1,4 +1,5 @@
 """ Network Port Channel API. """
+import ipaddress
 from orca_nw_lib.common import IFMode
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -88,6 +89,15 @@ def device_port_chnl_list(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             ip_with_prefix = req_data.get("ip_address", None)
+            if ip_with_prefix:
+                try:
+                    ipaddress.ip_network(ip_with_prefix, strict=False)
+                except Exception as e:
+                    _logger.error(f"Invalid IP address: {ip_with_prefix}")
+                    return Response(
+                        {"status": str(e)},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
             try:
                 add_port_chnl(
                     device_ip,
@@ -280,6 +290,15 @@ def remove_port_channel_ip_address(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         ip_addr = req_data.get("ip_address", None)
+        if ip_addr:
+            try:
+                ipaddress.ip_network(ip_addr, strict=False)
+            except Exception as e:
+                _logger.error(f"Invalid IP address: {ip_addr}")
+                return Response(
+                    {"status": str(e)},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         try:
             remove_port_chnl_ip(device_ip, chnl_name, ip_addr)
             add_msg_to_list(result, get_success_msg(request))
