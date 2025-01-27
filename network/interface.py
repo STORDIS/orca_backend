@@ -1,4 +1,5 @@
 """ Interface view. """
+import ipaddress
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -15,6 +16,7 @@ from orca_nw_lib.common import Speed, PortFec, IFMode
 from log_manager.decorators import log_request
 from log_manager.logger import get_backend_logger
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg
+from network.models import IPAvailability
 
 _logger = get_backend_logger()
 
@@ -61,17 +63,27 @@ def device_interfaces_list(request):
                     {"status": "Required field device mgt_ip not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-
-            if not req_data.get("name"):
+            name = req_data.get("name")
+            if not name:
                 _logger.error("Required field name not found.")
                 return Response(
                     {"status": "Required field name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+            ip_with_prefix = req_data.get("ip_address")
+            if ip_with_prefix:
+                try:
+                    ipaddress.ip_network(ip_with_prefix, strict=False)
+                except Exception as e:
+                    _logger.error(f"Invalid IP address: {ip_with_prefix}")
+                    return Response(
+                        {"status": str(e)},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
             try:
                 config_interface(
                     device_ip=device_ip,
-                    if_name=req_data.get("name"),
+                    if_name=name,
                     enable=(
                         True
                         if str(req_data.get("enabled")).lower() == "true"
@@ -104,9 +116,25 @@ def device_interfaces_list(request):
                         )
                     ),
                     adv_speeds=req_data.get("adv_speeds"),
-                    ip_with_prefix=req_data.get("ip_address"),
+                    ip_with_prefix=ip_with_prefix,
                     secondary=req_data.get("secondary", False),
                 )
+                # checking if ip with given interface is already in use.
+                # if it in use the get data from neo4j and update it.
+                # else add new ip usage.
+                if ip_with_prefix:
+                    if IPAvailability.objects.filter(used_in=name, device_ip=device_ip).exists():
+                        IPAvailability.remove_usage_by_device_ip_and_used_in(
+                            device_ip=device_ip, used_in=name
+                        )
+                        sub_intfc = get_subinterfaces(device_ip, name)
+                        for i in sub_intfc:
+                            IPAvailability.add_ip_usage(
+                                ip=i.get("ip_address"), device_ip=device_ip, used_in=name
+                            )
+                    else: 
+                    # add new ip usage
+                        IPAvailability.add_ip_usage(ip=ip_with_prefix, device_ip=device_ip, used_in=name)
                 add_msg_to_list(result, get_success_msg(request))
                 http_status = http_status and True
                 _logger.info("Interface %s config updated successfully.", req_data.get("name"))
@@ -277,6 +305,15 @@ def interface_subinterface_config(request):
                     {"status": "Required field device interface name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+            if ip_address:
+                try:
+                    ipaddress.ip_network(ip_address, strict=False)
+                except Exception as e:
+                    _logger.error(f"Invalid IP address: {ip_address}")
+                    return Response(
+                        {"status": str(e)},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
             try:
                 config_interface(
                     device_ip=device_ip,
@@ -284,6 +321,22 @@ def interface_subinterface_config(request):
                     ip_with_prefix=ip_address,
                     secondary=req_data.get("secondary", False),
                 )
+                # checking if ip with given interface is already in use.
+                # if it in use the get data from neo4j and update it.
+                # else add new ip usage.
+                if ip_address:
+                    if IPAvailability.objects.filter(used_in=if_name, device_ip=device_ip).exists():
+                        IPAvailability.remove_usage_by_device_ip_and_used_in(
+                            device_ip=device_ip, used_in=if_name
+                        )
+                        sub_intfc = get_subinterfaces(device_ip, if_name)
+                        for i in sub_intfc:
+                            IPAvailability.add_ip_usage(
+                                ip=i.get("ip_address"), device_ip=device_ip, used_in=if_name
+                            )
+                    else: 
+                    # add new ip usage
+                        IPAvailability.add_ip_usage(ip=ip_address, device_ip=device_ip, used_in=if_name)
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Interface %s ip configured successfully.", if_name)
             except Exception as err:
@@ -308,6 +361,7 @@ def interface_subinterface_config(request):
                     {"status": "Required field device interface name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+            ip_address = req_data.get("ip_address", "")
             try:
                 del_ip_from_intf(
                     device_ip=device_ip,
@@ -315,6 +369,10 @@ def interface_subinterface_config(request):
                     ip_address=req_data.get("ip_address", ""),
                     secondary=req_data.get("secondary", False),
                 )
+                if ip_address:
+                    IPAvailability.add_ip_usage(ip=ip_address, device_ip=None, used_in=None)
+                else:
+                    IPAvailability.remove_usage_by_device_ip_and_used_in(device_ip, if_name)
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Interface %s ip deleted successfully.", if_name)
             except Exception as err:

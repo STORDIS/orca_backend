@@ -1,0 +1,109 @@
+import ipaddress
+from django.forms import model_to_dict
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+from log_manager.decorators import log_request
+from log_manager.logger import get_backend_logger
+from network.models import IPAvailability, IPRange
+from network.util import add_msg_to_list, get_failure_msg, get_success_msg
+
+
+_logger = get_backend_logger()
+
+
+@api_view(["PUT", "GET", "DELETE"])
+@log_request
+def ip_range(request):
+    """ 
+    Create, Get, Delete IP address range from the IPRange table. 
+    Adds IP addresses to the IPAvailability table.
+    """
+    result = []
+    http_status = True
+    if request.method == "GET":
+        data = IPRange.objects.all()
+        return (
+            Response([model_to_dict(ip_range) for ip_range in data], status=status.HTTP_200_OK)
+            if data
+            else Response({}, status=status.HTTP_204_NO_CONTENT)
+        )
+    req_data_list = request.data if isinstance(request.data, list) else [request.data]
+    if request.method == "PUT":
+        for req_data in req_data_list:
+            try:
+                ip_range = req_data.get("range")
+                IPRange.add_ip_range(range=ip_range)
+                add_msg_to_list(result, get_success_msg(request))
+            except Exception as e:
+                import traceback
+                print(traceback.format_exc())
+                _logger.error(e)
+                http_status = False
+                add_msg_to_list(result, get_failure_msg(e, request))
+                
+    if request.method == "DELETE":
+        for req_data in req_data_list:
+            try:
+                ip_range = req_data.get("range")
+                IPRange.delete_ip_range(ip_range)
+                add_msg_to_list(result, get_success_msg(request))
+            except Exception as e:
+                _logger.error(e)
+                http_status = False
+                add_msg_to_list(result, get_failure_msg(e, request))
+    return Response(
+        {"result": result},
+        status=(status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR),
+    )
+    
+    
+@api_view(["GET"])
+@log_request
+def ip_availability(request):
+    """ Get All IP address from the IPAvailability table. """
+    result = []
+    http_status = True
+    if request.method == "GET":
+        ip_range = request.GET.get("range")
+        if ip_range is None:
+            ip_availability_list = IPAvailability.objects.all()
+        else:
+            ip_availability_list = IPAvailability.objects.filter(range=ip_range)
+        for ip in ip_availability_list:
+            result.append(
+                {
+                    "ip": ip.ip, 
+                    "used_in": ip.used_in,
+                    "device_ip": ip.device_ip,
+                    "range": [ip_range.range for ip_range in ip.range.all()]
+                }
+            )
+        return (
+            Response(result, status=status.HTTP_200_OK)
+            if result
+            else Response({}, status=status.HTTP_204_NO_CONTENT)
+        )
+    return Response(
+        {"result": result},
+        status=(status.HTTP_200_OK if http_status else status.HTTP_500_INTERNAL_SERVER_ERROR),
+    )
+    
+
+@api_view(["GET"])
+@log_request
+def get_available_ip(request):
+    """ Get available IP address from the IPAvailability table. """
+    if request.method == "GET":
+        try:
+            range = request.GET.get("range")
+            if range is None:
+                ips_available_list = IPAvailability.objects.filter(used_in__isnull=True)
+            else:
+                ip_range = IPRange.objects.get(range=range)
+                ips_available_list = IPAvailability.objects.filter(range=ip_range, used_in__isnull=True)
+            return Response([ip.ip for ip in ips_available_list], status=status.HTTP_200_OK)
+        except Exception as e:
+            _logger.error(e)
+            return Response({"status": "Internal server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

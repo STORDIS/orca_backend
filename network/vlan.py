@@ -1,4 +1,5 @@
 """ VLAN API. """
+import ipaddress
 from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework.response import Response
@@ -20,6 +21,7 @@ from network.util import (
     get_failure_msg,
     get_success_msg,
 )
+from network.models import IPAvailability
 
 
 _logger = get_backend_logger()
@@ -86,7 +88,27 @@ def vlan_config(request):
                 ## Update members dictionary with tagging mode Enum
                 for mem_if, tagging_mode in mem.items():
                     members[mem_if] = IFMode.get_enum_from_str(tagging_mode)
-
+            ip_addr_with_prefix = req_data.get("ip_address", None)
+            anycast_ip_addr_with_prefix = req_data.get("sag_ip_address", None)
+            if ip_addr_with_prefix:
+                try:
+                    ipaddress.ip_network(ip_addr_with_prefix, strict=False)
+                except Exception as e:
+                    _logger.error(f"Invalid IP address: {ip_addr_with_prefix}")
+                    return Response(
+                        {"status": str(e)},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+            if anycast_ip_addr_with_prefix:
+                for ip in anycast_ip_addr_with_prefix:
+                    try:
+                        ipaddress.ip_network(ip, strict=False)
+                    except Exception as e:
+                        _logger.error(f"Invalid IP address: {ip}")
+                        return Response(
+                            {"status": str(e)},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
             try:
                 config_vlan(
                     device_ip,
@@ -94,7 +116,7 @@ def vlan_config(request):
                     enabled=req_data.get("enabled", None),
                     descr=req_data.get("description", None),
                     mtu=req_data.get("mtu", None),
-                    ip_addr_with_prefix=req_data.get("ip_address", None),
+                    ip_addr_with_prefix=ip_addr_with_prefix,
                     autostate=(
                         auto_st
                         if (
@@ -107,6 +129,15 @@ def vlan_config(request):
                     anycast_addr=req_data.get("sag_ip_address", None),
                     mem_ifs=members if members else None,
                 )
+                if ip_addr_with_prefix:
+                    # removing ip usage for vlan if usage for vlan exits
+                    IPAvailability.remove_usage_by_device_ip_and_used_in(device_ip, vlan_name)
+                    # adding ip usage
+                    IPAvailability.add_ip_usage(ip=ip_addr_with_prefix, device_ip=device_ip, used_in=vlan_name)
+                if anycast_ip_addr_with_prefix:
+                    # anycast ip is list so can be updated without removing ip usage.
+                    for ip in anycast_ip_addr_with_prefix:
+                        IPAvailability.add_ip_usage(ip=ip, device_ip=device_ip, used_in=vlan_name)
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Successfully configured VLAN: %s", vlan_name)
             except Exception as err:
@@ -141,6 +172,7 @@ def vlan_config(request):
                             _logger.error("Failed to delete VLAN member: %s", mem_if)
             try:
                 del_vlan(device_ip, vlan_name)
+                IPAvailability.remove_usage_by_device_ip_and_used_in(device_ip, vlan_name)
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Successfully deleted VLAN: %s", vlan_name)
             except Exception as err:
@@ -176,12 +208,25 @@ def remove_vlan_ip_address(request):
                 {"status": "Required field device vlan_name not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        ip_address = req_data.get("ip_address", None)
+        if ip_address:
+            try:
+                ipaddress.ip_network(ip_address, strict=False)
+            except Exception as e:
+                _logger.error(f"Invalid IP address: {ip_address}")
+                return Response(
+                    {"status": str(e)},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         try:
             remove_ip_from_vlan(
                 device_ip,
                 vlan_name,
             )
-            add_msg_to_list(result, get_success_msg(request))
+            if ip_address:
+                IPAvailability.add_ip_usage(ip=ip_address, device_ip=None, used_in=None)
+            else:
+                IPAvailability.remove_usage_by_device_ip_and_used_in(device_ip, vlan_name)
             _logger.info("Successfully removed IP address from VLAN: %s", vlan_name)
         except Exception as err:
             add_msg_to_list(result, get_failure_msg(err, request))
@@ -190,8 +235,22 @@ def remove_vlan_ip_address(request):
 
         if sag_ip_address:=req_data.get("sag_ip_address", []):
             for sag_ip in sag_ip_address:
+                if sag_ip:
+                    try:
+                        ipaddress.ip_network(sag_ip, strict=False)
+                    except Exception as e:
+                        _logger.error(f"Invalid IP address: {sag_ip}")
+                        return Response(
+                            {"status": str(e)},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
                 try:
                     remove_anycast_ip_from_vlan(device_ip, vlan_name, sag_ip)
+                    add_msg_to_list(result, get_success_msg(request))
+                    if ip_address:
+                        IPAvailability.add_ip_usage(ip=ip_address, device_ip=None, used_in=None)
+                    else:
+                        IPAvailability.remove_usage_by_device_ip_and_used_in(device_ip, vlan_name)
                     add_msg_to_list(result, get_success_msg(request))
                     _logger.info("Successfully removed anycast IP address from VLAN: %s", vlan_name)
                 except Exception as err:

@@ -428,8 +428,20 @@ class TestPortChnl(TestORCA):
     def test_port_channel_ip(self):
         device_ip = list(self.device_ips.keys())[0]
         self.remove_mclag(device_ip)
-        ip_address_1 = "192.10.10.9/24"
-        ip_address_2 = "192.11.10.9/24"
+        
+        ip_range = "10.10.100.0 - 10.10.100.10"
+        
+        # adding ip range
+        response = self.put_req("ip_range", {"range": ip_range})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # validate ip range added
+        response = self.get_req("ip_range")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(ip_range, [i["range"] for i in response.data])
+        
+        ip_address_1 = "10.10.100.1/31"
+        ip_address_2 = "10.10.100.9/31"
         port_channel = "PortChannel103"
         # Test ip_address attribute on port channel creation
         request_body = {

@@ -21,6 +21,21 @@ class TestVlan(TestORCA):
     def test_vlan_ip_config(self):
         
         device_ip = list(self.device_ips.keys())[0]
+        
+        # create ip range
+        ip_range_1 = "202.20.20.0/24"
+        response = self.put_req("ip_range", {"range": ip_range_1})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        ip_range_2 = "101.10.10.0/24"
+        response = self.put_req("ip_range", {"range": ip_range_2})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # validate ip range created
+        response = self.get_req("ip_range")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(ip_range_1, [i["range"] for i in response.data])
+        self.assertIn(ip_range_2, [i["range"] for i in response.data])
 
         # create Vlan
         req_payload = {
@@ -43,6 +58,7 @@ class TestVlan(TestORCA):
             "ip_address": "101.10.10.10/10",
         }
         response = self.put_req("vlan_config", req_payload_update_ip)
+        print(response.json())
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # check updated ip and other fields
@@ -80,6 +96,21 @@ class TestVlan(TestORCA):
 
         #clean up
         self.delete_vlan(req_payload)
+        
+        # delete ip range
+        response = self.del_req("ip_range", {"range": ip_range_1})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        response = self.del_req("ip_range", {"range": ip_range_2})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # validate ip range deleted
+        response = self.get_req("ip_range")
+        self.assertIn(response.status_code, [status.HTTP_204_NO_CONTENT, status.HTTP_200_OK])
+        self.assertNotIn(ip_range_1, [i["range"] for i in response.data])
+        self.assertNotIn(ip_range_2, [i["range"] for i in response.data])
+
+        
     def test_vlan_sag_ip_config(self):
         device_ip = list(self.device_ips.keys())[0]
 
@@ -95,9 +126,25 @@ class TestVlan(TestORCA):
         }
         self.create_vlan(req_payload)
         
-        sag_ip_1 = "101.10.10.10/10"
-        sag_ip_2 = "201.20.20.20/20"
-        sag_ip_3 = "202.30.30.30/30"
+        sag_ip_1 = "101.10.10.10/31"
+        sag_ip_2 = "201.20.20.20/31"
+        sag_ip_3 = "202.30.30.30/31"
+        
+        # add ip range
+        response = self.put_req("ip_range", {"range": sag_ip_1})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.put_req("ip_range", {"range": sag_ip_2})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.put_req("ip_range", {"range": sag_ip_3})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # validate ip range added
+        response = self.get_req("ip_range")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(sag_ip_1, [i["range"] for i in response.data])
+        self.assertIn(sag_ip_2, [i["range"] for i in response.data])
+        self.assertIn(sag_ip_3, [i["range"] for i in response.data])
+        
         # Now assign sag_ip
         req_payload_assign_ip = {
             "mgt_ip": device_ip,
@@ -183,9 +230,38 @@ class TestVlan(TestORCA):
 
         #clean up
         self.delete_vlan(req_payload)
+        
+        # delete ip range
+        response = self.del_req("ip_range", {"range": sag_ip_1})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        response = self.del_req("ip_range", {"range": sag_ip_2})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        response = self.del_req("ip_range", {"range": sag_ip_3})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # validate ip range deleted
+        response = self.get_req("ip_range")
+        self.assertIn(response.status_code, [status.HTTP_204_NO_CONTENT, status.HTTP_200_OK])
+        self.assertNotIn(sag_ip_1, [i["range"] for i in response.data])
+        self.assertNotIn(sag_ip_2, [i["range"] for i in response.data])
+        self.assertNotIn(sag_ip_3, [i["range"] for i in response.data])
+        
+        
     def test_vlan_description(self):
         device_ip = list(self.device_ips.keys())[0]
 
+        # create ip range
+        ip_range = "20.20.20.0/24"
+        response = self.put_req("ip_range", {"range": ip_range})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # validate ip range created
+        response = self.get_req("ip_range")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(ip_range, [i["range"] for i in response.data])
+        
         # create Vlan
         req_payload = {
             "mgt_ip": device_ip,
@@ -226,6 +302,15 @@ class TestVlan(TestORCA):
         
          #clean up
         self.delete_vlan(req_payload)
+        
+        # delete ip range
+        response = self.del_req("ip_range", {"range": ip_range})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # validate ip range deleted
+        response = self.get_req("ip_range")
+        self.assertIn(response.status_code, [status.HTTP_204_NO_CONTENT, status.HTTP_200_OK])
+        self.assertNotIn(ip_range, [i["range"] for i in response.data])
         
     def test_vlan_mem_config(self):
         """

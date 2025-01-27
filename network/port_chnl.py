@@ -1,4 +1,5 @@
 """ Network Port Channel API. """
+import ipaddress
 from orca_nw_lib.common import IFMode
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -18,7 +19,7 @@ from log_manager.decorators import log_request
 from log_manager.logger import get_backend_logger
 from network.util import add_msg_to_list, get_failure_msg, get_success_msg
 from orca_nw_lib.port_chnl import add_port_chnl_vlan_members
-
+from network.models import IPAvailability
 
 _logger = get_backend_logger()
 
@@ -87,6 +88,16 @@ def device_port_chnl_list(request):
                     {"status": "Required field device lag_name not found."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+            ip_with_prefix = req_data.get("ip_address", None)
+            if ip_with_prefix:
+                try:
+                    ipaddress.ip_network(ip_with_prefix, strict=False)
+                except Exception as e:
+                    _logger.error(f"Invalid IP address: {ip_with_prefix}")
+                    return Response(
+                        {"status": str(e)},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
             try:
                 add_port_chnl(
                     device_ip,
@@ -103,8 +114,18 @@ def device_port_chnl_list(request):
                     description=req_data.get("description", None),
                     fallback=req_data.get("fallback", None),
                     graceful_shutdown_mode=req_data.get("graceful_shutdown_mode", None),
-                    ip_addr_with_prefix=req_data.get("ip_address", None),
+                    ip_addr_with_prefix=ip_with_prefix,
                 )
+                if ip_with_prefix:
+                    # removing ip usage for the port channel if already exists
+                    IPAvailability.remove_usage_by_device_ip_and_used_in(
+                        device_ip=device_ip, used_in=req_data.get("lag_name")
+                    )
+                    
+                    # adding ip usage
+                    IPAvailability.add_ip_usage(
+                        ip=ip_with_prefix, device_ip=device_ip, used_in=req_data.get("lag_name")
+                    )
                 add_msg_to_list(result, get_success_msg(request))
                 _logger.info("Added port channel: %s", req_data.get("lag_name"))
             except Exception as err:
@@ -269,10 +290,23 @@ def remove_port_channel_ip_address(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         ip_addr = req_data.get("ip_address", None)
+        if ip_addr:
+            try:
+                ipaddress.ip_network(ip_addr, strict=False)
+            except Exception as e:
+                _logger.error(f"Invalid IP address: {ip_addr}")
+                return Response(
+                    {"status": str(e)},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         try:
             remove_port_chnl_ip(device_ip, chnl_name, ip_addr)
             add_msg_to_list(result, get_success_msg(request))
             _logger.info("Removed port channel IP address: %s", ip_addr)
+            if ip_addr:
+                IPAvailability.add_ip_usage(ip=ip_addr, device_ip=None, used_in=None)
+            else:
+                IPAvailability.remove_usage_by_device_ip_and_used_in(device_ip, chnl_name)
         except Exception as err:
             add_msg_to_list(result, get_failure_msg(err, request))
             http_status = http_status and False
