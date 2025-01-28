@@ -16,3 +16,6 @@ fileserver/media/*
 !fileserver/media/templates
 !fileserver/media/download/
 fileserver/media/download/**
+model_cache
+neo4j
+redis
