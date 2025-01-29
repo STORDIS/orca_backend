@@ -34,7 +34,7 @@ ORCA Backend is a REST API server written using Django framework to access orca_
   - [To execute tests](#to-execute-tests)
   - [To Run GitHub Actions Locally](#to-run-github-actions-locally)
   - [ORCA Backend backup and restore](#orca-backend-backup-and-restore)
-    - [Backup and Restore](#backup-and-restore)
+    - [Backup and restore](#backup-and-restore)
     - [How Volumes Work](#how-volumes-work)
     - [Fresh Start ORCA backend](#fresh-start-orca-backend)
 
@@ -146,7 +146,7 @@ For a quick start, APIs can be directly used from browser with django rest frame
 
 ### Backup and restore
 
-The ORCA Backend data is stored in Docker volumes, which ensures that data is not deleted even if the Docker containers are restarted. Docker volumes are designed to persist data independently of the container's lifecycle, meaning that when containers are stopped, restarted, or removed, the data inside the volume remains intact.
+The ORCA data is backed up by mapping the volumes to host. Docker volumes are designed to persist data independently of the container's lifecycle, meaning that when containers are stopped, restarted, or removed, the data inside the volume remains intact because it is stored on the host.
 
 ### How Volumes Work
 
