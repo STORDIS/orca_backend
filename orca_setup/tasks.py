@@ -80,8 +80,11 @@ def discovery_task(device_ips, **kwargs):
             result.append({"message": "failed", "details": f"Failed to discover devices from config. Error: {err}"})
             _logger.error("Failed to discover devices from config. Error: %s", err)
     try:
-        discover_device(device_ips=device_ips)
-        result.append({"message": "success", "details": "Discovery successful."})
+        discovery_result = discover_device(device_ips=device_ips)
+        if discovery_result:
+            result.append({"message": "failed", "details": discovery_result})
+        else:
+            result.append({"message": "success", "details": "Discovery successful."})
     except Exception as err:
         result.append({"message": "failed", "details": str(err)})
         _logger.error("Failed to discover devices. Error: %s", err)
