@@ -33,6 +33,10 @@ ORCA Backend is a REST API server written using Django framework to access orca_
     - [Steps to Use APIs](#steps-to-use-apis)
   - [To execute tests](#to-execute-tests)
   - [To Run GitHub Actions Locally](#to-run-github-actions-locally)
+  - [ORCA Backend backup and restore](#orca-backend-backup-and-restore)
+    - [Backup and restore](#backup-and-restore)
+    - [How Volumes Work](#how-volumes-work)
+    - [Fresh Start ORCA backend](#fresh-start-orca-backend)
 
 
 ## Quick Start orca_backend
@@ -137,3 +141,53 @@ For a quick start, APIs can be directly used from browser with django rest frame
 
             cd orca_backend
             act --secret-file github_secret_file
+
+## ORCA Backend backup and restore
+
+### Backup and restore
+
+The ORCA data is backed up by mapping the volumes to host. Docker volumes are designed to persist data independently of the container's lifecycle, meaning that when containers are stopped, restarted, or removed, the data inside the volume remains intact because it is stored on the host.
+
+### How Volumes Work
+
+Volumes are a form of storage in Docker that allows data to be saved in a persistent manner, separate from the container filesystem. When you use volumes in Docker, the data stored in the volume is not affected by container lifecycle events such as:
+
+- **Container restarts**: Volumes persist across restarts and do not get deleted or reset.
+- **Container removal**: Volumes remain even if the container is deleted.
+
+In the context of ORCA Backend, we are using Docker volumes for storing data for services like **Neo4j** and **Redis**. These databases need to maintain their state between container restarts, and Docker volumes ensure that their data is safely stored.
+
+For example, the following Docker Compose setup maps volumes for **Neo4j** and **Redis**:
+
+```yaml
+  neo4j:
+    image: neo4j:latest
+    volumes:
+      - ./neo4j/data:/data
+
+  redis:
+    image: redis:latest
+    volumes:
+      - ./redis:/data
+```
+
+Here, the local directories ./neo4j/data and ./redis are mapped to Docker volumes inside the containers. These volumes are stored on the host machine, ensuring that even when the containers are restarted or removed, the data persists.
+
+> **NOTE:** If the container is restarted while a Celery task is running, its status will be changed to INTERRUPTED.
+
+### Fresh Start ORCA backend
+
+To perform a fresh start of the ORCA backend, execute the following commands:
+
+```bash
+docker compose down
+sudo rm -r neo4j redis db.sqlite3
+```
+
+restarting orca_backend
+
+```bash
+docker compose up -d --build
+```
+
+> **_NOTE_:** Deleting db.sqlite3 will remove all user data.
